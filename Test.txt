@@ -1,579 +1,3086 @@
-package com.tab.af.reporting;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.aventstack.extentreports.AnalysisStrategy;
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
-import com.aventstack.extentreports.reporter.configuration.Theme;
-
-public class ExtentManager {
-
-	private static Map<Long, ExtentReports> extentMap = new HashMap<Long, ExtentReports>();
-
-	public static ExtentHtmlReporter getReporter(String fullName, String scenarioName) {
-		ExtentHtmlReporter htmlReporter = new ExtentHtmlReporter(fullName);
-
-		htmlReporter.setAppendExisting(true);
-		htmlReporter.config().setDocumentTitle(scenarioName);
-		htmlReporter.config().setTheme(Theme.DARK);
-		return htmlReporter;
-	}
-
-	public static void setupInstance(String scenarioName) {
-		String fullPath = System.getProperty("extent.Report.Directory") + "\\" + scenarioName + ".html";
-		ExtentReports extent = new ExtentReports();
-		extent.attachReporter(getReporter(fullPath, scenarioName));
-		extent.setSystemInfo("Run Platform", "Winodws");
-		extent.setSystemInfo("Environment", "QA");
-		extent.setAnalysisStrategy(AnalysisStrategy.TEST);
-		extentMap.put(Thread.currentThread().getId(), extent);
-	}
-
-	public static ExtentReports getInstance() {
-		return extentMap.get(Thread.currentThread().getId());
-	}
-
-	public static void flushInstance() {
-		getInstance().flush();
-	}
-}
-******************************************************************************
-package com.tab.af.reporting;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-
-import org.testng.IReporter;
-import org.testng.IResultMap;
-import org.testng.ISuite;
-import org.testng.ISuiteResult;
-import org.testng.ITestContext;
-import org.testng.ITestResult;
-import org.testng.xml.XmlSuite;
-
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.Status;
-import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
-import com.aventstack.extentreports.reporter.configuration.Theme;
-
-public class ExtentNG implements IReporter {
-	private ExtentReports extent;
-
-	@Override
-	public void generateReport(List<XmlSuite> xmlSuites, List<ISuite> suites, String outputDirectory) {
-		extent = new ExtentReports();
-		ExtentHtmlReporter reporter = new ExtentHtmlReporter(
-				outputDirectory + File.separator + "ExtentReportsTestNG.html");
-		reporter.setAppendExisting(false);
-		reporter.config().setTheme(Theme.DARK);
-		extent.attachReporter(reporter);
-
-		for (ISuite suite : suites) {
-			Map<String, ISuiteResult> result = suite.getResults();
-
-			for (ISuiteResult r : result.values()) {
-				ITestContext context = r.getTestContext();
-
-				buildTestNodes(context.getPassedTests(), Status.PASS);
-				buildTestNodes(context.getFailedTests(), Status.FAIL);
-				buildTestNodes(context.getSkippedTests(), Status.SKIP);
-			}
-		}
-
-		extent.flush();
-
-	}
-
-	private void buildTestNodes(IResultMap tests, Status status) {
-		ExtentTest test;
-
-		if (tests.size() > 0) {
-			for (ITestResult result : tests.getAllResults()) {
-				Object[] aa = result.getParameters();
-
-				test = extent.createTest(aa[0].toString());
-
-				test.assignCategory(aa[1].toString());
-
-				String message = "Test " + status.toString().toLowerCase() + "ed";
-
-				if (result.getThrowable() != null) {
-					message = result.getThrowable().getMessage();
-				}
-
-				test.log(status, message);
-
-			}
-		}
-	}
-
-}
-***************************************************************************
-package com.tab.af.reporting;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.Status;
-import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
-import com.aventstack.extentreports.reporter.configuration.Theme;
-
-public class ExtentSummary {
-
-	private static ExtentReports reports;
-
-	private static Map<Long, ExtentTest> summaryTestMap = new HashMap<Long, ExtentTest>();
-
-	public static void createSummaryInstance() {
-		String reportDirectory = System.getProperty("extent.Report.Directory");
-		ExtentHtmlReporter reporter = new ExtentHtmlReporter(reportDirectory + "\\Summary.html");
-		reporter.config().setReportName("Execution Summary Report");
-		reporter.config().setTheme(Theme.DARK);
-		reporter.config().setDocumentTitle("Automation Execution Summary Report");
-		reporter.setAppendExisting(true);
-		reports = new ExtentReports();
-		reports.attachReporter(reporter);
-	}
-
-	public static ExtentReports getSummaryInstance() {
-		return reports;
-	}
-
-	public static void createTest(String reportFileName, String category) {
-		String testCaseName = reportFileName.replace(".html", "");
-		ExtentTest test = reports.createTest(testCaseName).assignCategory(category);
-		summaryTestMap.put(Thread.currentThread().getId(), test);
-	}
-
-	public static ExtentTest getTest() {
-		return summaryTestMap.get(Thread.currentThread().getId());
-	}
-
-	public static void logFailTest(String name) {
-		ExtentTest test = getTest();
-		String testCaseName = name;
-		String reportFileName = name + ".html";
-		test.log(Status.FAIL, "<a href='" + reportFileName
-				+ "' target=\"_blank\" style=\"text - decoration: underline; \" class=\"label white-text red\" >"
-				+ testCaseName + "</a>");
-	}
-
-	public static void logPassTest(String name) {
-		ExtentTest test = getTest();
-		String testCaseName = name;
-		String reportFileName = name + ".html";
-		test.log(Status.PASS, "<a href='" + reportFileName
-				+ "' target=\"_blank\" style=\"text - decoration: underline; \" class=\"label white-text green\" >"
-				+ testCaseName + "</a>");
-	}
-
-	public static void flushSummaryReport() {
-		if (reports != null) {
-			reports.flush();
-			summaryTestMap.remove(Thread.currentThread().getId());
-		}
-	}
-
-}
-*******************************************************************
-package com.tab.af.reporting;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
-
-public class ExtentTestManager {
-
-	private static Map<Long, ExtentTest> extentTestMap = new HashMap<Long, ExtentTest>();
-
-	public static void removeTest() {
-		extentTestMap.get(Thread.currentThread().getId());
-	}
-
-	public static void createTest(String testName) {
-		ExtentReports extent = ExtentManager.getInstance();
-		ExtentTest test = extent.createTest(testName);
-		extentTestMap.put(Thread.currentThread().getId(), test);
-	}
-
-	public static ExtentTest getTest() {
-		return extentTestMap.get(Thread.currentThread().getId());
-	}
-
-	public static void assignCategory(String categoryName) {
-		ExtentTest test = extentTestMap.get(Thread.currentThread().getId());
-		test.assignCategory(categoryName);
-	}
-
-}
-*************************************************************************
-package com.tab.af.reporting;
+package com.tab.af.actions;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import com.rajatthareja.reportbuilder.ReportBuilder;
+import org.openqa.selenium.JavascriptException;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebElement;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import com.tab.af.engine.DriverEngine;
+import com.tab.af.reporting.StepLogging;
 import com.tab.af.testbase.TestBase;
 
-import net.masterthought.cucumber.Configuration;
-import net.masterthought.cucumber.presentation.PresentationMode;
-import net.masterthought.cucumber.reducers.ReducingMethod;
-import net.masterthought.cucumber.sorting.SortingMethod;
+public class ShadowActions {
 
-public class JSONReportBuilder {
+	private DriverEngine driverEngine;
 
-	private static JSONReportBuilder executionSummaryReport;
-	private static final String JSONFILEPAATH = "target/cucumber-reports/cucumber.json";
+	private StepLogging log = StepLogging.getLoggingObject();
 
-	private JSONReportBuilder() {
+	long explicitPeriod = Long.parseLong(TestBase.prop.explicitWaitPeriod());
+
+	public ShadowActions(DriverEngine driverEngine) {
+		this.driverEngine = driverEngine;
+
 	}
 
-	public static JSONReportBuilder getInstance() {
-		if (executionSummaryReport == null) {
-			executionSummaryReport = new JSONReportBuilder();
-		}
-		return executionSummaryReport;
+	private Object injectShadowExecuter(String javascript) {
+
+		JavascriptExecutor js = driverEngine.getWebDriver();
+		waitForPageLoaded();
+		return js.executeScript(javascript);
+
 	}
 
-	public void generateMasterThoughtsSummary() {
-		List<String> list = new ArrayList();
-		list.add(JSONFILEPAATH);
-		String projectName = "Tab Bank";
-		File reportOutputDirectory = new File("target");
-		Configuration configuration = new Configuration(reportOutputDirectory, projectName);
-		configuration.addPresentationModes(PresentationMode.EXPAND_ALL_STEPS);
-		configuration.addClassifications("Execution Type", TestBase.prop.runType());
-		configuration.addReducingMethod(ReducingMethod.HIDE_EMPTY_HOOKS);
-		configuration.addPresentationModes(PresentationMode.EXPAND_ALL_STEPS);
-		configuration.setSortingMethod(SortingMethod.NATURAL);
-		configuration.addClassifications("Environment", TestBase.prop.onboardingEnvironment());
-		// List<String> confFiles = new ArrayList<String>();
-		// confFiles.add(RootDir + "\\src\\main\\resources\\Config.properties");
-		// configuration.addClassificationFiles(confFiles);
-		net.masterthought.cucumber.ReportBuilder reportBuilder = new net.masterthought.cucumber.ReportBuilder(list,
-				configuration);
-		reportBuilder.generateReports();
+	private Object injectShadowExecuter(String javascript, WebElement element) {
+
+		JavascriptExecutor js = driverEngine.getWebDriver();
+		waitForPageLoaded();
+		return js.executeScript(javascript, element);
+
 	}
 
-	public void generateReportBuilderSummary() {
-		String path = System.getProperty("user.dir");
-		ReportBuilder reportBuilder = new ReportBuilder();
-		reportBuilder.setReportDirectory(path + "\\target\\SummaryReports\\");
-		// Map<String, String> map = new HashMap<String, String>();
-		// for (String key : TestBase.props.stringPropertyNames()) {
-		// String value = TestBase.props.getProperty(key);
-		// map.put(key, value.toString());
-		// }
-		// reportBuilder.setAdditionalInfo(map);
-		reportBuilder.setReportFileName("Summary Report");
-		reportBuilder.setReportTitle("Automation Execution Report");
-		reportBuilder.disableVoiceControl();
-		reportBuilder.setAdditionalInfo("Author", "Abhay");
-		reportBuilder.setReportColor("#b0bec5 blue-grey lighten-5");
-		reportBuilder.setAdditionalInfo("Environment", TestBase.prop.onboardingEnvironment());
-		List<Object> cucumberJsonReports = new ArrayList<>();
-		cucumberJsonReports.add(new File(path + "\\target\\cucumber-reports\\cucumber.json"));
-		String newContent = "";
-		reportBuilder.build(cucumberJsonReports);
-		FileReader fr = null;
-		try {
-			File file = new File(path + "\\target\\SummaryReports\\Summary Report.html");
-			fr = new FileReader(file);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		try (BufferedReader br = new BufferedReader(fr)) {
-			StringBuilder content = new StringBuilder(1024);
-			while ((newContent = br.readLine()) != null) {
-				content.append(newContent);
+	private Object executerGetObject(String script) {
+		String javascript = convertJStoText().toString();
+		javascript += script;
+		return injectShadowExecuter(javascript);
+	}
+
+	private Object executerGetObject(String script, WebElement element) {
+		String javascript = convertJStoText().toString();
+		javascript += script;
+		return injectShadowExecuter(javascript, element);
+	}
+
+	private StringBuilder convertJStoText() {
+		InputStream in = getClass().getResourceAsStream("/querySelector.js");
+
+		StringBuilder text = new StringBuilder();
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+			while (reader.ready()) {
+				text.append(reader.readLine());
 			}
-			// Removing Footer
-			newContent = content.toString().replace(
-					"<div class=\"container\">            Happy Reporting!            <a class=\"white-text text-lighten-4 right\" href=\"http://reportbuilderjava.rajatthareja.com\">Generated by Report Builder</a>        </div>",
-					"").replace("teal lighten-2", "teal lighten-5");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		try (FileWriter fw = new FileWriter(path + "\\target\\SummaryReports\\Summary Report.html");) {
-			fw.write(newContent);
-			fw.close();
+
+		return text;
+	}
+
+	private void fixLocator(SearchContext context, String cssLocator, WebElement element) {
+		if (element instanceof RemoteWebElement) {
+			try {
+
+				Class[] parameterTypes = new Class[] { SearchContext.class, String.class, String.class };
+				Method m = element.getClass().getDeclaredMethod("setFoundBy", parameterTypes);
+				m.setAccessible(true);
+				Object[] parameters = new Object[] { context, "cssSelector", cssLocator };
+				m.invoke(element, parameters);
+			} catch (Exception fail) {
+				// fail("Something bad happened when fixing locator");
+			}
+		}
+	}
+
+	private void waitForPageLoaded() {
+		ExpectedCondition<Boolean> expectation = new ExpectedCondition<Boolean>() {
+
+			@Override
+			public Boolean apply(WebDriver driver) {
+				return ((JavascriptExecutor) driver).executeScript("return document.readyState").toString()
+						.equals("complete");
+			}
+
+		};
+		try {
+			Thread.sleep(1000);
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
+			wait.until(expectation);
+		} catch (Throwable error) {
+			// Assertions.fail("Timeout waiting for Page Load Request to complete.");
+		}
+	}
+
+	public WebElement findElement(String cssSelector) {
+		WebElement element = null;
+		element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\");");
+		fixLocator(driverEngine.getWebDriver(), cssSelector, element);
+		return element;
+	}
+
+	public WebElement findElement(WebElement parent, String cssSelector) {
+		WebElement element = null;
+		element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\", arguments[0]);", parent);
+		fixLocator(driverEngine.getWebDriver(), cssSelector, element);
+		return element;
+	}
+
+	public List<WebElement> findElements(String cssSelector) {
+		List<WebElement> elements = null;
+		Object object = executerGetObject("return getAllObject(\"" + cssSelector + "\");");
+		if (object != null && object instanceof List<?>) {
+			elements = (List<WebElement>) object;
+		}
+		if (elements != null) {
+			for (WebElement webElement : elements) {
+				fixLocator(driverEngine.getWebDriver(), cssSelector, webElement);
+			}
+		}
+		return elements;
+	}
+
+	public List<WebElement> findElements(WebElement parent, String cssSelector) {
+		List<WebElement> elements = null;
+		Object object = executerGetObject("return getAllObject(\"" + cssSelector + "\", arguments[0]);", parent);
+		if (object != null && object instanceof List<?>) {
+			elements = (List<WebElement>) object;
+		}
+		if (elements != null) {
+			for (WebElement webElement : elements) {
+				fixLocator(driverEngine.getWebDriver(), cssSelector, webElement);
+			}
+		}
+		return elements;
+	}
+
+	public WebElement getShadowElement(WebElement parent, String selector) {
+		WebElement element = null;
+		element = (WebElement) executerGetObject("return getShadowElement(arguments[0],\"" + selector + "\");", parent);
+		fixLocator(driverEngine.getWebDriver(), selector, element);
+		return element;
+	}
+
+	public List<WebElement> getAllShadowElement(WebElement parent, String selector) {
+		List<WebElement> elements = null;
+		Object object = executerGetObject("return getAllShadowElement(arguments[0],\"" + selector + "\");", parent);
+		if (object != null && object instanceof List<?>) {
+			elements = (List<WebElement>) object;
+		}
+		if (elements != null) {
+			for (WebElement element : elements) {
+				fixLocator(driverEngine.getWebDriver(), selector, element);
+			}
+		}
+		return elements;
+	}
+
+	public WebElement getParentElement(WebElement element) {
+		return (WebElement) executerGetObject("return getParentElement(arguments[0]);", element);
+	}
+
+	public List<WebElement> getChildElements(WebElement parent) {
+		List<WebElement> elements = null;
+		Object object = executerGetObject("return getChildElements(arguments[0]);", parent);
+		if (object != null && object instanceof List<?>) {
+			elements = (List<WebElement>) object;
+		}
+		return elements;
+	}
+
+	public List<WebElement> getSiblingElements(WebElement element) {
+		List<WebElement> elements = null;
+		Object object = executerGetObject("return getSiblingElements(arguments[0]);", element);
+		if (object != null && object instanceof List<?>) {
+			elements = (List<WebElement>) object;
+		}
+		return elements;
+	}
+
+	public WebElement getSiblingElement(WebElement element, String selector) {
+		return (WebElement) executerGetObject("return getSiblingElement(arguments[0],\"" + selector + "\");", element);
+	}
+
+	public WebElement getNextSiblingElement(WebElement element) {
+		return (WebElement) executerGetObject("return getNextSiblingElement(arguments[0]);", element);
+	}
+
+	public WebElement getPreviousSiblingElement(WebElement element) {
+		return (WebElement) executerGetObject("return getPreviousSiblingElement(arguments[0]);", element);
+	}
+
+	public boolean isVisible(WebElement element) {
+		return (Boolean) executerGetObject("return isVisible(arguments[0]);", element);
+	}
+
+	public boolean isChecked(WebElement element) {
+		return (Boolean) executerGetObject("return isChecked(arguments[0]);", element);
+	}
+
+	public boolean isDisabled(WebElement element) {
+		return (Boolean) executerGetObject("return isDisabled(arguments[0]);", element);
+	}
+
+	public String getAttribute(WebElement element, String attribute) {
+		return (String) executerGetObject("return getAttribute(arguments[0],\"" + attribute + "\");", element);
+	}
+
+	public void selectCheckbox(WebElement parentElement, String label) {
+		executerGetObject("return selectCheckbox(\"" + label + "\",arguments[0]);", parentElement);
+	}
+
+	public void selectCheckbox(String label) {
+		executerGetObject("return selectCheckbox(\"" + label + "\");");
+	}
+
+	public void selectRadio(WebElement parentElement, String label) {
+		executerGetObject("return selectRadio(\"" + label + "\",arguments[0]);", parentElement);
+	}
+
+	public void selectRadio(String label) {
+		executerGetObject("return selectRadio(\"" + label + "\");");
+	}
+
+	public void selectDropdown(WebElement parentElement, String label) {
+		executerGetObject("return selectDropdown(\"" + label + "\",arguments[0]);", parentElement);
+	}
+
+	public void selectDropdown(String label) {
+		executerGetObject("return selectDropdown(\"" + label + "\");");
+	}
+
+	public void scrollTo(WebElement element) {
+		executerGetObject("return scrollTo(arguments[0]);", element);
+	}
+
+	public WebElement waitUntilPresentinDOM(String cssLocator) throws Exception {
+		WebElement element = null;
+		long timeOut = explicitPeriod;
+		do {
+
+			try {
+				element = findElement(cssLocator);
+
+				if (element == null) {
+					Thread.sleep(1000);
+					timeOut--;
+
+				} else {
+					break;
+				}
+			} catch (Exception e) {
+				throw e;
+			}
+		} while (timeOut > 0);
+		return element;
+	}
+
+	/**
+	 * Click Element
+	 *
+	 * @param cssLocator
+	 * @param elementName
+	 */
+	public void click(String cssLocator, String elementName) {
+		try {
+			WebElement element = findElement(cssLocator);
+			element.click();
+			log.info("Click on: ", elementName);
+		} catch (Exception e) {
+			log.error("Click on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Wait for Explicit Period of time Until Element Returned is not Null and Click
+	 *
+	 * @param cssLocator
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitAndClick(String cssLocator, String elementName) throws Exception {
+		try {
+			WebElement element = waitAndfindElement(cssLocator, elementName);
+			element.click();
+			log.info("Click on: ", elementName);
+		} catch (Exception e) {
+			log.error("Click on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Click the Element with Matching Text from a List of WebElement
+	 *
+	 * @param cssLocator
+	 * @param elementName
+	 */
+	public void clickByTextInList(String cssLocator, String texttoClick, String elementName) {
+		try {
+
+			List<WebElement> list = findElements(cssLocator);
+
+			for (WebElement element : list) {
+
+				if (element.getText().equals(texttoClick)) {
+					element.click();
+					break;
+				}
+			}
+			log.info("Click on Element By texts: ", elementName);
+		} catch (Exception e) {
+			log.error("Click on Element By text: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Send Keys To Element
+	 *
+	 * @param cssLocator
+	 * @param elementName
+	 */
+	public void sendKeys(String cssLocator, String value, String elementName) {
+		try {
+			WebElement element = findElement(cssLocator);
+			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].value=''", element);
+			element.sendKeys(value);
+			log.info("Sendkeys on: ", elementName);
+		} catch (Exception e) {
+			log.error("Sendkeys on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Wait for Explicit Period of time Until Element Returned is not Null and Send
+	 * Keys
+	 *
+	 * @param cssLocator
+	 * @param value
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitAndSendKeys(String cssLocator, String value, String elementName) throws Exception {
+		try {
+			WebElement element = waitAndfindElement(cssLocator, elementName);
+			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].value=''", element);
+			element.sendKeys(value);
+			log.info("Sendkeys on: ", elementName);
+		} catch (Exception e) {
+			log.error("Sendkeys on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Wait for Explicit Period of time Until Element Returned is not Null and
+	 * Displayed and Send Keys
+	 *
+	 * @param cssLocator
+	 * @param value
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitUntilDisplayedAndSendKeys(String cssLocator, String value, String elementName) throws Exception {
+		try {
+			WebElement element = waitUntilDisplayed(cssLocator, elementName);
+			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].value=''", element);
+			element.sendKeys(value);
+			log.info("Sendkeys on: ", elementName);
+		} catch (Exception e) {
+			log.error("Sendkeys on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Wait Until Element is not null,Displayed and Click
+	 *
+	 * @param cssLocator
+	 * @param value
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitUntilDisplayedAndClick(String cssLocator, String elementName) throws Exception {
+		try {
+			WebElement element = waitUntilDisplayed(cssLocator, elementName);
+			element.click();
+			log.info("Sendkeys on: ", elementName);
+		} catch (Exception e) {
+			log.error("Sendkeys on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Clear textbox Value
+	 *
+	 * @param cssLocator
+	 * @param value
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void clear(String cssLocator, String elementName) throws Exception {
+		try {
+			WebElement element = findElement(cssLocator);
+			JavascriptExecutor js = driverEngine.getWebDriver();
+			js.executeScript("arguments[0].value='';", element);
+			log.info("Sendkeys on: ", elementName);
+		} catch (Exception e) {
+			log.error("Sendkeys on: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Wait for Explicit Period of time Until Element Returned is not Null
+	 *
+	 * @param cssSelector
+	 * @param elementName
+	 * @return
+	 * @throws Exception
+	 */
+	public WebElement waitAndfindElement(String cssSelector, String elementName) throws Exception {
+		WebElement element = null;
+		long timeout = explicitPeriod;
+		do {
+
+			try {
+
+				element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\");");
+				fixLocator(driverEngine.getWebDriver(), cssSelector, element);
+
+				if (element != null) {
+					log.info("Element is Displayed: ", elementName);
+					break;
+				}
+				TimeUnit.MILLISECONDS.sleep(1000);
+				timeout--;
+
+			} catch (JavascriptException e) {
+
+				TimeUnit.MILLISECONDS.sleep(1000);
+
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Displayed failed: ", elementName);
+				break;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * Wait for Explicit Period of time Until Element Returned is not Null and is
+	 * Displayed
+	 *
+	 * @param cssSelector
+	 * @param elementName
+	 * @return
+	 * @throws Exception
+	 */
+	public WebElement waitUntilDisplayed(String cssSelector, String elementName) throws Exception {
+		WebElement element = null;
+		do {
+
+			try {
+
+				element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\");");
+				fixLocator(driverEngine.getWebDriver(), cssSelector, element);
+
+				if (element != null) {
+					if (element.isDisplayed()) {
+						log.info("Element is Displayed: ", elementName);
+						break;
+					}
+				} else {
+					explicitPeriod--;
+				}
+
+			} catch (JavascriptException e) {
+
+				TimeUnit.MILLISECONDS.sleep(1000);
+
+				explicitPeriod--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Displayed failed: ", elementName);
+				break;
+			}
+		} while (explicitPeriod > 0);
+		return element;
+	}
+
+	/**
+	 * Select Radio Button by Label From a List of Radio Buttons
+	 *
+	 * @param cssLocator
+	 * @param label
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void selectRadioButonByLabel(String cssLocator, String label, String elementName) throws Exception {
+		try {
+
+			List<WebElement> list = findElements(cssLocator);
+
+			for (WebElement element : list) {
+
+				if (element.getText().equals(label)) {
+					element.click();
+
+					break;
+				}
+			}
+
+			log.info("Click Radio Button: ", elementName);
+		} catch (Exception e) {
+			log.error("Click Radio Button: ", elementName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Send Keys to AutoFill Dropdowns
+	 *
+	 * @param cssSelector
+	 * @param value
+	 * @param elementName
+	 */
+	public void sendKeystoAuto(String cssSelector, String value, String elementName) {
+		try {
+			WebElement element = findElement(cssSelector);
+			element.sendKeys(value);
+			// Added Below property To click on the Dropdown that is Currently Enabled
+			List<WebElement> dropDownList = findElements(
+					"paper-item[role='option'][class='active'][aria-disabled='false']");
+			for (WebElement webElement : dropDownList) {
+				webElement.click();
+			}
+			log.info("Send Keys to AutoComplete Input: ", elementName);
+		} catch (Exception e) {
+			log.error("Send Keys to AutoComplete Input: ", elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Get Text Attribute of Element
+	 *
+	 * @param cssSelector
+	 * @param elementName
+	 * @return
+	 */
+	public String getText(String cssSelector, String elementName) {
+		String text = "";
+		try {
+			WebElement element = findElement(cssSelector);
+			text = element.getText();
+			log.info("Get text: " + text, elementName);
+		} catch (Exception e) {
+			log.error("Get text: ", elementName, e);
+			throw e;
+		}
+		return text;
+	}
+
+}
+****************************************************
+package com.tab.af.actions;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.Alert;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.ElementNotInteractableException;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import com.tab.af.engine.ConcurrentEngine;
+import com.tab.af.engine.DriverEngine;
+import com.tab.af.reporting.StepLogging;
+import com.tab.af.testbase.TestBase;
+
+public class WebActions {
+
+	private DriverEngine driverEngine;
+
+	private StepLogging log = StepLogging.getLoggingObject();
+
+	long explicitPeriod = Long.parseLong(TestBase.prop.explicitWaitPeriod());
+
+	public DriverEngine getDriverEngine() {
+		return driverEngine;
+	}
+
+	public WebActions(DriverEngine driverEngine) {
+		this.driverEngine = driverEngine;
+	}
+
+	public void loadURL(String URL) {
+		driverEngine.getWebDriver().get(URL);
+	}
+
+	public void refreshPage() {
+		driverEngine.getWebDriver().navigate().refresh();
+	}
+
+	/**
+	 * Load URL using JavaScript
+	 *
+	 * @param URL
+	 */
+	public void loadURLByJS(String URL) {
+		try {
+			driverEngine.getWebDriver().executeScript("window.location=arguments[0];", URL);
+			log.info("Load URL: ", URL);
+		} catch (Exception e) {
+			log.error("Load URL: ", URL, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * clears the Input field Value of Element using JS
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void clearByJS(WebElement element, String elementName) {
+		try {
+			// Using JS clear as Webelement.clear() is not supported
+			(driverEngine.getWebDriver()).executeScript("arguments[0].value='';", element);
+			log.info("Clear by JS on: ", elementName);
+		} catch (Exception e) {
+			log.error("Clear By JS on: ", elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * clears the WebElement before sending value
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void sendKeys(WebElement element, String value, String elementName) {
+		try {
+			clearByJS(element, elementName);
+			element.sendKeys(value);
+			element.sendKeys(Keys.TAB);
+			log.info("Send Keys value: ", value.replaceAll("[^A-Za-z0-9]", "") + " on " + elementName);
+		} catch (Exception e) {
+			log.error("Send Keys value: ", value.replaceAll("[^A-Za-z0-9]", "") + " on " + elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Enter String as a char
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void sendKeysByChar(WebElement element, String value, String elementName) {
+		try {
+			char[] arr = value.toCharArray();
+			element.sendKeys(Keys.HOME);
+			for (char c : arr) {
+				element.sendKeys(c + "");
+			}
+			element.sendKeys(Keys.TAB);
+			log.info("Send Keys By Char value: ", value + " on " + elementName);
+		} catch (Exception e) {
+			log.error("Send Keys value: ", value.replaceAll("[^A-Za-z0-9]", "") + " on " + elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Enter String as a char with Explicit Wait 0f 1 Sec
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void sendKeysByCharWithWait(WebElement element, String value, String elementName) throws Exception {
+		try {
+			char[] arr = value.toCharArray();
+			for (char c : arr) {
+				element.sendKeys(String.valueOf(c));
+				log.info("Wait 1 Seconds", elementName);
+				Thread.sleep(1000);
+			}
+			Actions action = new Actions(driverEngine.getWebDriver());
+			action.sendKeys(element, Keys.TAB);
+			log.info("Send Keys Action Tab", elementName);
+			// element=element.findElement(By.xpath("following::div[@class=\"v-filterselect-button\"][1]"));
+			// clickAction(element, elementName);
+			// element=driverEngine.getWebDriver().findElement(By.xpath("//div[@id=\"VAADIN_COMBOBOX_OPTIONLIST\"]//tbody"));
+			// JavascriptExecutor js = (JavascriptExecutor) driverEngine.getWebDriver();
+			// js.executeScript("var body= arguments[0];" +
+			// "var tr = document.createElement('tr'); " +
+			// "var att = document.createAttribute('class');" +
+			// "att.value = 'gwt-MenuItem gwt-MenuItem-selected'; " +
+			// "var td=document.createElement('td');" +
+			// "td.setAttributeNode(att);" +
+			// "att = document.createAttribute('role');" +
+			// "att.value = 'listitem'; " +
+			// "td.setAttributeNode(att);" +
+			// "body.appendChild(tr);" +
+			// "tr.appendChild(td);" +
+			// "var span = document.createElement('span'); " +
+			// "span.innerHTML="+value+";" +
+			// "td.append(span);",element);
+		} catch (Exception e) {
+			log.error("Send Keys By Char With Wait", elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Clear the Textbox and Enter String as a char
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void clearAndSendKeysByChar(WebElement element, String value, String elementName) {
+		clearByJS(element, elementName);
+		sendKeysByChar(element, value, elementName);
+	}
+
+	/**
+	 * Wait for Element to be Displayed and enter String as a char
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitAndSendKeysByChar(WebElement element, String value, String elementName) throws Exception {
+		waitUntilPresentAndDisplayed(element, elementName);
+		sendKeysByChar(element, value, elementName);
+	}
+
+	/**
+	 * Wait for Element to be Displayed and enter String as a char in Autocomplete
+	 * Input Textboxes TextBoxes
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitAndSendKeysByCharAuto(WebElement element, String value, String elementName) throws Exception {
+		waitUntilPresentAndDisplayed(element, elementName);
+		SendKeysByCharAuto(element, value, elementName);
+	}
+
+	/**
+	 * Wait for Element ,clear the field and then Sedn keys by char to Auto textbox
+	 *
+	 * @param element
+	 * @param value
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitClearSendKeysByCharAuto(WebElement element, String value, String elementName) throws Exception {
+		waitUntilPresentAndDisplayed(element, elementName);
+		clearByJS(element, elementName);
+		SendKeysByCharAuto(element, value, elementName);
+	}
+
+	public void executeJScript(String script, Object... args) {
+		try {
+			driverEngine.getWebDriver().executeScript(script, args);
+			log.info("Execute Script", script);
+		} catch (Exception e) {
+			log.error("Execute Script", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Enter String as a char in Auto-complete Input TextBoxes
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void SendKeysByCharAuto(WebElement element, String value, String elementName) throws Exception {
+		try {
+			char[] arr = value.toCharArray();
+			clickBYJS(element.findElement(By.xpath("//following-sibling::div")), elementName);
+			waitForJSandJQueryToLoad();
+			for (char c : arr) {
+				element.sendKeys(String.valueOf(c));
+			}
+			selectDropDownOption(element, value, elementName);
+			log.info("Send Keys By Char value: ", value + " on " + elementName);
+		} catch (TimeoutException e) {
+			// Retry Once More
+			clearByJS(element, elementName);
+			selectDropDownOption(element, value, elementName);
+		} catch (Exception e) {
+			log.error("Send Keys value: ", value + " on " + elementName, e);
+			throw e;
+		}
+	}
+
+	private void selectDropDownOption(WebElement element, String value, String elementName) throws Exception {
+		WebDriver driver = driverEngine.getWebDriver();
+		Actions actions = new Actions(driver);
+		try {
+			waitUntilPresentInDOM(By.xpath("//td[@role='listitem']"), "List");
+			WebElement option = driver
+					.findElement(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"));
+			waitForClickAbility(element, value);
+			waitUntilPresentInDOM(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"), "List");
+			option = driver.findElement(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"));
+			actions.click(option).build().perform();
+			waitForTextToBePresentInValue(element, value, elementName, 10);
+			log.info("Click Dropdown Element", value);
+		} catch (StaleElementReferenceException | ElementNotInteractableException e) {
+			waitUntilPresentInDOM(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"), "List");
+			WebElement option = driver
+					.findElement(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"));
+			actions.sendKeys(option, Keys.ENTER).build().perform();
+		} catch (Exception e) {
+			log.info("Click Dropdown Element", value);
+		}
+	}
+
+	/**
+	 * Click WebElement
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void click(WebElement element, String elementName) {
+		try {
+			element.click();
+			log.info("Click on: ", elementName);
+		} catch (Exception e) {
+			log.error("Click on: ", elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * wait Until WebElement Displayed Property is True and then Click
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitAndClick(WebElement element, String elementName) {
+		waitForClickAbility(element, elementName);
+		click(element, elementName);
+	}
+
+	/**
+	 * wait Until WebElement Enabled Property is True and then Click
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitUntilEnabledAndClick(WebElement element, String elementName) throws Exception {
+		waitUntilEnabled(element, elementName);
+		click(element, elementName);
+	}
+
+	/**
+	 * get Element Attribute Value
+	 *
+	 * @param element
+	 * @param elementName
+	 * @return
+	 */
+	public String getValue(WebElement element, String elementName) {
+		String value = null;
+		try {
+			value = element.getAttribute("value");
+			log.info("Get Attribute Value for ", elementName + ": " + value);
+		} catch (Exception e) {
+			log.error("Get Attribute Value Failed for ", e);
+		}
+		return value;
+	}
+
+	public String getText(WebElement element, String elementName) {
+		String text = null;
+		try {
+			text = element.getText();
+			log.info("Get Attribute Value for ", elementName + ": " + text);
+		} catch (Exception e) {
+			log.error("Get Attribute Value Failed for ", e);
+		}
+		return text;
+	}
+
+	/**
+	 * wait Until WebElement is Visible using WebDriverWait
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitForVisibility(WebElement element, String elementName) {
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
+			wait.ignoring(NoSuchElementException.class);
+			wait.until(ExpectedConditions.visibilityOf(element));
+			log.info("Wait for Element to be visible: ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Element to be visible: ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * wait Until WebElement is Visible using WebDriverWait and Defined Wait Period
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public WebElement waitForVisibility(WebElement element, String elementName, long period) {
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), period);
+			wait.ignoring(NoSuchElementException.class).pollingEvery(Duration.ofMillis(500));
+			wait.until(ExpectedConditions.visibilityOf(element));
+			log.info("Wait for Element to be visible: ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Element to be visible: ", e);
+			throw e;
+		}
+		return element;
+	}
+
+	public boolean isPresent(WebElement element, String elementName) {
+		try {
+			element.getSize();
+			log.info("Element is Present: ", elementName);
+			return true;
+
+		} catch (NoSuchElementException e) {
+			log.info("Element not Present : ", elementName);
+			return false;
+
+		}
+
+	}
+
+	/**
+	 * Wait Until Element is Clickable
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void waitForClickAbility(WebElement element, String elementName) {
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
+			wait.ignoring(NoSuchElementException.class);
+			wait.until(ExpectedConditions.elementToBeClickable(element));
+			log.info("Wait for Element to be Clickable: ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Element to be Clickable: ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait Until Element is Clickable and Perform JS Click
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void waitForClickAbilityAndClick(WebElement element, String elementName) {
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
+			wait.ignoring(NoSuchElementException.class);
+			wait.until(ExpectedConditions.elementToBeClickable(element));
+			clickBYJS(element, elementName);
+			log.info("Wait for Element to be Clickable: ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Element to be Clickable: ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait for Text to Be Present in Textbox
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void waitForTextToBePresentInValue(WebElement element, String value, String elementName) {
+		long timeOut = explicitPeriod;
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeOut);
+			wait.ignoring(NoSuchElementException.class);
+			wait.until(ExpectedConditions.textToBePresentInElementValue(element, value));
+			log.info("Wait for Text to Present in Value: ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Text to Present in Value: ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait for Text to Be Present in Textbox
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void waitForTextToBePresentInValue(WebElement element, String value, String elementName, long timeout) {
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
+			wait.ignoring(NoSuchElementException.class);
+			wait.until(ExpectedConditions.textToBePresentInElementValue(element, value));
+			log.info("Wait for Text to Present in Value: ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Text to Present in Value: ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait Until Element is not present in DOM anymore
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitForElementToBeNotPresent(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (element.isDisplayed()) {
+					Thread.sleep(1000);
+				}
+				timeout--;
+			} catch (NoSuchElementException | StaleElementReferenceException e) {
+				log.info("Element is Not Present in DOM ", elementName);
+				break;
+			} catch (Exception e) {
+				log.info("Wait for Element Not Present in DOM failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+	}
+
+	/**
+	 * Wait Until Element is Disabled
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void waitForElementToBeDisabled(WebElement element, String elementName) {
+		try {
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
+			wait.ignoring(NoSuchElementException.class);
+			wait.until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(element)));
+			log.info("Element is Disabled ", elementName);
+		} catch (Exception e) {
+			log.info("Element is Disabled: ", elementName);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait For CUBA Loading Bar to Appear
+	 *
+	 * @throws Exception
+	 */
+	public void waitForLoadingBarToAppear() throws Exception {
+		try {
+			long timeout = explicitPeriod;
+			WebElement element = driverEngine.getWebDriver()
+					.findElement(By.xpath("//div[contains(@class,'v-loading-indicator')]"));
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
+			wait.until(new ExpectedCondition<Boolean>() {
+
+				@Override
+				public Boolean apply(WebDriver driver) {
+					boolean enabled = element.isDisplayed();
+					if (enabled) {
+						return true;
+					}
+					return false;
+				}
+
+			});
+			log.info("Wait For loading Bar to Finish", "Loading Bar");
+		} catch (NoSuchElementException e) {
+			log.info("Wait For loading Bar to Finish", "Loading Bar");
+		} catch (Exception e) {
+			log.error("Wait For loading Bar to Finish", "Loading Bar", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait For CUBA Loading Bar to complete
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitForLoadingBarToComplete() throws Exception {
+		try {
+			long timeout = explicitPeriod;
+			WebElement element = driverEngine.getWebDriver()
+					.findElement(By.xpath("//div[contains(@class,'v-loading-indicator')]"));
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
+			wait.until(new ExpectedCondition<Boolean>() {
+
+				@Override
+				public Boolean apply(WebDriver driver) {
+					boolean enabled = element.getAttribute("style").contains("none");
+					if (enabled) {
+						return true;
+					}
+					return false;
+				}
+
+			});
+			log.info("Wait For loading Bar to Finish", "Loading Bar");
+		} catch (NoSuchElementException e) {
+			log.info("Wait For loading Bar to Finish", "Loading Bar");
+		} catch (Exception e) {
+			log.error("Wait For loading Bar to Finish", "Loading Bar", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Click WebElement by JS click
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void clickBYJS(WebElement element, String elementName) {
+		try {
+			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].click();", element);
+			log.info("Click by JS on: ", elementName);
+		} catch (Exception e) {
+			log.error("Click by JS on: ", elementName, e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait and Displayed and then Click WebElement by JS click
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitAndCickBYJS(WebElement element, String elementName) throws Exception {
+		waitUntilPresentAndDisplayed(element, elementName);
+		clickBYJS(element, elementName);
+	}
+
+	public void scrollAndCickBYJS(WebElement element, String elementName) throws Exception {
+		scrollIntoViewByJS(element, elementName);
+		clickBYJS(element, elementName);
+	}
+
+	/**
+	 * Wait Until element is CUBA Enabled and present in DOM , then Click WebElement
+	 * by JS click
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitUntilEnabledAndCickBYJS(WebElement element, String elementName) throws Exception {
+		waitUntilEnabledCubaButton(element, elementName);
+		clickBYJS(element, elementName);
+	}
+
+	public WebElement findByText(String text, String prependingTag) {
+		long timeout = explicitPeriod;
+		WebElement element = null;
+		do {
+			try {
+				if (prependingTag.isEmpty()) {
+					element = driverEngine.getWebDriver().findElement(By.xpath("//*[text()='" + text + "']"));
+				} else {
+					element = driverEngine.getWebDriver()
+							.findElement(By.xpath(prependingTag + "[contains(text(),'" + text + "')]"));
+				}
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ex) {
+					ex.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Find text By Element Failed due to: ", e.getClass().getCanonicalName());
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * Finds WebElement by Complete Text
+	 *
+	 * @param text
+	 * @return WebElement
+	 */
+	public WebElement findWebElementByText(String text) {
+		long timeout = explicitPeriod;
+		WebElement element = null;
+		do {
+			try {
+				element = driverEngine.getWebDriver().findElement(By.xpath("//*[text()='" + text + "']"));
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ex) {
+					ex.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Find text By Element Failed due to: ", e.getClass().getCanonicalName());
+				timeout = 0;
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * Finds WebElement by Contains Text
+	 *
+	 * @param text
+	 * @return WebElement
+	 */
+	public WebElement findWebElementByContainsText(String text) {
+		long timeout = explicitPeriod;
+		WebElement element = null;
+		do {
+			try {
+				element = driverEngine.getWebDriver().findElement(By.xpath("//*[contains(text(),'" + text + "')]"));
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException ex) {
+					ex.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Find text By Element Failed due to: ", e.getClass().getCanonicalName());
+				timeout = 0;
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * Wait Until WebElement is Found in DOM Ignore NoSuchElementException for Given
+	 * Timeout Period
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 *
+	 */
+	public WebElement waitUntilPresent(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				element.getTagName();
+				log.info("Element is Present: ", elementName);
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Present failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for Element to be Present Failed: " + elementName);
+		}
+		return element;
+	}
+
+	public WebElement waitUntilPresentInDOM(By by, String elementName) throws Exception {
+		WebElement element = null;
+		long timeout = explicitPeriod;
+		do {
+			try {
+				element = driverEngine.getWebDriver().findElement(by);
+				log.info("Element is Present in DOM: ", elementName);
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Present in DOM failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for Element to be Present in DOM Failed: " + elementName);
+		}
+		return element;
+	}
+
+	public Boolean isVisibleInViewport(WebElement element) {
+		boolean state = (Boolean) driverEngine.getWebDriver()
+				.executeScript("var elem = arguments[0],                 " + "  box = elem.getBoundingClientRect(),    "
+						+ "  cx = box.left + box.width / 2,         " + "  cy = box.top + box.height / 2,         "
+						+ "  e = document.elementFromPoint(cx, cy); " + "for (; e; e = e.parentElement) {         "
+						+ "  if (e === elem)                        " + "    return true;                         "
+						+ "}                                        " + "return false;                            ",
+						element);
+		return state;
+	}
+
+	public boolean isDisplayed(WebElement element, String elementName) {
+		boolean displayed = false;
+		try {
+			displayed = element.isDisplayed();
+			log.info("Is Element Displayed", elementName);
+		} catch (Exception e) {
+			log.error("Is element Displayed Check Fail", e);
+			throw e;
+		}
+		return displayed;
+	}
+
+	/**
+	 * Wait Until WebElement Displayed property return true while Ignoring
+	 * NoSuchElementException
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 *
+	 */
+	public WebElement waitUntilPresentAndDisplayed(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (!isVisibleInViewport(element)) {
+					scrollIntoViewByJS(element, elementName);
+				}
+				if (element.isDisplayed()) {
+					log.info("Element is Displayed: ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+				timeout--;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Displayed failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for Element to be displayed Failed: " + elementName);
+		}
+		return element;
+	}
+
+	/**
+	 * Wait Until Element class Attribute is enabled
+	 *
+	 * @param element
+	 * @param elementName
+	 * @return
+	 * @throws Exception
+	 */
+	public WebElement waitUntilClassEnabled(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				TimeUnit.MILLISECONDS.sleep(1000);
+				String disabled = element.getAttribute("aria-disabled");
+				if (disabled == null) {
+					log.info("Element is Enabled: ", elementName);
+					break;
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Enabled failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for Element Class to be Enabled: " + elementName);
+		}
+		return element;
+	}
+
+	/**
+	 * Enter Credentials into a Alert
+	 *
+	 * @param username
+	 * @param password
+	 */
+	public void setCredentialsinAlert(String username, String password) {
+		Alert alert = driverEngine.getWebDriver().switchTo().alert();
+		alert.sendKeys(username + "\ue004" + password);
+	}
+
+	/**
+	 * Scroll Element into ViewPort using JS
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void scrollIntoViewByJS(WebElement element, String elementName) {
+		try {
+			driverEngine.getWebDriver().executeScript("arguments[0].scrollIntoView(true);", element);
+			log.info("Scroll to WebElement ", elementName);
+		} catch (Exception e) {
+			log.error("Scroll to WebElement : ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Get Page Source
+	 *
+	 * @return
+	 */
+	public String getPageSource() {
+		String source = "";
+		try {
+			source = driverEngine.getWebDriver().getPageSource();
+			log.info("Get Page Source ", "");
+		} catch (Exception e) {
+			log.error("Get Page Source", e);
+		}
+		return source;
+	}
+
+	/**
+	 * Click the Specified webElement using Actions class
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void clickAction(WebElement element, String elementName) {
+		try {
+			Actions action = new Actions(driverEngine.getWebDriver());
+			action.click(element).build().perform();
+			log.info("Click By Action ", elementName);
+		} catch (Exception e) {
+			log.error("Click By Action : ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Click the Specified webElement using Actions class
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void rightClickAction(WebElement element, String elementName) {
+		try {
+			Actions action = new Actions(driverEngine.getWebDriver());
+			action.contextClick(element).build().perform();
+			log.info("Click By Action ", elementName);
+		} catch (Exception e) {
+			log.error("Click By Action : ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Click the Specified webElement using Actions class
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void WaitAndClickAction(WebElement element, String elementName) throws Exception {
+		waitUntilPresentAndDisplayed(element, elementName);
+		clickAction(element, elementName);
+	}
+
+	/**
+	 * Double the Specified webElement using Actions class
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void doubleClick(WebElement element, String elementName) {
+		try {
+			Actions action = new Actions(driverEngine.getWebDriver());
+			action.doubleClick(element).build().perform();
+			log.info("Scroll to WebElement ", elementName);
+		} catch (Exception e) {
+			log.error("Wait for Element to be Displayed failed: ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Double the Specified webElement using Actions class
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void authenticationLogin(String userName, String password) {
+		try {
+			Alert alert = driverEngine.getWebDriver().switchTo().alert();
+			alert.sendKeys(userName + Keys.TAB + password);
+			alert.accept();
+			log.info("Send Keys to Alert ", "Authentication Alert");
+		} catch (Exception e) {
+			log.error("Send Keys to Alert ", e);
+		}
+	}
+
+	/**
+	 * Wait Until the WebElement Enabled Property return true while Ignoring
+	 * NoSuchElementException
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public WebElement waitUntilEnabled(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				TimeUnit.MILLISECONDS.sleep(500);
+				if (element.isEnabled()) {
+					log.info("Element is Enabled: ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+				timeout--;
+			} catch (NoSuchElementException e) {
+				Thread.sleep(1000);
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Enabled failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for Element to be Enabled: " + elementName);
+		}
+		return element;
+	}
+
+	/**
+	 * Wait Until CUBA UI Buttons are not Disabled
+	 *
+	 * @param element
+	 * @param elementName Note: Specific to UI and Element Tag must Be DIV
+	 * @return
+	 * @throws Exception Note: Element Should have a "aria-disabled" Attribute
+	 *                   Otherwise condition Will always be Null
+	 */
+	public WebElement waitUntilEnabledCubaButton(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (element.getAttribute("aria-disabled") == null) {
+					log.info("Element is Enabled: ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+				timeout--;
+			} catch (NoSuchElementException e) {
+				Thread.sleep(1000);
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Enabled failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for Cuba Element to be Enabled: " + elementName);
+		}
+		return element;
+	}
+
+	/**
+	 * Wait Until CUBA UI TextBoxes are not Disabled
+	 *
+	 * @param element
+	 * @param elementName Note: Specific to UI and Element Tag must Be DIV
+	 * @return
+	 * @throws Exception
+	 */
+	public WebElement waitUntilEnabledCubaTBox(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				TimeUnit.MILLISECONDS.sleep(500);
+				if (element.getAttribute("disabled") == null) {
+					log.info("Element is Enabled: ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+				timeout--;
+			} catch (NoSuchElementException e) {
+				Thread.sleep(1000);
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Enabled failed : ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Wait for CUBA TextBox Element to be Enabled Failed: " + elementName);
+		}
+		return element;
+	}
+
+	/**
+	 * Wait for "aria-disabled" Attribute to be present and Return value as true
+	 * Specifica to CUBA Elements with "aria-disabled" parameter
+	 *
+	 * @param element
+	 * @param elementName Note: Ignoring StaleElementReferenceException and
+	 *                    NoSuchElementException class
+	 */
+	public void waitUntilDisabled(WebElement element, String elementName) {
+		try {
+			long timeout = explicitPeriod;
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
+			wait.ignoring(StaleElementReferenceException.class);
+			wait.until(new ExpectedCondition<Boolean>() {
+
+				@Override
+				public Boolean apply(WebDriver driver) {
+					String enabled = element.getAttribute("aria-disabled");
+					if (enabled.equals("true")) {
+						return true;
+					}
+					return false;
+				}
+
+			});
+			log.info("Wait until Disabled", elementName);
+		} catch (TimeoutException e) {
+			log.info("Timeout Exception Occured ", elementName);
+			throw e;
+		}
+	}
+
+	/**
+	 * Wait Until the Specified Boolean Coniditon is true
+	 *
+	 * @param element
+	 * @param elementName
+	 */
+	public void waitUntilTrue(boolean conditon, String details) {
+		try {
+			long timeout = explicitPeriod;
+			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
+			wait.ignoring(StaleElementReferenceException.class);
+			wait.until(new ExpectedCondition<Boolean>() {
+
+				@Override
+				public Boolean apply(WebDriver driver) {
+					if (conditon) {
+						return true;
+					}
+					return false;
+				}
+
+			});
+			log.info("Wait until Conditon Is true", details);
+		} catch (TimeoutException e) {
+			log.info("Timeout Exception Occured ", details);
+			throw e;
+		}
+	}
+
+	public void assertDisplayed(WebElement element, String elementName) throws Exception {
+		try {
+			if (element.isDisplayed() == true) {
+				log.info("Element is Displayed", elementName);
+			} else {
+				throw new Exception("Element not Displayed");
+			}
+		} catch (Exception e) {
+			log.info("Assert Displayed Exception Occured ", elementName);
+			throw e;
+		}
+	}
+
+	/**
+	 * Returns a index for the column Name Note: Specific to Tables in CUBA UI Only
+	 *
+	 * @param ColumnName
+	 * @return
+	 */
+	public int getColumnIndex(String ColumnName, List<WebElement> list) {
+		int cIndex = 1;
+		for (WebElement e : list) {
+			if (e.getText().contentEquals(ColumnName)) {
+				break;
+			}
+			cIndex++;
+		}
+		return cIndex;
+	}
+
+	/**
+	 * Returns Map of Index by ColumnaNames Input List Should contain header
+	 * Elements Note: Specific to Tables in CUBA UI Only
+	 *
+	 * @param elements
+	 * @return
+	 */
+	public Map<String, Integer> getColumnIndexMap(List<WebElement> elements) {
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		for (int i = 0; i < elements.size(); i++) {
+			map.put(elements.get(i).getText(), i + 1);
+		}
+		return map;
+	}
+
+	/**
+	 * GET Table Row input WebElement
+	 *
+	 * @param map
+	 * @param row
+	 * @param columnName
+	 * @return
+	 */
+	public WebElement getRowElement(Map<String, Integer> map, int row, String columnName) {
+		int cIndex = map.get(columnName);
+		WebElement element = findBy(By.xpath("//tr[" + row + "]//td[" + cIndex + "]//div//input"));
+		return element;
+	}
+
+	/**
+	 * Clicks a Specified valued in the specified ColumnName Note:Specific to Tables
+	 * in CUBA UI Only
+	 *
+	 * @param ColumnName
+	 * @param valueToSelect
+	 */
+	public void selectCellValue(String ColumnName, String valueToSelect, List<WebElement> webList) {
+		int column = getColumnIndex(ColumnName, webList);
+		List<WebElement> list = driverEngine.getWebDriver()
+				.findElements(By.xpath("//tr//td[" + column + "]//div[text()]"));
+		for (WebElement e : list) {
+			if (e.getText().equals(valueToSelect)) {
+				scrollIntoViewByJS(e, valueToSelect);
+				doubleClick(e, valueToSelect);
+				break;
+			}
+		}
+	}
+
+	public int getRowIndex(String ColumnName, String valueToSelect, List<WebElement> webList) {
+		int column = getColumnIndex(ColumnName, webList);
+		int rowIndex = 1;
+		List<WebElement> list = driverEngine.getWebDriver()
+				.findElements(By.xpath("//tr//td[" + column + "]//div[text()]"));
+		for (WebElement e : list) {
+			if (e.getText().equals(valueToSelect)) {
+				break;
+			}
+			rowIndex++;
+		}
+		return rowIndex;
+	}
+
+	public boolean waitForJSandJQueryToLoad() {
+		WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
+		// wait for jQuery to load
+		ExpectedCondition<Boolean> jQueryLoad = new ExpectedCondition<Boolean>() {
+
+			@Override
+			public Boolean apply(WebDriver driver) {
+				try {
+					return ((Long) ((JavascriptExecutor) driverEngine.getWebDriver())
+							.executeScript("return jQuery.active") == 0);
+				} catch (Exception e) {
+					// no jQuery present
+					return true;
+				}
+			}
+
+		};
+		// wait for Javascript to load
+		ExpectedCondition<Boolean> jsLoad = new ExpectedCondition<Boolean>() {
+
+			@Override
+			public Boolean apply(WebDriver driver) {
+				return ((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("return document.readyState")
+						.toString().equals("complete");
+			}
+
+		};
+		return wait.until(jQueryLoad) && wait.until(jsLoad);
+	}
+
+	public void waitForStalenessOf(WebElement element, String elementName) {
+		long timeout = explicitPeriod;
+		try {
+			WebDriverWait wait = new WebDriverWait(getDriverEngine().getWebDriver(), timeout);
+			wait.until(ExpectedConditions.stalenessOf(element));
+			log.info("Wait For Staleness of : ", elementName);
+		} catch (Exception e) {
+			log.info("Wait For Staleness of : ", elementName);
+			throw e;
+		}
+	}
+
+	/**
+	 * FInd element by By object and wait for explicit Period
+	 *
+	 * @param by
+	 * @return WebElement
+	 */
+	public WebElement findBy(By by) {
+		long timeout = explicitPeriod;
+		WebElement element = null;
+		do {
+			try {
+				element = driverEngine.getWebDriver().findElement(by);
+				log.info("Element is Found: ", "");
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("FInd Element failed: ", "");
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * FInd element by By object and wait for explicit Period
+	 *
+	 * @param by
+	 * @return WebElement
+	 */
+	public WebElement findBy(By by, long timeout) {
+		WebElement element = null;
+		do {
+			try {
+				element = driverEngine.getWebDriver().findElement(by);
+				log.info("Element is Found: ", "");
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("FInd Element failed: ", "");
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * FInd element List by By object
+	 *
+	 * @param by
+	 * @return WebElement
+	 */
+	public List<WebElement> findsBy(By by) {
+		long timeout = explicitPeriod;
+		List<WebElement> elementList = null;
+		do {
+			try {
+				elementList = driverEngine.getWebDriver().findElements(by);
+				log.info("Element is Found: ", "");
+				break;
+			} catch (NoSuchElementException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				timeout--;
+			} catch (Exception e) {
+				log.info("FInd Element failed: ", "");
+				throw e;
+			}
+		} while (timeout > 0);
+		return elementList;
+	}
+
+	/**
+	 * Wait Until Element is not DIsplayed
+	 *
+	 * @param element
+	 * @param elementName
+	 * @return
+	 * @throws Exception
+	 */
+	public WebElement waitUntilNotDisplayed(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (!element.isDisplayed()) {
+					log.info("Element is Not Displayed: ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element to be Not Displayed failed: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	/**
+	 * Wait Until Value of Textbxo is not empty
+	 *
+	 * @param element
+	 * @param elementName
+	 * @return
+	 * @throws Exception
+	 */
+	public WebElement waitUntilValueisNotEmpty(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (!element.getAttribute("value").isEmpty()) {
+					log.info("Wait for Element Value is not Empty: ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+				timeout--;
+			} catch (Exception e) {
+				log.info("Wait for Element Value is not Empty: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		return element;
+	}
+
+	public void clickByJSAndWaitUntilNotPresent(WebElement element, String elementName) throws Exception {
+		clickBYJS(element, elementName);
+		waitUntilNotPresent(element, elementName);
+	}
+
+	/**
+	 * Wait Until Element is not present in DOM
+	 *
+	 * @param element
+	 * @param elementName
+	 * @return
+	 * @throws Exception
+	 */
+	public void waitUntilNotPresent(WebElement element, String elementName) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (element.isDisplayed()) {
+					log.info("Element is Not Present in DOM Anymore: ", elementName);
+					Thread.sleep(1000);
+					timeout--;
+				}
+			} catch (NoSuchElementException | StaleElementReferenceException e) {
+				break;
+			} catch (Exception e) {
+				log.info("Element is Not Present in DOM Anymore: ", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Timeout while waiting for Element to be not present in DOM");
+		}
+	}
+
+	/**
+	 * Wait Until the Inner text of the WebElement changes
+	 *
+	 * @param element
+	 * @param elementName
+	 * @throws Exception
+	 */
+	public void waitforTextToChange(WebElement element, String elementName, String originaltext) throws Exception {
+		long timeout = explicitPeriod;
+		do {
+			try {
+				if (!element.getText().equals(originaltext)) {
+					log.info("Element Text Changed ", elementName);
+					break;
+				}
+				Thread.sleep(1000);
+			} catch (Exception e) {
+				log.info("Wait for Element Text Changed Failed", elementName);
+				throw e;
+			}
+		} while (timeout > 0);
+		if (timeout == 0) {
+			throw new Exception("Timeout while waiting for Element Text to Change");
+		}
+	}
+
+	/**
+	 * Switch to Other window than current Note: works Properly only when two
+	 * windows are open
+	 */
+	public void switchToOtherOpenedWindow() {
+		try {
+			Thread.sleep(5000);
+			WebDriver driver = driverEngine.getWebDriver();
+			String curentHandle = driver.getWindowHandle();
+			Set<String> handles = driver.getWindowHandles();
+			for (String string : handles) {
+				if (!string.equals(curentHandle)) {
+					driver.switchTo().window(string);
+					break;
+				}
+			}
+			log.info("Switch to newly opened window ", "");
+		} catch (Exception e) {
+			log.error("Switch to newly opened window ", e);
+		}
+	}
+
+	/**
+	 * Return the Webelement Attribue value as a String
+	 *
+	 * @param element
+	 * @param attribute
+	 * @param elementName
+	 * @return
+	 */
+	public String getAttributeValue(WebElement element, String attribute, String elementName) {
+		String value = null;
+		try {
+			value = element.getAttribute(attribute);
+			log.info("Get Attribute Value for ", elementName + ": " + value);
+		} catch (Exception e) {
+			log.error("Get Attribute Value Failed for ", e);
+		}
+		return value;
+	}
+
+	public String getBrowsername() {
+		Capabilities cap = ((RemoteWebDriver) driverEngine.getWebDriver().getWrappedDriver()).getCapabilities();
+		return cap.getBrowserName().toLowerCase();
+	}
+
+	/**
+	 * Designed for Tables only in CUBA UI, Maynot work for All cuba Tables
+	 *
+	 * @return
+	 */
+	public Map<String, Integer> getHeadersIndex() {
+		try {
+			Map<String, Integer> tableHeader = new HashMap<String, Integer>();
+			List<WebElement> headersList = driverEngine.getWebDriver()
+					.findElements(By.xpath("//div[@class='v-table-header']//tr//td//div[3]"));
+			Iterator<WebElement> itr = headersList.iterator();
+			int column = 1;
+			while (itr.hasNext()) {
+				tableHeader.put(itr.next().getText(), column);
+				column++;
+			}
+			log.info("Get Table Headers map by Index ", "");
+			return tableHeader;
+
+		} catch (Exception e) {
+
+			log.error("Get Table Headers map by Index ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Get List of WebElement under the specified column
+	 *
+	 * @param tableElement
+	 * @param ColumnName
+	 * @return
+	 */
+	public List<WebElement> getColumnElementsByColumnName(String ColumnName) {
+		try {
+			Map<String, Integer> map = getHeadersIndex();
+			int cIndex = 0;
+			if (map != null) {
+				cIndex = map.get(ColumnName);
+			}
+			WebDriver driver = ConcurrentEngine.getEngine().getWebDriver();
+			List<WebElement> columnElements = driver
+					.findElements(By.xpath("//tr//td[@class='v-table-cell-content'][" + cIndex + "]"));
+			log.info("Get List of WebElements under a Column ", "");
+			return columnElements;
+		} catch (Exception e) {
+			log.error("Get List of WebElements under a Column Failed", e);
+			throw e;
+		}
+
+	}
+}
+****************************************
+package com.tab.af.cucumber;
+
+import cucumber.runtime.CucumberException;
+import gherkin.events.PickleEvent;
+
+/**
+ * The only purpose of this class is to move parse errors from the DataProvider to the test
+ * execution of the TestNG tests.
+ *
+ * @see TestNGCucumberRunner#provideScenarios()
+ */
+class CucumberExceptionWrapper implements PickleEventWrapper {
+
+  private CucumberException exception;
+
+  CucumberExceptionWrapper(CucumberException e) {
+    this.exception = e;
+  }
+
+  @Override
+  public PickleEvent getPickleEvent(){
+    throw this.exception;
+  }
+
+}
+*******************************************
+package com.tab.af.cucumber;
+
+import cucumber.api.testng.CucumberFeatureWrapper;
+import cucumber.runtime.model.CucumberFeature;
+
+class CucumberFeatureWrapperImpl implements CucumberFeatureWrapper {
+
+  private final CucumberFeature cucumberFeature;
+
+  CucumberFeatureWrapperImpl(CucumberFeature cucumberFeature) {
+    this.cucumberFeature = cucumberFeature;
+  }
+
+  @Override
+  public String toString(){
+    return "\"" + cucumberFeature.getGherkinFeature().getFeature().getName() + "\"";
+
+  }
+
+}
+****************************************************
+package com.tab.af.cucumber;
+
+import cucumber.api.testng.AbstractTestNGCucumberTests;
+import gherkin.events.PickleEvent;
+
+/**
+ * The only purpose of this interface is to be able to provide a custom
+ * 
+ * <pre>
+ * toString()
+ * </pre>
+ * 
+ * , making TestNG reports look more descriptive.
+ *
+ * @see AbstractTestNGCucumberTests#runScenario(cucumber.api.testng.PickleEventWrapper,
+ *      cucumber.api.testng.CucumberFeatureWrapper)
+ */
+public interface PickleEventWrapper {
+
+  PickleEvent getPickleEvent();
+
+}
+**********************************************
+package com.tab.af.cucumber;
+
+import gherkin.events.PickleEvent;
+
+class PickleEventWrapperImpl implements PickleEventWrapper {
+
+  private final PickleEvent pickleEvent;
+
+  PickleEventWrapperImpl(PickleEvent pickleEvent) {
+    this.pickleEvent = pickleEvent;
+  }
+
+  @Override
+  public PickleEvent getPickleEvent(){
+    return pickleEvent;
+  }
+
+  @Override
+  public String toString(){
+    return "\"" + pickleEvent.pickle.getName() + "\"";
+  }
+
+}
+********************************************
+package com.tab.af.cucumber;
+
+import org.testng.SkipException;
+
+import cucumber.api.Result;
+import cucumber.api.event.EventHandler;
+import cucumber.api.event.TestCaseFinished;
+import cucumber.runner.EventBus;
+import cucumber.runtime.CucumberException;
+
+class TestCaseResultListener {
+
+	static final String UNDEFINED_MESSAGE = "There are undefined steps";
+
+	static final String SKIPPED_MESSAGE = "This scenario is skipped";
+
+	private final EventBus bus;
+
+	private boolean strict;
+
+	private Result result;
+
+	private final EventHandler<TestCaseFinished> testCaseFinishedHandler = new EventHandler<TestCaseFinished>() {
+
+		@Override
+		public void receive(TestCaseFinished event) {
+			receiveResult(event.result);
+		}
+
+	};
+
+	TestCaseResultListener(EventBus bus, boolean strict) {
+		this.strict = strict;
+		this.bus = bus;
+		bus.registerHandlerFor(TestCaseFinished.class, testCaseFinishedHandler);
+	}
+
+	void finishExecutionUnit() {
+		bus.removeHandlerFor(TestCaseFinished.class, testCaseFinishedHandler);
+	}
+
+	void receiveResult(Result result) {
+		this.result = result;
+	}
+
+	boolean isPassed() {
+		return result == null || result.is(Result.Type.PASSED);
+	}
+
+	Throwable getError() {
+		if (result == null) {
+			return null;
+		}
+		switch (result.getStatus()) {
+		case FAILED:
+		case AMBIGUOUS:
+			return result.getError();
+		case PENDING:
+			if (strict) {
+				return result.getError();
+			}
+			return new SkipException(result.getErrorMessage(), result.getError());
+		case UNDEFINED:
+			if (strict) {
+				return new CucumberException(UNDEFINED_MESSAGE);
+			}
+			return new SkipException(UNDEFINED_MESSAGE);
+		case SKIPPED:
+			Throwable error = result.getError();
+			if (error != null) {
+				if (error instanceof SkipException) {
+					return error;
+				}
+				return new SkipException(result.getErrorMessage(), error);
+			}
+			return new SkipException(SKIPPED_MESSAGE);
+		case PASSED:
+			return null;
+		default:
+			throw new IllegalStateException("Unexpected result status: " + result.getStatus());
+		}
+	}
+
+}
+*******************************************************
+package com.tab.af.cucumber;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.testng.ITestContext;
+
+import cucumber.api.event.TestRunFinished;
+import cucumber.api.event.TestRunStarted;
+import cucumber.api.testng.CucumberFeatureWrapper;
+import cucumber.runner.EventBus;
+import cucumber.runner.Runner;
+import cucumber.runner.ThreadLocalRunnerSupplier;
+import cucumber.runner.TimeService;
+import cucumber.runner.TimeServiceEventBus;
+import cucumber.runtime.BackendModuleBackendSupplier;
+import cucumber.runtime.ClassFinder;
+import cucumber.runtime.CucumberException;
+import cucumber.runtime.FeaturePathFeatureSupplier;
+import cucumber.runtime.RuntimeOptions;
+import cucumber.runtime.RuntimeOptionsFactory;
+import cucumber.runtime.filter.Filters;
+import cucumber.runtime.formatter.PluginFactory;
+import cucumber.runtime.formatter.Plugins;
+import cucumber.runtime.io.MultiLoader;
+import cucumber.runtime.io.ResourceLoader;
+import cucumber.runtime.io.ResourceLoaderClassFinder;
+import cucumber.runtime.model.CucumberFeature;
+import cucumber.runtime.model.FeatureLoader;
+import gherkin.events.PickleEvent;
+
+/**
+ * Glue code for running Cucumber via TestNG.
+ */
+public class TestNGCucumberRunner {
+
+	private final EventBus bus;
+
+	private final Filters filters;
+
+	private final FeaturePathFeatureSupplier featureSupplier;
+
+	private final ThreadLocalRunnerSupplier runnerSupplier;
+
+	private final RuntimeOptions runtimeOptions;
+
+	private final Plugins plugins;
+
+	/**
+	 * Bootstrap the cucumber runtime
+	 *
+	 * @param clazz Which has the {@link cucumber.api.CucumberOptions} and
+	 *              {@link org.testng.annotations.Test} annotations
+	 */
+	public TestNGCucumberRunner(ITestContext context, Class clazz) {
+		Map<String, String> allParameters = context.getCurrentXmlTest().getAllParameters();
+		ClassLoader classLoader = clazz.getClassLoader();
+		ResourceLoader resourceLoader = new MultiLoader(classLoader);
+
+		RuntimeOptionsFactory runtimeOptionsFactory = new RuntimeOptionsFactory(clazz);
+		runtimeOptions = runtimeOptionsFactory.create();
+		// tags
+		if (allParameters.containsKey("tags")) {
+			runtimeOptions.getTagFilters().add(allParameters.getOrDefault("tags", "@smoke"));
+		}
+
+		ClassFinder classFinder = new ResourceLoaderClassFinder(resourceLoader, classLoader);
+		BackendModuleBackendSupplier backendSupplier = new BackendModuleBackendSupplier(resourceLoader, classFinder,
+				runtimeOptions);
+		bus = new TimeServiceEventBus(TimeService.SYSTEM);
+		plugins = new Plugins(classLoader, new PluginFactory(), runtimeOptions);
+		FeatureLoader featureLoader = new FeatureLoader(resourceLoader);
+		filters = new Filters(runtimeOptions);
+		this.runnerSupplier = new ThreadLocalRunnerSupplier(runtimeOptions, bus, backendSupplier);
+		featureSupplier = new FeaturePathFeatureSupplier(featureLoader, runtimeOptions);
+	}
+
+	public void runScenario(PickleEvent pickle) throws Throwable {
+		// Possibly invoked in a multi-threaded context
+		Runner runner = runnerSupplier.get();
+		TestCaseResultListener testCaseResultListener = new TestCaseResultListener(runner.getBus(),
+				runtimeOptions.isStrict());
+		runner.runPickle(pickle);
+		testCaseResultListener.finishExecutionUnit();
+
+		if (!testCaseResultListener.isPassed()) {
+			throw testCaseResultListener.getError();
+		}
+	}
+
+	public void finish() {
+		bus.send(new TestRunFinished(bus.getTime(), bus.getTimeMillis()));
+	}
+
+	/**
+	 * @return returns the cucumber scenarios as a two dimensional array of
+	 *         {@link PickleEventWrapper} scenarios combined with their
+	 *         {@link CucumberFeatureWrapper} feature.
+	 */
+	public Object[][] provideScenarios() {
+		try {
+			List<Object[]> scenarios = new ArrayList<Object[]>();
+			List<CucumberFeature> features = getFeatures();
+			for (CucumberFeature feature : features) {
+				for (PickleEvent pickle : feature.getPickles()) {
+					if (filters.matchesFilters(pickle)) {
+						scenarios.add(new Object[] { new PickleEventWrapperImpl(pickle),
+								new CucumberFeatureWrapperImpl(feature) });
+					}
+				}
+			}
+			return scenarios.toArray(new Object[][] {});
+		} catch (CucumberException e) {
+			return new Object[][] { new Object[] { new CucumberExceptionWrapper(e), null } };
+		}
+	}
+
+	List<CucumberFeature> getFeatures() {
+		plugins.setSerialEventBusOnEventListenerPlugins(bus);
+
+		List<CucumberFeature> features = featureSupplier.get();
+		bus.send(new TestRunStarted(bus.getTime(), bus.getTimeMillis()));
+		for (CucumberFeature feature : features) {
+			feature.sendTestSourceRead(bus);
+		}
+		return features;
+	}
+
+}
+***********************************************
+package com.tab.af.engine;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.ie.InternetExplorerOptions;
+
+import com.google.gson.Gson;
+import com.tab.af.testbase.TestBase;
+
+public class BrowserCapabilities {
+
+	public Capabilities getCapabilities(String browserName) throws IOException, ParseException {
+		JSONParser parser = new JSONParser();
+		Map<String, String> map = new HashMap<>();
+		try (FileReader reader = new FileReader(
+				System.getProperty("user.dir") + "\\src\\main\\resources\\capabilities.json")) {
+			Object obj = parser.parse(reader);
+			JSONObject parentObject = (JSONObject) obj;
+			JSONObject browser = (JSONObject) parentObject.get(browserName);
+			JSONObject arguments = (JSONObject) browser.get("arguments");
+			JSONObject capabilities = (JSONObject) browser.get("capabilities");
+			if (browserName.equalsIgnoreCase("chrome")) {
+				map = new Gson().fromJson(arguments.toString(), Map.class);
+				ChromeOptions options = new ChromeOptions();
+				Set<String> keys = map.keySet();
+				for (String key : keys) {
+					options.addArguments(map.get(key));
+				}
+				options.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
+				options.setExperimentalOption("useAutomationExtension", false);
+				Map<String, Object> prefs = new HashMap<>();
+				prefs.put("credentials_enable_service", false);
+				prefs.put("password_manager_enabled", false);
+				options.setExperimentalOption("prefs", prefs);
+				// File file = new File(System.getProperty("user.dir") +
+				// "\\src\\main\\resources\\XPath-Helper_v2.0.2 (1).crx");
+				// options.addExtensions(file);
+				map.clear();
+				map = new Gson().fromJson(capabilities.toString(), Map.class);
+				keys = map.keySet();
+				for (String key : keys) {
+					options.setCapability(key, map.get(key));
+				}
+				return options;
+			}
+			if (browserName.equalsIgnoreCase("firefox")) {
+				map = new Gson().fromJson(arguments.toString(), Map.class);
+				FirefoxOptions options = new FirefoxOptions();
+				if (TestBase.prop.runType().equals("local")) {
+					options.setBinary(TestBase.prop.firefoxBinaryPath());
+				}
+				Set<String> keys = map.keySet();
+				for (String key : keys) {
+					options.addArguments(map.get(key));
+				}
+				map.clear();
+				map = new Gson().fromJson(capabilities.toString(), Map.class);
+				keys = map.keySet();
+				for (String key : keys) {
+					options.setCapability(key, map.get(key));
+				}
+				return options;
+			}
+			if (browserName.equalsIgnoreCase("ie")) {
+				InternetExplorerOptions options = new InternetExplorerOptions();
+				map = new Gson().fromJson(capabilities.toString(), Map.class);
+				Set<String> keys = map.keySet();
+				for (String key : keys) {
+					options.setCapability(key, map.get(key));
+				}
+				return options;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+}
+******************************************************
+package com.tab.af.engine;
+
+import static org.testng.Assert.assertNotNull;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.openqa.selenium.Capabilities;
+
+import com.tab.af.testbase.TestBase;
+
+public class ConcurrentEngine {
+
+	private static ConcurrentHashMap<Long, DriverEngine> engines = new ConcurrentHashMap<>();
+
+	public static DriverEngine getEngine() {
+		return engines.get(Thread.currentThread().getId());
+	}
+
+	public static void createEngine(Capabilities caps, String browserName, boolean remoteExecution) throws Exception {
+		try {
+			DriverEngine engine = new DriverEngine();
+			engine.setUpWebDriver(browserName, caps, remoteExecution);
+			assertNotNull(engine.getWebDriver().getWrappedDriver(), "Webdriver was not set up correctly.");
+			engines.putIfAbsent(Thread.currentThread().getId(), engine);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public static void main(String[] args) {
-		new JSONReportBuilder().generateReportBuilderSummary();
+	public static void destroyEngine() {
+		if (engines.containsKey(Thread.currentThread().getId())) {
+			if (!TestBase.prop.runType().equalsIgnoreCase("api")
+					|| !getEngine().getWebDriver().toString().contains("null")) {
+				{
+					cleanUpDriverProcesses();
+				}
+			}
+			engines.remove(Thread.currentThread().getId());
+		}
+	}
+
+	public static void closeDriver() {
+		getEngine().getWebDriver().close();
+	}
+
+	public static void cleanUpDriverProcesses() {
+		getEngine().getWebDriver().quit();
+	}
+
+}
+*********************************************************
+package com.tab.af.engine;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.openqa.selenium.Capabilities;
+import org.openqa.selenium.SessionNotCreatedException;
+import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.ie.InternetExplorerOptions;
+import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ThreadGuard;
+import org.openqa.selenium.support.events.EventFiringWebDriver;
+
+import com.tab.af.actions.ShadowActions;
+import com.tab.af.actions.WebActions;
+import com.tab.af.reporting.ReportLibrary;
+import com.tab.af.testbase.TestBase;
+
+import io.github.bonigarcia.wdm.WebDriverManager;
+
+public class DriverEngine {
+
+	private EventFiringWebDriver webDriver;
+
+	private WebActions webActions;
+
+	private ReportLibrary reportLibrary;
+
+	private ShadowActions shadowActions;
+
+	private String browser;
+
+	private String browserVersion;
+
+	private WebDriverEvents webDriverEvents = WebDriverEvents.getInstance();
+
+	public String getBrowser() {
+		return browser;
+	}
+
+	public void setBrowser(String browser) {
+		this.browser = browser;
+	}
+
+	public String getBrowserVersion() {
+		return browserVersion;
+	}
+
+	public void setBrowserVersion(String browserVersion) {
+		this.browserVersion = browserVersion;
+	}
+
+	public DriverEngine() {
+		initialize();
+	}
+
+	public void initialize() {
+		initalizeWebActions();
+		initalizeReportLibrary();
+		initalizeShadowActions();
+	}
+
+	private void initalizeWebActions() {
+		webActions = new WebActions(this);
+	}
+
+	private void initalizeReportLibrary() {
+		reportLibrary = new ReportLibrary(this);
+	}
+
+	private void initalizeShadowActions() {
+		shadowActions = new ShadowActions(this);
+	}
+
+	public WebActions getWebActions() {
+		return webActions;
+	}
+
+	public ReportLibrary getReportLibrary() {
+		return reportLibrary;
+	}
+
+	public EventFiringWebDriver getWebDriver() {
+		return webDriver;
+	}
+
+	public ShadowActions getShadowActions() {
+		return shadowActions;
+	}
+
+	public void setWebDriver(EventFiringWebDriver webDriver) {
+		this.webDriver = webDriver;
+	}
+
+	public void setUpWebDriver(String browserType, Capabilities caps, boolean remoteExecution) throws Exception {
+		selectDriverType(browserType, caps, remoteExecution);
+	}
+
+	private final void selectDriverType(String browserType, Capabilities caps, boolean remoteExecution)
+			throws Exception {
+		if (remoteExecution)
+			setUpRemoteWebDriver(browserType, caps);
+		else
+			setUpLocalWebDriver(browserType, caps);
+	}
+
+	private void setUpRemoteWebDriver(String browser, Capabilities caps) throws Exception {
+		try {
+			webDriver = new EventFiringWebDriver(ThreadGuard.protect(createRemoteDriver(caps)));
+			webDriver.manage().window().maximize();
+			if (Boolean.parseBoolean(TestBase.prop.seleniumEventLog())) {
+				webDriver.register(webDriverEvents);
+			}
+		} catch (MalformedURLException e) {
+			System.out.println("setUpRemoteWebDriver, The url provided was malformed.");
+			throw e;
+		} catch (SessionNotCreatedException e) {
+			System.out.println("setUpRemoteWebDriver, The session could not be created.");
+			throw e;
+		} catch (WebDriverException e) {
+			System.out.println(
+					"setUpRemoteWebDriver, The webdriver created on one thread was accessed by another thread or the session could not be created");
+			throw e;
+		}
+	}
+
+	private RemoteWebDriver createRemoteDriver(Capabilities caps) throws MalformedURLException {
+		RemoteWebDriver remoteWebDriver;
+		String hubURL = System.getProperty("grid.url");
+		switch ("grid") {
+		case "grid":
+			remoteWebDriver = new RemoteWebDriver(new URL(hubURL), caps);
+			break;
+		default:
+			System.out.println("an attempt to create a remote web driver for grid is failed");
+			remoteWebDriver = new RemoteWebDriver(new URL(hubURL), caps);
+		}
+		return remoteWebDriver;
+	}
+
+	private void setUpLocalWebDriver(String browserType, Capabilities caps) throws Exception {
+		EventFiringWebDriver eventDriver;
+		switch (browserType.toUpperCase()) {
+		case "CHROME":
+			eventDriver = setUpLocalChromeDriver(caps);
+			break;
+		case "FIREFOX":
+			eventDriver = setUpLocalFirefoxDriver(caps);
+			break;
+		case "IE":
+			eventDriver = setUpLocalIeDriver(caps);
+			break;
+		default:
+			throw new IllegalArgumentException(browserType + " is not supported. Please choose another browser.");
+		}
+		webDriver = eventDriver;
+		// #############
+		if (Boolean.parseBoolean(TestBase.prop.seleniumEventLog())) {
+			webDriver.register(webDriverEvents);
+		}
+		webDriver.manage().window().maximize();
+		setBrowser(caps.getBrowserName());
+		setBrowserVersion(caps.getVersion());
+	}
+
+	private EventFiringWebDriver setUpLocalChromeDriver(Capabilities caps) {
+		EventFiringWebDriver driver;
+		ChromeOptions options = (ChromeOptions) caps;
+		WebDriverManager.chromedriver().version(TestBase.prop.chromeBinaryVersion()).setup();
+		if (caps == null) {
+			driver = new EventFiringWebDriver(ThreadGuard.protect(new ChromeDriver()));
+		} else {
+			driver = new EventFiringWebDriver(ThreadGuard.protect(new ChromeDriver(options)));
+		}
+		return driver;
+	}
+
+	private EventFiringWebDriver setUpLocalFirefoxDriver(Capabilities caps) {
+		EventFiringWebDriver driver;
+		FirefoxOptions options = (FirefoxOptions) caps;
+		WebDriverManager.firefoxdriver().version(TestBase.prop.firefoxBinaryVersion()).setup();
+		if (caps == null) {
+			driver = new EventFiringWebDriver(ThreadGuard.protect(new FirefoxDriver()));
+		} else {
+			driver = new EventFiringWebDriver(ThreadGuard.protect(new FirefoxDriver(options)));
+		}
+		return driver;
+	}
+
+	private EventFiringWebDriver setUpLocalIeDriver(Capabilities caps) {
+		EventFiringWebDriver driver;
+		InternetExplorerOptions options = (InternetExplorerOptions) caps;
+		WebDriverManager.iedriver().version(TestBase.prop.internetExplorerBinaryVersion()).arch32().setup();
+		if (caps == null) {
+			driver = new EventFiringWebDriver(ThreadGuard.protect(new InternetExplorerDriver()));
+		} else {
+			driver = new EventFiringWebDriver(ThreadGuard.protect(new InternetExplorerDriver(options)));
+		}
+		return driver;
+	}
+
+}
+********************************************************
+package com.tab.af.engine;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+
+public class GridSetup {
+
+	public String startGrid(String portNumber) throws UnknownHostException {
+		String url = "http://" + InetAddress.getLocalHost().getHostAddress() + ":" + portNumber;
+		String consoleURL = url + "/grid/console";
+		HttpURLConnection huc = null;
+		try {
+			huc = (HttpURLConnection) (new URL(consoleURL).openConnection());
+			huc.setRequestMethod("HEAD");
+			huc.connect();
+			if (huc.getResponseCode() == 200) {
+				System.out.println("Hub Already running");
+			}
+		} catch (Exception e) {
+			if (e.getMessage().contains("Connection refused")) {
+				System.out.println("Hub is not Started");
+				// For Hidden Mode Append " /B " After Start
+				String hubPath = System.getProperty("user.dir") + "\\grid\\hub.bat";
+				String command = "cmd.exe /C Start  " + hubPath;
+				try {
+					Runtime.getRuntime().exec(command);
+					// wait so as to Let Hub Initializes Properly
+					Thread.sleep(5000);
+					System.out.println("Hub Started");
+				} catch (InterruptedException | IOException ex) {
+					ex.printStackTrace();
+				}
+			} else {
+				e.printStackTrace();
+			}
+		}
+		return url + "/wd/hub";
 	}
 
 }
 **********************************************
-package com.tab.af.reporting;
+package com.tab.af.engine;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Base64;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
-import org.apache.commons.io.FileUtils;
+import org.joda.time.DateTime;
+import org.openqa.selenium.By;
 import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.testng.Assert;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.events.WebDriverEventListener;
 
-import com.aventstack.extentreports.MediaEntityBuilder;
-import com.aventstack.extentreports.Status;
-import com.tab.af.engine.ConcurrentEngine;
-import com.tab.af.engine.DriverEngine;
 import com.tab.af.testbase.TestBase;
 
-public class ReportLibrary {
+public class WebDriverEvents implements WebDriverEventListener {
 
-	private DriverEngine engine;
+	private static Logger log;
 
-	private boolean takeScreenshotPassFlag = Boolean.parseBoolean(TestBase.prop.screenshotPassedStep());
+	private static WebDriverEvents webDriverEvents = null;
 
-	private boolean takeScreenshotFailFlag = Boolean.parseBoolean(TestBase.prop.screenshotFailedStep());
-
-	public DriverEngine getEngine() {
-		return engine;
+	private WebDriverEvents() {
 	}
 
-	public ReportLibrary(DriverEngine engine) {
-		this.engine = engine;
-	}
-
-	public ReportLibrary() {
-
-	}
-
-	public void reportInfo(String message) {
-		ExtentTestManager.getTest().log(Status.INFO, message);
-	}
-
-	public void logPass(String message) {
-		ExtentTestManager.getTest().log(Status.PASS, message);
-	}
-
-	public void logException(Throwable t) {
-		ExtentTestManager.getTest().log(Status.FAIL, t);
-	}
-
-	public void logHardFail(String message, Throwable e) {
-		ExtentTestManager.getTest().log(Status.FAIL, message + " Exception Message: " + e.getMessage());
-		Assert.assertTrue(false);
-	}
-
-	public void logFail(String message, Throwable e) {
-		ExtentTestManager.getTest().log(Status.FAIL, message + " Exception Message: " + e.getMessage());
-
-	}
-
-	public void logWarning(String message) {
-		ExtentTestManager.getTest().log(Status.WARNING, message);
-
-	}
-
-	public void reportPass(String message) {
-		if (takeScreenshotPassFlag) {
-			passedLogWithScreenshot(message);
-		} else {
-			ExtentTestManager.getTest().log(Status.PASS, message);
-		}
-	}
-
-	public void reportPass(String message, boolean takeScreenshot) {
-		if (takeScreenshotPassFlag && takeScreenshot) {
-			passedLogWithScreenshot(message);
-		} else {
-			ExtentTestManager.getTest().log(Status.PASS, message);
-		}
-	}
-
-	public void reportFail(String message) {
-		if (takeScreenshotFailFlag) {
-			failedLogWithScreenshot(message);
-		} else {
-			ExtentTestManager.getTest().log(Status.FAIL, message);
-		}
-	}
-
-	public void reportFail(String message, boolean takeScreenshot) {
-		if (takeScreenshotFailFlag && takeScreenshot) {
-			failedLogWithScreenshot(message);
-		} else {
-			ExtentTestManager.getTest().log(Status.FAIL, message);
-		}
-	}
-
-	public void reportHardFail(Exception e, String message) {
-		if (takeScreenshotFailFlag) {
-			failedLogWithScreenshot(message + e.getMessage());
-			Assert.fail();
-		} else {
-			ExtentTestManager.getTest().log(Status.FAIL, message);
-			Assert.fail();
-		}
-	}
-
-	public void reportHardFail(String message, boolean takeScreenshot) {
-		if (takeScreenshotFailFlag && takeScreenshot) {
-			failedLogWithScreenshot(message);
-			Assert.fail();
-		} else {
-			ExtentTestManager.getTest().log(Status.FAIL, message);
-			Assert.fail();
-		}
-	}
-
-	public void reportHardFail(String message) {
-
-		ExtentTestManager.getTest().log(Status.FAIL, message);
-		Assert.fail();
-
-	}
-
-	public void reportHardFailException(Throwable t) {
-
-		ExtentTestManager.getTest().log(Status.FAIL, t);
-		Assert.fail();
-
-	}
-
-	private void failedLogWithScreenshot(String message) {
-
-		String base64String = captureBase64();
-		try {
-			ExtentTestManager.getTest().log(Status.FAIL, message,
-					MediaEntityBuilder.createScreenCaptureFromBase64String(base64String).build());
-		} catch (IOException e) {
-			System.out.println(
-					"failedLogWithScreenshot > Screenshot could not be captured. Possible causes are directory not found or access to it.");
-			e.printStackTrace();
-		}
-	}
-
-	private void passedLogWithScreenshot(String message) {
-		String base64String = captureBase64();
-		try {
-			ExtentTestManager.getTest().log(Status.PASS, message,
-					MediaEntityBuilder.createScreenCaptureFromBase64String(base64String).build());
-		} catch (IOException e) {
-			System.out.println(
-					"passedLogWithScreenshot Screenshot could not be captured. Possible causes are directory not found or access to it.");
-			e.printStackTrace();
-		}
-	}
-
-	public String captureBase64() {
-		File source = takeScreenShot();
-		String base64Screenshot = "";
-		try {
-			byte[] fileContent = FileUtils.readFileToByteArray(source);
-			base64Screenshot = Base64.getEncoder().encodeToString(fileContent);
-		} catch (IOException io) {
-			System.out.println("Screenshot file not found or inaccessible.");
-			io.printStackTrace();
-		}
-		return base64Screenshot;
-	}
-
-	public File takeScreenShot() {
-		File srcFile = null;
-		if (ConcurrentEngine.getEngine() != null) {
-			if (ConcurrentEngine.getEngine().getWebDriver() != null) {
-				try {
-					srcFile = ((TakesScreenshot) ConcurrentEngine.getEngine().getWebDriver())
-							.getScreenshotAs(OutputType.FILE);
-				} catch (Exception e) {
-					System.out.println("Could not capture screenshot" + e);
-				}
+	public synchronized static WebDriverEvents getInstance() {
+		if (Boolean.parseBoolean(TestBase.prop.seleniumEventLog())) {
+			if (log == null) {
+				setupEvents();
+			}
+			if (webDriverEvents == null) {
+				webDriverEvents = new WebDriverEvents();
 			}
 		}
-		return srcFile;
+		return webDriverEvents;
 	}
 
-}
-***************************************************************
-package com.tab.af.reporting;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
-public class StepLogging {
-
-	private Logger log = Logger.getLogger(StepLogging.class);
-
-	private static StepLogging stepLogging;
-
-	private StepLogging() {
-		// Singleton
-	}
-
-	public static StepLogging getLoggingObject() {
-		if (stepLogging == null) {
-			stepLogging = new StepLogging();
+	private static void setupEvents() {
+		String dir = System.getProperty("user.dir") + "\\src\\test\\resources\\logs\\";
+		String date = DateTime.now().toString("MMddyyyyhhmmss");
+		File file = new File(dir + "Event Log " + date + ".txt");
+		if (file.exists()) {
+			file.delete();
 		}
-		return stepLogging;
+		FileHandler fh = null;
+		log = Logger.getLogger("Webdriver Logger");
+		try {
+			fh = new FileHandler(file.getPath(), true);
+			log.addHandler(fh);
+			log.setUseParentHandlers(false);
+			SimpleFormatter formatter = new SimpleFormatter();
+			fh.setFormatter(formatter);
+		} catch (SecurityException | IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (fh != null) {
+				fh.close();
+			}
+		}
 	}
 
-	public void setLogginLevel(String loggingLevel) {
-		log.setLevel(Level.toLevel(loggingLevel));
-
+	@Override
+	public void beforeAlertAccept(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Alert Accept");
 	}
 
-	public void info(String details, String elementName)
-
-	{
-		log.info("Thread: " + Thread.currentThread().getName() + details + elementName);
+	@Override
+	public void afterAlertAccept(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Alert Accept");
 	}
 
-	public void info(String details)
-
-	{
-		log.info("Thread: " + Thread.currentThread().getName() + details);
+	@Override
+	public void afterAlertDismiss(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Alert Dismiss");
 	}
 
-	public void warn(String details, String elementName) {
-
-		log.warn("Thread: " + Thread.currentThread().getName() + details + elementName);
-
+	@Override
+	public void beforeAlertDismiss(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Alert Accept");
 	}
 
-	public void warn(String message) {
-
-		log.warn("Thread: " + Thread.currentThread().getName() + "message");
-
+	@Override
+	public void beforeNavigateTo(String url, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate to :" + url);
 	}
 
-	public void error(String details, String elementName, Throwable e) {
-
-		log.error("Thread: " + Thread.currentThread().getName() + details + elementName, e);
-
+	@Override
+	public void afterNavigateTo(String url, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Navigate to :" + url + "in Browser: ");
 	}
 
-	public void error(String message, Throwable e) {
-
-		log.error("Thread: " + Thread.currentThread().getName() + message, e);
-
+	@Override
+	public void beforeNavigateBack(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Back");
 	}
 
-	public void fatal(String details, String elementName, Throwable e) {
+	@Override
+	public void afterNavigateBack(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Navigate Back");
+	}
 
-		log.fatal("Thread: " + Thread.currentThread().getName() + details + elementName, e);
+	@Override
+	public void beforeNavigateForward(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Forward");
+	}
 
+	@Override
+	public void afterNavigateForward(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Navigate Forward");
+	}
+
+	@Override
+	public void beforeNavigateRefresh(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Refresh");
+	}
+
+	@Override
+	public void afterNavigateRefresh(WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Refresh");
+	}
+
+	@Override
+	public void beforeFindBy(By by, WebElement element, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before FindBy");
+	}
+
+	@Override
+	public void afterFindBy(By by, WebElement element, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before FindBy " + by.toString());
+	}
+
+	@Override
+	public void beforeClickOn(WebElement element, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Click on: " + element.toString());
+	}
+
+	@Override
+	public void afterClickOn(WebElement element, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Click on: " + element.toString());
+	}
+
+	@Override
+	public void beforeChangeValueOf(WebElement element, WebDriver driver, CharSequence[] keysToSend) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Change value of: " + element.toString()
+				+ " value to Send: " + keysToSend[0].toString());
+	}
+
+	@Override
+	public void afterChangeValueOf(WebElement element, WebDriver driver, CharSequence[] keysToSend) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Change value of: " + element.toString()
+				+ " value to Send: " + keysToSend[0].toString());
+	}
+
+	@Override
+	public void beforeScript(String script, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Executing Script: " + script);
+	}
+
+	@Override
+	public void afterScript(String script, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Executing Script: " + script);
+	}
+
+	@Override
+	public void beforeSwitchToWindow(String windowName, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Before Switch to Window: " + windowName);
+	}
+
+	@Override
+	public void afterSwitchToWindow(String windowName, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " After Switch to Window: " + windowName);
+	}
+
+	@Override
+	public void onException(Throwable throwable, WebDriver driver) {
+		log.info("Thread: " + Thread.currentThread().getName() + " Exception Encountered: " + throwable.getMessage());
+	}
+
+	@Override
+	public <X> void beforeGetScreenshotAs(OutputType<X> target) {
+	}
+
+	@Override
+	public <X> void afterGetScreenshotAs(OutputType<X> target, X screenshot) {
+	}
+
+	@Override
+	public void beforeGetText(WebElement element, WebDriver driver) {
+	}
+
+	@Override
+	public void afterGetText(WebElement element, WebDriver driver, String text) {
 	}
 
 }
