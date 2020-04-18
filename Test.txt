@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Suite" parallel="tests" thread-count="1" data-provider-thread-count="1">
-	<test thread-count="1" name="Tests on chrome" enabled="true" parallel="methods">
-		<parameter name="browser" value="chrome"></parameter>
-	<!--	<parameter name="tags" value="@EBank or @EDGe or @EPrecision or @OnBoarding"></parameter> -->
-		 <parameter name="tags" value="@EPrecision"></parameter>
+
+<suite name="Suite" parallel="tests" thread-count="1"
+	data-provider-thread-count="1">
+	<listeners>
+		<listener class-name="com.tab.af.reporting.ExtentNG" />
+	</listeners>
+	<test thread-count="1" name="Tests on chrome" enabled="true"
+		parallel="methods">
+		<parameter name="browser" value=""></parameter>
+		<parameter name="tags" value="@MUL-770"></parameter>
 		<classes>
-			<class name="com.tab.af.web.runners.WebTestRunner" />
+			<class name="com.tab.af.api.runners.APITestRunner" />
 		</classes>
 	</test>
-</suite> <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Suite" parallel="tests" thread-count="1" data-provider-thread-count="1">
-	<test thread-count="1" name="Tests on chrome" enabled="true" parallel="methods">
-		<parameter name="browser" value="chrome"></parameter>
-	<!--	<parameter name="tags" value="@EBank or @EDGe or @EPrecision or @OnBoarding"></parameter> -->
-		 <parameter name="tags" value="@EPrecision"></parameter>
-		<classes>
-			<class name="com.tab.af.web.runners.WebTestRunner" />
-		</classes>
-	</test>
-</suite> 
+</suite>
