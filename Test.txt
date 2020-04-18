@@ -1,3086 +1,3533 @@
-package com.tab.af.actions;
+package com.tab.af.rest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Method;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
-import org.openqa.selenium.JavascriptException;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.SearchContext;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.remote.RemoteWebElement;
-import org.openqa.selenium.support.ui.ExpectedCondition;
-import org.openqa.selenium.support.ui.WebDriverWait;
+public class HttpClient {
 
-import com.tab.af.engine.DriverEngine;
-import com.tab.af.reporting.StepLogging;
-import com.tab.af.testbase.TestBase;
+	private HttpURLConnection httpConn;
 
-public class ShadowActions {
+	public HttpURLConnection sendGetRequest(String requestURL) throws IOException {
+		URL url = new URL(requestURL);
+		httpConn = (HttpURLConnection) url.openConnection();
+		httpConn.setUseCaches(false);
 
-	private DriverEngine driverEngine;
+		httpConn.setDoInput(true); // true if we want to read server's response
+		httpConn.setDoOutput(false); // false indicates this is a GET request
 
-	private StepLogging log = StepLogging.getLoggingObject();
-
-	long explicitPeriod = Long.parseLong(TestBase.prop.explicitWaitPeriod());
-
-	public ShadowActions(DriverEngine driverEngine) {
-		this.driverEngine = driverEngine;
-
+		return httpConn;
 	}
 
-	private Object injectShadowExecuter(String javascript) {
-
-		JavascriptExecutor js = driverEngine.getWebDriver();
-		waitForPageLoaded();
-		return js.executeScript(javascript);
-
-	}
-
-	private Object injectShadowExecuter(String javascript, WebElement element) {
-
-		JavascriptExecutor js = driverEngine.getWebDriver();
-		waitForPageLoaded();
-		return js.executeScript(javascript, element);
-
-	}
-
-	private Object executerGetObject(String script) {
-		String javascript = convertJStoText().toString();
-		javascript += script;
-		return injectShadowExecuter(javascript);
-	}
-
-	private Object executerGetObject(String script, WebElement element) {
-		String javascript = convertJStoText().toString();
-		javascript += script;
-		return injectShadowExecuter(javascript, element);
-	}
-
-	private StringBuilder convertJStoText() {
-		InputStream in = getClass().getResourceAsStream("/querySelector.js");
-
-		StringBuilder text = new StringBuilder();
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-			while (reader.ready()) {
-				text.append(reader.readLine());
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+	public Map<String, String> createParamsMap(String[] paramKeys, String[] paramValues) {
+		Map<String, String> params = new HashMap<String, String>();
+		for (int i = 0; i < paramKeys.length; i++) {
+			if (paramValues.length < paramKeys.length && i == paramKeys.length - 1)
+				params.put(paramKeys[i], null);
+			else
+				params.put(paramKeys[i], paramValues[i]);
 		}
-
-		return text;
+		return params;
 	}
 
-	private void fixLocator(SearchContext context, String cssLocator, WebElement element) {
-		if (element instanceof RemoteWebElement) {
-			try {
+	public HttpURLConnection sendPostRequest(String requestURL, Map<String, String> paramsMap) throws IOException {
+		URL url = new URL(requestURL);
+		httpConn = (HttpURLConnection) url.openConnection();
+		httpConn.setUseCaches(false);
 
-				Class[] parameterTypes = new Class[] { SearchContext.class, String.class, String.class };
-				Method m = element.getClass().getDeclaredMethod("setFoundBy", parameterTypes);
-				m.setAccessible(true);
-				Object[] parameters = new Object[] { context, "cssSelector", cssLocator };
-				m.invoke(element, parameters);
-			} catch (Exception fail) {
-				// fail("Something bad happened when fixing locator");
-			}
-		}
-	}
+		httpConn.setDoInput(true); // true indicates the server returns response
 
-	private void waitForPageLoaded() {
-		ExpectedCondition<Boolean> expectation = new ExpectedCondition<Boolean>() {
+		StringBuffer requestParams = new StringBuffer();
 
-			@Override
-			public Boolean apply(WebDriver driver) {
-				return ((JavascriptExecutor) driver).executeScript("return document.readyState").toString()
-						.equals("complete");
+		if (paramsMap != null && paramsMap.size() > 0) {
+
+			httpConn.setDoOutput(true); // true indicates POST request
+
+			// creates the params string, encode them using URLEncoder
+			Iterator<String> paramIterator = paramsMap.keySet().iterator();
+			while (paramIterator.hasNext()) {
+				String key = paramIterator.next();
+				String value = paramsMap.get(key);
+				requestParams.append(URLEncoder.encode(key, "UTF-8"));
+				requestParams.append("=").append(URLEncoder.encode(value, "UTF-8"));
+				requestParams.append("&");
 			}
 
-		};
-		try {
-			Thread.sleep(1000);
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
-			wait.until(expectation);
-		} catch (Throwable error) {
-			// Assertions.fail("Timeout waiting for Page Load Request to complete.");
-		}
-	}
-
-	public WebElement findElement(String cssSelector) {
-		WebElement element = null;
-		element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\");");
-		fixLocator(driverEngine.getWebDriver(), cssSelector, element);
-		return element;
-	}
-
-	public WebElement findElement(WebElement parent, String cssSelector) {
-		WebElement element = null;
-		element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\", arguments[0]);", parent);
-		fixLocator(driverEngine.getWebDriver(), cssSelector, element);
-		return element;
-	}
-
-	public List<WebElement> findElements(String cssSelector) {
-		List<WebElement> elements = null;
-		Object object = executerGetObject("return getAllObject(\"" + cssSelector + "\");");
-		if (object != null && object instanceof List<?>) {
-			elements = (List<WebElement>) object;
-		}
-		if (elements != null) {
-			for (WebElement webElement : elements) {
-				fixLocator(driverEngine.getWebDriver(), cssSelector, webElement);
-			}
-		}
-		return elements;
-	}
-
-	public List<WebElement> findElements(WebElement parent, String cssSelector) {
-		List<WebElement> elements = null;
-		Object object = executerGetObject("return getAllObject(\"" + cssSelector + "\", arguments[0]);", parent);
-		if (object != null && object instanceof List<?>) {
-			elements = (List<WebElement>) object;
-		}
-		if (elements != null) {
-			for (WebElement webElement : elements) {
-				fixLocator(driverEngine.getWebDriver(), cssSelector, webElement);
-			}
-		}
-		return elements;
-	}
-
-	public WebElement getShadowElement(WebElement parent, String selector) {
-		WebElement element = null;
-		element = (WebElement) executerGetObject("return getShadowElement(arguments[0],\"" + selector + "\");", parent);
-		fixLocator(driverEngine.getWebDriver(), selector, element);
-		return element;
-	}
-
-	public List<WebElement> getAllShadowElement(WebElement parent, String selector) {
-		List<WebElement> elements = null;
-		Object object = executerGetObject("return getAllShadowElement(arguments[0],\"" + selector + "\");", parent);
-		if (object != null && object instanceof List<?>) {
-			elements = (List<WebElement>) object;
-		}
-		if (elements != null) {
-			for (WebElement element : elements) {
-				fixLocator(driverEngine.getWebDriver(), selector, element);
-			}
-		}
-		return elements;
-	}
-
-	public WebElement getParentElement(WebElement element) {
-		return (WebElement) executerGetObject("return getParentElement(arguments[0]);", element);
-	}
-
-	public List<WebElement> getChildElements(WebElement parent) {
-		List<WebElement> elements = null;
-		Object object = executerGetObject("return getChildElements(arguments[0]);", parent);
-		if (object != null && object instanceof List<?>) {
-			elements = (List<WebElement>) object;
-		}
-		return elements;
-	}
-
-	public List<WebElement> getSiblingElements(WebElement element) {
-		List<WebElement> elements = null;
-		Object object = executerGetObject("return getSiblingElements(arguments[0]);", element);
-		if (object != null && object instanceof List<?>) {
-			elements = (List<WebElement>) object;
-		}
-		return elements;
-	}
-
-	public WebElement getSiblingElement(WebElement element, String selector) {
-		return (WebElement) executerGetObject("return getSiblingElement(arguments[0],\"" + selector + "\");", element);
-	}
-
-	public WebElement getNextSiblingElement(WebElement element) {
-		return (WebElement) executerGetObject("return getNextSiblingElement(arguments[0]);", element);
-	}
-
-	public WebElement getPreviousSiblingElement(WebElement element) {
-		return (WebElement) executerGetObject("return getPreviousSiblingElement(arguments[0]);", element);
-	}
-
-	public boolean isVisible(WebElement element) {
-		return (Boolean) executerGetObject("return isVisible(arguments[0]);", element);
-	}
-
-	public boolean isChecked(WebElement element) {
-		return (Boolean) executerGetObject("return isChecked(arguments[0]);", element);
-	}
-
-	public boolean isDisabled(WebElement element) {
-		return (Boolean) executerGetObject("return isDisabled(arguments[0]);", element);
-	}
-
-	public String getAttribute(WebElement element, String attribute) {
-		return (String) executerGetObject("return getAttribute(arguments[0],\"" + attribute + "\");", element);
-	}
-
-	public void selectCheckbox(WebElement parentElement, String label) {
-		executerGetObject("return selectCheckbox(\"" + label + "\",arguments[0]);", parentElement);
-	}
-
-	public void selectCheckbox(String label) {
-		executerGetObject("return selectCheckbox(\"" + label + "\");");
-	}
-
-	public void selectRadio(WebElement parentElement, String label) {
-		executerGetObject("return selectRadio(\"" + label + "\",arguments[0]);", parentElement);
-	}
-
-	public void selectRadio(String label) {
-		executerGetObject("return selectRadio(\"" + label + "\");");
-	}
-
-	public void selectDropdown(WebElement parentElement, String label) {
-		executerGetObject("return selectDropdown(\"" + label + "\",arguments[0]);", parentElement);
-	}
-
-	public void selectDropdown(String label) {
-		executerGetObject("return selectDropdown(\"" + label + "\");");
-	}
-
-	public void scrollTo(WebElement element) {
-		executerGetObject("return scrollTo(arguments[0]);", element);
-	}
-
-	public WebElement waitUntilPresentinDOM(String cssLocator) throws Exception {
-		WebElement element = null;
-		long timeOut = explicitPeriod;
-		do {
-
-			try {
-				element = findElement(cssLocator);
-
-				if (element == null) {
-					Thread.sleep(1000);
-					timeOut--;
-
-				} else {
-					break;
-				}
-			} catch (Exception e) {
-				throw e;
-			}
-		} while (timeOut > 0);
-		return element;
-	}
-
-	/**
-	 * Click Element
-	 *
-	 * @param cssLocator
-	 * @param elementName
-	 */
-	public void click(String cssLocator, String elementName) {
-		try {
-			WebElement element = findElement(cssLocator);
-			element.click();
-			log.info("Click on: ", elementName);
-		} catch (Exception e) {
-			log.error("Click on: ", elementName, e);
-			throw e;
+			// sends POST data
+			OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
+			writer.write(requestParams.toString());
+			writer.flush();
 		}
 
+		return httpConn;
 	}
 
-	/**
-	 * Wait for Explicit Period of time Until Element Returned is not Null and Click
-	 *
-	 * @param cssLocator
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitAndClick(String cssLocator, String elementName) throws Exception {
-		try {
-			WebElement element = waitAndfindElement(cssLocator, elementName);
-			element.click();
-			log.info("Click on: ", elementName);
-		} catch (Exception e) {
-			log.error("Click on: ", elementName, e);
-			throw e;
+	public String readSingleLineRespone() throws IOException {
+		InputStream inputStream = null;
+		if (httpConn != null) {
+			inputStream = httpConn.getInputStream();
+		} else {
+			throw new IOException("Connection is not established.");
+		}
+		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+		String response = reader.readLine();
+		reader.close();
+
+		return response;
+	}
+
+	public String[] readMultipleLinesRespone() throws IOException {
+		InputStream inputStream = null;
+		if (httpConn != null) {
+			inputStream = httpConn.getInputStream();
+		} else {
+			throw new IOException("Connection is not established.");
 		}
 
-	}
+		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+		List<String> response = new ArrayList<String>();
 
-	/**
-	 * Click the Element with Matching Text from a List of WebElement
-	 *
-	 * @param cssLocator
-	 * @param elementName
-	 */
-	public void clickByTextInList(String cssLocator, String texttoClick, String elementName) {
-		try {
-
-			List<WebElement> list = findElements(cssLocator);
-
-			for (WebElement element : list) {
-
-				if (element.getText().equals(texttoClick)) {
-					element.click();
-					break;
-				}
-			}
-			log.info("Click on Element By texts: ", elementName);
-		} catch (Exception e) {
-			log.error("Click on Element By text: ", elementName, e);
-			throw e;
+		String line = "";
+		while ((line = reader.readLine()) != null) {
+			response.add(line);
 		}
+		reader.close();
 
+		return response.toArray(new String[0]);
 	}
 
-	/**
-	 * Send Keys To Element
-	 *
-	 * @param cssLocator
-	 * @param elementName
-	 */
-	public void sendKeys(String cssLocator, String value, String elementName) {
-		try {
-			WebElement element = findElement(cssLocator);
-			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].value=''", element);
-			element.sendKeys(value);
-			log.info("Sendkeys on: ", elementName);
-		} catch (Exception e) {
-			log.error("Sendkeys on: ", elementName, e);
-			throw e;
+	public void disconnect() {
+		if (httpConn != null) {
+			httpConn.disconnect();
 		}
-
-	}
-
-	/**
-	 * Wait for Explicit Period of time Until Element Returned is not Null and Send
-	 * Keys
-	 *
-	 * @param cssLocator
-	 * @param value
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitAndSendKeys(String cssLocator, String value, String elementName) throws Exception {
-		try {
-			WebElement element = waitAndfindElement(cssLocator, elementName);
-			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].value=''", element);
-			element.sendKeys(value);
-			log.info("Sendkeys on: ", elementName);
-		} catch (Exception e) {
-			log.error("Sendkeys on: ", elementName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Wait for Explicit Period of time Until Element Returned is not Null and
-	 * Displayed and Send Keys
-	 *
-	 * @param cssLocator
-	 * @param value
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitUntilDisplayedAndSendKeys(String cssLocator, String value, String elementName) throws Exception {
-		try {
-			WebElement element = waitUntilDisplayed(cssLocator, elementName);
-			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].value=''", element);
-			element.sendKeys(value);
-			log.info("Sendkeys on: ", elementName);
-		} catch (Exception e) {
-			log.error("Sendkeys on: ", elementName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Wait Until Element is not null,Displayed and Click
-	 *
-	 * @param cssLocator
-	 * @param value
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitUntilDisplayedAndClick(String cssLocator, String elementName) throws Exception {
-		try {
-			WebElement element = waitUntilDisplayed(cssLocator, elementName);
-			element.click();
-			log.info("Sendkeys on: ", elementName);
-		} catch (Exception e) {
-			log.error("Sendkeys on: ", elementName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Clear textbox Value
-	 *
-	 * @param cssLocator
-	 * @param value
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void clear(String cssLocator, String elementName) throws Exception {
-		try {
-			WebElement element = findElement(cssLocator);
-			JavascriptExecutor js = driverEngine.getWebDriver();
-			js.executeScript("arguments[0].value='';", element);
-			log.info("Sendkeys on: ", elementName);
-		} catch (Exception e) {
-			log.error("Sendkeys on: ", elementName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Wait for Explicit Period of time Until Element Returned is not Null
-	 *
-	 * @param cssSelector
-	 * @param elementName
-	 * @return
-	 * @throws Exception
-	 */
-	public WebElement waitAndfindElement(String cssSelector, String elementName) throws Exception {
-		WebElement element = null;
-		long timeout = explicitPeriod;
-		do {
-
-			try {
-
-				element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\");");
-				fixLocator(driverEngine.getWebDriver(), cssSelector, element);
-
-				if (element != null) {
-					log.info("Element is Displayed: ", elementName);
-					break;
-				}
-				TimeUnit.MILLISECONDS.sleep(1000);
-				timeout--;
-
-			} catch (JavascriptException e) {
-
-				TimeUnit.MILLISECONDS.sleep(1000);
-
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Displayed failed: ", elementName);
-				break;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * Wait for Explicit Period of time Until Element Returned is not Null and is
-	 * Displayed
-	 *
-	 * @param cssSelector
-	 * @param elementName
-	 * @return
-	 * @throws Exception
-	 */
-	public WebElement waitUntilDisplayed(String cssSelector, String elementName) throws Exception {
-		WebElement element = null;
-		do {
-
-			try {
-
-				element = (WebElement) executerGetObject("return getObject(\"" + cssSelector + "\");");
-				fixLocator(driverEngine.getWebDriver(), cssSelector, element);
-
-				if (element != null) {
-					if (element.isDisplayed()) {
-						log.info("Element is Displayed: ", elementName);
-						break;
-					}
-				} else {
-					explicitPeriod--;
-				}
-
-			} catch (JavascriptException e) {
-
-				TimeUnit.MILLISECONDS.sleep(1000);
-
-				explicitPeriod--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Displayed failed: ", elementName);
-				break;
-			}
-		} while (explicitPeriod > 0);
-		return element;
-	}
-
-	/**
-	 * Select Radio Button by Label From a List of Radio Buttons
-	 *
-	 * @param cssLocator
-	 * @param label
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void selectRadioButonByLabel(String cssLocator, String label, String elementName) throws Exception {
-		try {
-
-			List<WebElement> list = findElements(cssLocator);
-
-			for (WebElement element : list) {
-
-				if (element.getText().equals(label)) {
-					element.click();
-
-					break;
-				}
-			}
-
-			log.info("Click Radio Button: ", elementName);
-		} catch (Exception e) {
-			log.error("Click Radio Button: ", elementName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Send Keys to AutoFill Dropdowns
-	 *
-	 * @param cssSelector
-	 * @param value
-	 * @param elementName
-	 */
-	public void sendKeystoAuto(String cssSelector, String value, String elementName) {
-		try {
-			WebElement element = findElement(cssSelector);
-			element.sendKeys(value);
-			// Added Below property To click on the Dropdown that is Currently Enabled
-			List<WebElement> dropDownList = findElements(
-					"paper-item[role='option'][class='active'][aria-disabled='false']");
-			for (WebElement webElement : dropDownList) {
-				webElement.click();
-			}
-			log.info("Send Keys to AutoComplete Input: ", elementName);
-		} catch (Exception e) {
-			log.error("Send Keys to AutoComplete Input: ", elementName, e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Get Text Attribute of Element
-	 *
-	 * @param cssSelector
-	 * @param elementName
-	 * @return
-	 */
-	public String getText(String cssSelector, String elementName) {
-		String text = "";
-		try {
-			WebElement element = findElement(cssSelector);
-			text = element.getText();
-			log.info("Get text: " + text, elementName);
-		} catch (Exception e) {
-			log.error("Get text: ", elementName, e);
-			throw e;
-		}
-		return text;
 	}
 
 }
-****************************************************
-package com.tab.af.actions;
+**************************************************
+package com.tab.af.rest;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.apache.poi.ss.formula.functions.T;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import io.restassured.path.json.JsonPath;
+
+public class JSONUtilities {
+	public static String jsonToString(String filepath) {
+
+		try (FileReader reader = new FileReader(filepath)) {
+			JSONParser parser = new JSONParser();
+			Object obj = parser.parse(reader);
+			JSONObject jsonObject = (JSONObject) obj;
+			return jsonObject.toString();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return "";
+
+	}
+
+	public T getJSONPath(JsonPath jPath, String pathExpression) {
+
+		T value = null;
+
+		Object pathObject = jPath.get(pathExpression);
+		if (pathObject instanceof ArrayList<?>) {
+			value = (T) pathObject;
+			return value;
+		}
+		value = (T) pathObject;
+		return value;
+
+	}
+}
+*************************************************************
+package com.tab.af.rest;
+
+import java.io.FileWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.openqa.selenium.Alert;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.ElementNotInteractableException;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.support.ui.ExpectedCondition;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import io.restassured.http.Header;
+import io.restassured.response.Response;
+import io.restassured.specification.MultiPartSpecification;
+import io.restassured.specification.QueryableRequestSpecification;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.SpecificationQuerier;
 
-import com.tab.af.engine.ConcurrentEngine;
-import com.tab.af.engine.DriverEngine;
+public class OutPutJSON {
+	private static OutPutJSON outPutJSON = null;
+	private static String testName = null;
+
+	private OutPutJSON() {
+
+	}
+
+	public void setTestName(String testName) {
+		OutPutJSON.testName = testName;
+
+	}
+
+	public static OutPutJSON getinstance() {
+		if (outPutJSON == null) {
+			outPutJSON = new OutPutJSON();
+		}
+		return outPutJSON;
+	}
+
+	public void flushOPData() {
+		String jsonString = generateJSONTestDataString();
+		try {
+			String opfilePath = System.getProperty("api.output.file");
+
+			try (FileWriter writer = new FileWriter(opfilePath, true)) {
+				writer.append(jsonString);
+				writer.append(",");
+				writer.flush();
+			}
+
+		} catch (Exception e) {
+			System.out.print("Exception Occured While Writing to API output Test Data File");
+			e.printStackTrace();
+		}
+	}
+
+	private String generateJSONTestDataString() {
+		try {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			Response response = RestActions.getResponseReceived();
+			RequestSpecification request = RestActions.getCreatedRequest();
+			QueryableRequestSpecification queryable = SpecificationQuerier.query(request);
+			JSONArray dataArray = new JSONArray();
+
+			JSONObject parent = new JSONObject();
+
+			parent.put(testName, "");
+
+			if (queryable.getMethod() != null) {
+
+				String method = queryable.getMethod().toUpperCase();
+
+				JSONObject obj = new JSONObject();
+				obj.put("request_method", method);
+				dataArray.add(obj);
+
+			}
+			if (queryable.getAuthenticationScheme() != null) {
+				JSONObject object = new JSONObject();
+				object.put("authentication_scheme", queryable.getAuthenticationScheme());
+				dataArray.add(object);
+			}
+			if (queryable.getBaseUri() != null) {
+				String baseURI = queryable.getBaseUri();
+
+				JSONObject obj = new JSONObject();
+				obj.put("baseURI", baseURI);
+				dataArray.add(obj);
+			}
+
+			if (queryable.getBasePath() != null) {
+				String basePath = queryable.getBasePath();
+
+				JSONObject obj = new JSONObject();
+				obj.put("basepath", basePath);
+				dataArray.add(obj);
+			}
+
+			if (queryable.getURI() != null) {
+
+				JSONObject headerObj = new JSONObject();
+				headerObj.put("endpoint_URL", queryable.getURI());
+				dataArray.add(headerObj);
+			}
+
+			if (queryable.getHeaders() != null) {
+				List<Header> headers = queryable.getHeaders().asList();
+				JSONObject object = new JSONObject();
+				for (Header header : headers) {
+					object.put(header.getName(), header.getValue());
+				}
+				JSONObject headerObj = new JSONObject();
+				headerObj.put("request_Headers", object);
+				dataArray.add(headerObj);
+			}
+
+			if (queryable.getFormParams() != null) {
+				Map<String, String> formParamsMap = queryable.getFormParams();
+				JSONObject object = new JSONObject();
+				Set<String> keys = formParamsMap.keySet();
+				for (String key : keys) {
+					object.put(key, formParamsMap.get(key));
+				}
+				JSONObject fparmas = new JSONObject();
+				fparmas.put("form_params", object);
+				dataArray.add(fparmas);
+			}
+			if (queryable.getMultiPartParams() != null) {
+
+				List<MultiPartSpecification> multiPartParams = queryable.getMultiPartParams();
+				JSONArray arr = new JSONArray();
+				for (MultiPartSpecification mps : multiPartParams) {
+					arr.add(mps);
+
+				}
+				JSONObject multiPartParamsObj = new JSONObject();
+				multiPartParamsObj.put("multipartparams", arr);
+				dataArray.add(multiPartParamsObj);
+
+			}
+			if (queryable.getNamedPathParams() != null) {
+				Map<String, String> namedParamsMap = queryable.getNamedPathParams();
+				JSONObject object = new JSONObject();
+				Set<String> keys = namedParamsMap.keySet();
+				for (String key : keys) {
+					object.put(key, namedParamsMap.get(key));
+				}
+				JSONObject namedParams = new JSONObject();
+				namedParams.put("named_path_params", object);
+				dataArray.add(namedParams);
+			}
+			if (queryable.getPathParamPlaceholders() != null) {
+
+				List<String> pathParamHolders = queryable.getPathParamPlaceholders();
+				JSONArray arr = new JSONArray();
+				for (String pph : pathParamHolders) {
+					arr.add(pph);
+
+				}
+				JSONObject obj = new JSONObject();
+				obj.put("path_param_placeholders", arr);
+				dataArray.add(obj);
+
+			}
+			if (queryable.getPathParams() != null) {
+				Map<String, String> pathParams = queryable.getPathParams();
+				JSONObject object = new JSONObject();
+				Set<String> keys = pathParams.keySet();
+				for (String key : keys) {
+					object.put(key, pathParams.get(key));
+				}
+				JSONObject namedParams = new JSONObject();
+				namedParams.put("path_params", object);
+				dataArray.add(namedParams);
+			}
+			if (queryable.getQueryParams() != null) {
+				Map<String, String> queryParams = queryable.getQueryParams();
+				JSONObject object = new JSONObject();
+				Set<String> keys = queryParams.keySet();
+				for (String key : keys) {
+					object.put(key, queryParams.get(key));
+				}
+				JSONObject queryParamsObject = new JSONObject();
+				queryParamsObject.put("query_params", object);
+				dataArray.add(queryParamsObject);
+			}
+			if (queryable.getRequestParams() != null) {
+				Map<String, String> requestParams = queryable.getRequestParams();
+				JSONObject object = new JSONObject();
+				Set<String> keys = requestParams.keySet();
+				for (String key : keys) {
+					object.put(key, requestParams.get(key));
+				}
+				JSONObject requestParamsObject = new JSONObject();
+				requestParamsObject.put("request_params", object);
+				dataArray.add(requestParamsObject);
+
+			}
+
+			if (queryable.getBody() != null) {
+
+				String body = queryable.getBody().toString();
+
+				JSONObject obj = new JSONObject();
+				obj.put("request_body", body);
+				dataArray.add(obj);
+
+			}
+			if (response.getHeaders() != null) {
+				List<Header> headers = response.getHeaders().asList();
+				JSONObject object = new JSONObject();
+				for (Header header : headers) {
+					object.put(header.getName(), header.getValue());
+				}
+				JSONObject headerObj = new JSONObject();
+				headerObj.put("response_Headers", object);
+				dataArray.add(headerObj);
+			}
+			if (response.getBody() != null) {
+				JSONObject object = new JSONObject();
+
+				object.put("response_body", response.body().asString());
+				dataArray.add(object);
+			}
+
+			if (response.getTime() != -1) {
+				JSONObject object = new JSONObject();
+				long respsoneMS = response.getTimeIn(TimeUnit.MILLISECONDS);
+				int sec = (int) response.getTimeIn(TimeUnit.SECONDS);
+				long ms = (sec * 1000 - respsoneMS);
+				object.put("response_time", (sec + "s" + ":" + ms + "m").replace("-", ""));
+				dataArray.add(object);
+			}
+			if (response.getStatusCode() != -1 && response.getStatusLine() != null) {
+				JSONObject object = new JSONObject();
+				object.put("response_status_code_line", response.getStatusCode() + " " + response.getStatusLine());
+				dataArray.add(object);
+			}
+
+			parent.put(testName, dataArray);
+
+			String jsonString = gson.toJson(parent);
+
+			return jsonString;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "";
+
+	}
+}
+
+**********************************************************************
+package com.tab.af.rest;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import org.everit.json.schema.Schema;
+import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONTokener;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.testng.Assert;
+
+import com.google.gson.Gson;
+import com.jayway.jsonpath.DocumentContext;
 import com.tab.af.reporting.StepLogging;
-import com.tab.af.testbase.TestBase;
 
-public class WebActions {
+import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
+import io.restassured.http.ContentType;
+import io.restassured.http.Cookie;
+import io.restassured.http.Cookies;
+import io.restassured.http.Headers;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
+import io.restassured.specification.FilterableRequestSpecification;
+import io.restassured.specification.QueryableRequestSpecification;
+import io.restassured.specification.RequestSpecification;
+import io.restassured.specification.SpecificationQuerier;
 
-	private DriverEngine driverEngine;
-
+public class RestActions {
 	private StepLogging log = StepLogging.getLoggingObject();
+	private static FilterableRequestSpecification request;
+	private static Response response;
+	private String requestDataFile = null;
+	private static final String TESTDATADIRBODYVALID = ".\\src\\main\\resources\\OBPTestData\\Body\\POSITIVE";
+	private static final String TESTDATADIRBODYREQUESTDATA = ".\\src\\main\\resources\\OBPTestData\\Body\\RequestData";
+	private static final String TESTDATADIRSCHEMA = ".\\src\\main\\resources\\OBPTestData\\Schemas";
+	private static final String TESTDATADIRHEADERS = ".\\src\\main\\resources\\OBPTestData\\Headers";
+	private static final int CONNECTIONTIMEOUT = 30000;
+	private static final int SOCKETTIMEOUT = 30000;
+	private static final int CONNECTIONMANAGERTIMEOUT = 30000;
 
-	long explicitPeriod = Long.parseLong(TestBase.prop.explicitWaitPeriod());
-
-	public DriverEngine getDriverEngine() {
-		return driverEngine;
+	public static RequestSpecification getCreatedRequest() {
+		return request;
 	}
 
-	public WebActions(DriverEngine driverEngine) {
-		this.driverEngine = driverEngine;
+	public static Response getResponseReceived() {
+		return response;
 	}
 
-	public void loadURL(String URL) {
-		driverEngine.getWebDriver().get(URL);
+	public void setRequestDataFile(String requestDataFile) {
+		this.requestDataFile = requestDataFile;
 	}
 
-	public void refreshPage() {
-		driverEngine.getWebDriver().navigate().refresh();
+	public String getRequestDataFile() {
+		return requestDataFile;
+	}
+
+	public void setRequestTimeout() {
+
+		try {
+
+			request.config(RestAssuredConfig.config().httpClient(
+					HttpClientConfig.httpClientConfig().setParam("http.connection.timeout", CONNECTIONTIMEOUT)
+							.setParam("http.socket.timeout", SOCKETTIMEOUT)
+							.setParam("http.connection-manager.timeout", CONNECTIONMANAGERTIMEOUT)));
+
+			log.info("Set Timeouts ");
+
+		} catch (Exception e) {
+
+			log.error("Set Timeouts Failed :", e);
+			throw e;
+		}
+
 	}
 
 	/**
-	 * Load URL using JavaScript
+	 * Set Base URI for the Request
 	 *
-	 * @param URL
+	 * @param baseURI
 	 */
-	public void loadURLByJS(String URL) {
+	public void setBaseURI(String baseURI) {
+
 		try {
-			driverEngine.getWebDriver().executeScript("window.location=arguments[0];", URL);
-			log.info("Load URL: ", URL);
+			request.baseUri(baseURI);
+			log.info("Set Baser URL as", baseURI);
+
 		} catch (Exception e) {
-			log.error("Load URL: ", URL, e);
+
+			log.error("Set Base URL as: " + baseURI + " Failed :", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Set Base Path for the Request
+	 *
+	 * @param basePathTerm
+	 */
+	public void setBasePath(String basePathTerm) {
+		try {
+			request.basePath(basePathTerm);
+			log.info("Set Base Path as", basePathTerm);
+		} catch (Exception e) {
+
+			log.error("Set Base Path as: " + basePathTerm + " Failed :", e);
 			throw e;
 		}
 	}
 
 	/**
-	 * clears the Input field Value of Element using JS
+	 * Set Path params as a Key Value Pair
 	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
+	 * @param param
+	 * @param paramValue
 	 */
-	public void clearByJS(WebElement element, String elementName) {
+	public void setPathParams(String param, String paramValue) {
 		try {
-			// Using JS clear as Webelement.clear() is not supported
-			(driverEngine.getWebDriver()).executeScript("arguments[0].value='';", element);
-			log.info("Clear by JS on: ", elementName);
+			request.pathParam(param, paramValue);
+			log.info("Set Path Param as", param + ":" + paramValue);
 		} catch (Exception e) {
-			log.error("Clear By JS on: ", elementName, e);
+
+			log.error("Set Path Param as", param + ":" + paramValue + " Failed :", e);
 			throw e;
 		}
 	}
 
 	/**
-	 * clears the WebElement before sending value
+	 * use Relaxed HTTPS validation with the request
 	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
 	 */
-	public void sendKeys(WebElement element, String value, String elementName) {
+	public void setRelaxedHTTPSValidationProtocolAsSSL() {
+
 		try {
-			clearByJS(element, elementName);
-			element.sendKeys(value);
-			element.sendKeys(Keys.TAB);
-			log.info("Send Keys value: ", value.replaceAll("[^A-Za-z0-9]", "") + " on " + elementName);
+
+			request.relaxedHTTPSValidation();
+			log.info("Set Relaxed HTTPS Validation Protocol as SSL");
 		} catch (Exception e) {
-			log.error("Send Keys value: ", value.replaceAll("[^A-Za-z0-9]", "") + " on " + elementName, e);
+
+			log.error("Set Relaxed HTTPS Validation Protocol as: SSL Failed :", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Set the Type of Protocol for Relaxed Validation
+	 *
+	 * @param protocol
+	 */
+	public void setRelaxedHTTPSValidationProtocol(String protocol) {
+
+		try {
+
+			request.relaxedHTTPSValidation(protocol);
+			log.info("Set Relaxed HTTPS Validation Protocol as ", protocol);
+		} catch (Exception e) {
+
+			log.error("Set Relaxed HTTPS Validation Protocol as: " + protocol + " Failed :", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Request Setup
+	 */
+	public void setupRequest() {
+		try {
+
+			request = (FilterableRequestSpecification) RestAssured.given();
+			log.info("Set Request Specification");
+		} catch (Exception e) {
+
+			log.error("SetRequest Specification Failed :", e);
 			throw e;
 		}
 	}
 
 	/**
-	 * Enter String as a char
+	 * get a random string uuid
 	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void sendKeysByChar(WebElement element, String value, String elementName) {
-		try {
-			char[] arr = value.toCharArray();
-			element.sendKeys(Keys.HOME);
-			for (char c : arr) {
-				element.sendKeys(c + "");
-			}
-			element.sendKeys(Keys.TAB);
-			log.info("Send Keys By Char value: ", value + " on " + elementName);
-		} catch (Exception e) {
-			log.error("Send Keys value: ", value.replaceAll("[^A-Za-z0-9]", "") + " on " + elementName, e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Enter String as a char with Explicit Wait 0f 1 Sec
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void sendKeysByCharWithWait(WebElement element, String value, String elementName) throws Exception {
-		try {
-			char[] arr = value.toCharArray();
-			for (char c : arr) {
-				element.sendKeys(String.valueOf(c));
-				log.info("Wait 1 Seconds", elementName);
-				Thread.sleep(1000);
-			}
-			Actions action = new Actions(driverEngine.getWebDriver());
-			action.sendKeys(element, Keys.TAB);
-			log.info("Send Keys Action Tab", elementName);
-			// element=element.findElement(By.xpath("following::div[@class=\"v-filterselect-button\"][1]"));
-			// clickAction(element, elementName);
-			// element=driverEngine.getWebDriver().findElement(By.xpath("//div[@id=\"VAADIN_COMBOBOX_OPTIONLIST\"]//tbody"));
-			// JavascriptExecutor js = (JavascriptExecutor) driverEngine.getWebDriver();
-			// js.executeScript("var body= arguments[0];" +
-			// "var tr = document.createElement('tr'); " +
-			// "var att = document.createAttribute('class');" +
-			// "att.value = 'gwt-MenuItem gwt-MenuItem-selected'; " +
-			// "var td=document.createElement('td');" +
-			// "td.setAttributeNode(att);" +
-			// "att = document.createAttribute('role');" +
-			// "att.value = 'listitem'; " +
-			// "td.setAttributeNode(att);" +
-			// "body.appendChild(tr);" +
-			// "tr.appendChild(td);" +
-			// "var span = document.createElement('span'); " +
-			// "span.innerHTML="+value+";" +
-			// "td.append(span);",element);
-		} catch (Exception e) {
-			log.error("Send Keys By Char With Wait", elementName, e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Clear the Textbox and Enter String as a char
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void clearAndSendKeysByChar(WebElement element, String value, String elementName) {
-		clearByJS(element, elementName);
-		sendKeysByChar(element, value, elementName);
-	}
-
-	/**
-	 * Wait for Element to be Displayed and enter String as a char
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitAndSendKeysByChar(WebElement element, String value, String elementName) throws Exception {
-		waitUntilPresentAndDisplayed(element, elementName);
-		sendKeysByChar(element, value, elementName);
-	}
-
-	/**
-	 * Wait for Element to be Displayed and enter String as a char in Autocomplete
-	 * Input Textboxes TextBoxes
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitAndSendKeysByCharAuto(WebElement element, String value, String elementName) throws Exception {
-		waitUntilPresentAndDisplayed(element, elementName);
-		SendKeysByCharAuto(element, value, elementName);
-	}
-
-	/**
-	 * Wait for Element ,clear the field and then Sedn keys by char to Auto textbox
-	 *
-	 * @param element
-	 * @param value
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitClearSendKeysByCharAuto(WebElement element, String value, String elementName) throws Exception {
-		waitUntilPresentAndDisplayed(element, elementName);
-		clearByJS(element, elementName);
-		SendKeysByCharAuto(element, value, elementName);
-	}
-
-	public void executeJScript(String script, Object... args) {
-		try {
-			driverEngine.getWebDriver().executeScript(script, args);
-			log.info("Execute Script", script);
-		} catch (Exception e) {
-			log.error("Execute Script", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Enter String as a char in Auto-complete Input TextBoxes
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void SendKeysByCharAuto(WebElement element, String value, String elementName) throws Exception {
-		try {
-			char[] arr = value.toCharArray();
-			clickBYJS(element.findElement(By.xpath("//following-sibling::div")), elementName);
-			waitForJSandJQueryToLoad();
-			for (char c : arr) {
-				element.sendKeys(String.valueOf(c));
-			}
-			selectDropDownOption(element, value, elementName);
-			log.info("Send Keys By Char value: ", value + " on " + elementName);
-		} catch (TimeoutException e) {
-			// Retry Once More
-			clearByJS(element, elementName);
-			selectDropDownOption(element, value, elementName);
-		} catch (Exception e) {
-			log.error("Send Keys value: ", value + " on " + elementName, e);
-			throw e;
-		}
-	}
-
-	private void selectDropDownOption(WebElement element, String value, String elementName) throws Exception {
-		WebDriver driver = driverEngine.getWebDriver();
-		Actions actions = new Actions(driver);
-		try {
-			waitUntilPresentInDOM(By.xpath("//td[@role='listitem']"), "List");
-			WebElement option = driver
-					.findElement(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"));
-			waitForClickAbility(element, value);
-			waitUntilPresentInDOM(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"), "List");
-			option = driver.findElement(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"));
-			actions.click(option).build().perform();
-			waitForTextToBePresentInValue(element, value, elementName, 10);
-			log.info("Click Dropdown Element", value);
-		} catch (StaleElementReferenceException | ElementNotInteractableException e) {
-			waitUntilPresentInDOM(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"), "List");
-			WebElement option = driver
-					.findElement(By.xpath("//td[@role=\"listitem\"]//span[contains(text(),'" + value + "')]"));
-			actions.sendKeys(option, Keys.ENTER).build().perform();
-		} catch (Exception e) {
-			log.info("Click Dropdown Element", value);
-		}
-	}
-
-	/**
-	 * Click WebElement
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void click(WebElement element, String elementName) {
-		try {
-			element.click();
-			log.info("Click on: ", elementName);
-		} catch (Exception e) {
-			log.error("Click on: ", elementName, e);
-			throw e;
-		}
-	}
-
-	/**
-	 * wait Until WebElement Displayed Property is True and then Click
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitAndClick(WebElement element, String elementName) {
-		waitForClickAbility(element, elementName);
-		click(element, elementName);
-	}
-
-	/**
-	 * wait Until WebElement Enabled Property is True and then Click
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitUntilEnabledAndClick(WebElement element, String elementName) throws Exception {
-		waitUntilEnabled(element, elementName);
-		click(element, elementName);
-	}
-
-	/**
-	 * get Element Attribute Value
-	 *
-	 * @param element
-	 * @param elementName
 	 * @return
 	 */
-	public String getValue(WebElement element, String elementName) {
+	public String getUUID() {
+
+		String uuid = UUID.randomUUID().toString();
+		log.info("UUID ", uuid);
+		return uuid;
+
+	}
+
+	/**
+	 * Add A Map which contains the headers to be added to the Request
+	 *
+	 * @param map
+	 */
+	public void addHeadersToRequest(Map<String, String> map) {
+
+		try {
+			Set<String> keys = map.keySet();
+			for (String key : keys) {
+				if (map.get(key).contains(",")) {
+					List<String> multiValues = Arrays.asList(map.get(key).split(","));
+
+					addHeader(key, "", multiValues.toString());
+				} else {
+					addHeader(key, map.get(key));
+				}
+			}
+
+			log.info("Add Header Map to Specification");
+
+		} catch (Exception e) {
+
+			log.error("Add Header Map to Specification Failed :", e);
+			throw e;
+		}
+
+	}
+
+	public Map<String, String> getHeadersMapFromProperties(String headerFIleName) throws Exception {
+		File folder = null;
+		File rFile = null;
+		try {
+			folder = new File(TESTDATADIRHEADERS);
+			File[] listOfFiles = folder.listFiles();
+
+			for (File file : listOfFiles) {
+
+				if (file.getName().replace(".properties", "").equals(headerFIleName)) {
+					rFile = file;
+					break;
+				}
+
+			}
+			Properties properties = new Properties();
+			try (FileReader reader = new FileReader(rFile)) {
+				properties.load(reader);
+				log.info("Load properties file for: " + headerFIleName);
+
+			}
+			Map<String, String> propMap = new HashMap<String, String>();
+			Enumeration<?> propKeys = properties.propertyNames();
+			while (propKeys.hasMoreElements()) {
+				String key = (String) propKeys.nextElement();
+				if (properties.getProperty(key).contains("uuid")) {
+					propMap.put(key, getUUID());
+				} else {
+					propMap.put(key, properties.getProperty(key));
+				}
+			}
+			return propMap;
+		} catch (Exception e) {
+
+			log.error("Add Properties Header Fiel to Map for " + headerFIleName + "Failed :", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Add String body to the Request
+	 *
+	 * @param body
+	 * @return
+	 */
+	public RequestSpecification addRequestBody(String body) {
+
+		try {
+
+			request.body(body);
+			log.info("Add Body to Specification");
+		} catch (Exception e) {
+
+			log.error("Add Body to Specification Failed :", e);
+			throw e;
+		}
+		return request;
+	}
+
+	/**
+	 * Performa Get Request by the input path and set the response
+	 *
+	 * @param path
+	 * @param strings
+	 * @return
+	 */
+	public Response getResponsebyPath(String path, String... strings) {
+
+		try {
+
+			response = request.get(path, (Object[]) strings);
+			log.info("Set Request Specification");
+		} catch (Exception e) {
+
+			log.error("SetRequest Specification Failed :", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Performa Get Request by the input path and set the response
+	 *
+	 * @param path
+	 * @param strings
+	 * @return
+	 */
+	public Response postResponsebyPath(String path, String... strings) {
+
+		try {
+
+			response = request.post(path, (Object[]) strings);
+			log.info("Set Request Specification");
+		} catch (Exception e) {
+
+			log.error("SetRequest Specification Failed :", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Assert that the status code for the given Request is 200
+	 */
+	public void assertStatusCode200() {
+
+		int statCode = 0;
+		try {
+			statCode = getStatusCode();
+			Assert.assertEquals(statCode, 200);
+			log.info("Assert Status code Expected: 200 Actual: " + statCode);
+		} catch (AssertionError e) {
+
+			log.info("Assert Status code Expected: 200 Actual: " + statCode);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Assert that the status code for the given Request is 201
+	 */
+	public void assertStatusCode201() {
+
+		int statCode = 0;
+		try {
+			statCode = getStatusCode();
+			Assert.assertEquals(statCode, 201);
+			log.info("Assert Status code Expected: 201 Actual: " + statCode);
+		} catch (AssertionError e) {
+
+			log.info("Assert Status code Expected: 201 Actual: " + statCode);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Assert the status code for the given Request
+	 */
+	public void assertStatusCode(String expectedStatusCode) {
+
+		int statCode = 0;
+		try {
+			statCode = getStatusCode();
+			Assert.assertEquals(statCode + "", expectedStatusCode);
+			log.info("Assert Status code Expected: " + expectedStatusCode + " Actual: " + statCode);
+		} catch (AssertionError e) {
+
+			log.info("Assert Status code Expected: " + expectedStatusCode + " Actual: " + statCode);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Get the Status code for the Request
+	 *
+	 * @return
+	 */
+	public int getStatusCode() {
+		int statCode = 0;
+		try {
+			statCode = response.statusCode();
+
+			log.info("Get Status code : " + statCode);
+		} catch (Exception e) {
+
+			log.error("Get Status code Failed : ", e);
+			throw e;
+		}
+		return statCode;
+	}
+
+	/**
+	 * Assert Status Line of the Response
+	 *
+	 * @param statusLine
+	 */
+	public void assertStatusLine(String statusLine) {
+
+		String statLine = "";
+		try {
+			statLine = getStatusLine();
+			Assert.assertTrue(statLine.contains(statusLine));
+			log.info("Assert Status Line Expected: " + statusLine + " Actual: " + statLine);
+		} catch (AssertionError e) {
+
+			log.error("Assert Status Line Expected: " + statusLine + " Actual: " + statLine, e);
+			throw e;
+		}
+
+	}
+
+	public void assertStatusLine200() {
+
+		String statLine = "";
+		try {
+			statLine = getStatusLine();
+			Assert.assertTrue(statLine.contains("200 OK"));
+			log.info("Assert Status Line Expected: \"200 OK\" Actual: " + statLine);
+		} catch (AssertionError e) {
+
+			log.info("Assert Status Line Expected: \"200 OK\" Actual: " + statLine);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Get the Status Line for the Request
+	 *
+	 * @return
+	 */
+	public String getStatusLine() {
+		String statLine = "";
+		try {
+
+			statLine = response.statusLine();
+
+			log.info("Get Status Line : " + statLine);
+		} catch (Exception e) {
+
+			log.error("Get Status code Line : ", e);
+			throw e;
+		}
+		return statLine;
+	}
+
+	/**
+	 * Get Respsone as a string
+	 *
+	 * @return
+	 */
+	public String getResponseAsString() {
+		String responseString = null;
+		try {
+			responseString = response.asString();
+
+			log.info("Get Response as String");
+		} catch (Exception e) {
+
+			log.error("Get Response as String Failed ", e);
+			throw e;
+		}
+		return responseString;
+	}
+
+	/**
+	 * Get Response Body
+	 *
+	 * @return
+	 */
+	public String getResponsebody() {
+		String responseString = null;
+		try {
+			responseString = response.getBody().asString();
+
+			log.info("Get Response as String");
+		} catch (Exception e) {
+
+			log.error("Get Response as String Failed ", e);
+			throw e;
+		}
+		return responseString;
+	}
+
+	/**
+	 * Get JsonPath from the Resposne
+	 *
+	 * @return
+	 */
+	public JsonPath getJsonPathFromResponse() {
+		JsonPath jPath = null;
+		try {
+			if (response != null) {
+				jPath = response.jsonPath();
+			}
+
+			log.info("Get Response as   JSON path");
+		} catch (Exception e) {
+			log.error("Get Response as JSON Path Failed ", e);
+			throw e;
+		}
+		return jPath;
+	}
+
+	/**
+	 * Get a Object by JSONPATH
+	 *
+	 * @param path
+	 * @return
+	 */
+	public Object getObjectByJSONPath(String path) {
+		Object object = null;
+		try {
+			JsonPath jPath = getJsonPathFromResponse();
+			object = jPath.get(path);
+
+			log.info("Get Object by JSON path");
+		} catch (Exception e) {
+			log.error("Get Object by JSON path Failed ", e);
+			throw e;
+		}
+		return object;
+	}
+
+	/**
+	 * Get String value by JSONPath
+	 *
+	 * @param path
+	 * @return
+	 */
+	public String getValueByJSONPath(String path) {
 		String value = null;
 		try {
-			value = element.getAttribute("value");
-			log.info("Get Attribute Value for ", elementName + ": " + value);
+			JsonPath jPath = getJsonPathFromResponse();
+			value = jPath.get(path);
+
+			log.info("Get Object by JSON path");
 		} catch (Exception e) {
-			log.error("Get Attribute Value Failed for ", e);
+			log.error("Get Object by JSON path Failed ", e);
+			throw e;
 		}
 		return value;
 	}
 
-	public String getText(WebElement element, String elementName) {
-		String text = null;
+	/**
+	 * Reset base URL to null
+	 */
+	public void resetBaseURI() {
 		try {
-			text = element.getText();
-			log.info("Get Attribute Value for ", elementName + ": " + text);
+			request.baseUri(null);
+			log.info("Reset Base URL ");
 		} catch (Exception e) {
-			log.error("Get Attribute Value Failed for ", e);
+
+			log.error("Reset Base URL  Failed :", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Reset BasePath to null
+	 */
+	public void resetBasePath() {
+		try {
+			request.basePath(null);
+			log.info("Reset Base Path ");
+		} catch (Exception e) {
+
+			log.error("Reset Base Path  Failed :", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Set the content type for the Request
+	 *
+	 * @param Type
+	 */
+	public void setContentType(ContentType Type) {
+		try {
+			request.contentType(Type);
+			log.info("Set content type:", Type.toString());
+		} catch (Exception e) {
+
+			log.error("Set content type Failed :" + Type.toString(), e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Perform a get Request
+	 *
+	 * @return
+	 */
+	public Response getRequestResponse() {
+
+		try {
+			response = request.get();
+			log.info("Get Request Response");
+		} catch (Exception e) {
+
+			log.error("Get Request Response Failed :", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Set headers for the Request when the header is a multivalue header
+	 *
+	 * @param key
+	 * @param value
+	 * @param additionalValues
+	 */
+	public void addHeader(String key, String value, String... additionalValues) {
+		try {
+			request.header(key, value, (Object[]) additionalValues);
+
+			log.info("Set Header :" + "Key" + key + "value" + value + "Additional Values: "
+					+ additionalValues.toString());
+		} catch (Exception e) {
+
+			log.error("Set Header :" + "Key" + key + "value" + value + "Additional Values: "
+					+ additionalValues.toString() + "Failed ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Set headers for the Request when the header is a multivalue header
+	 *
+	 * @param key
+	 * @param value
+	 * @param additionalValues
+	 */
+	public void addHeader(String key, String value) {
+		try {
+			request.header(key, value);
+			log.info("Set Header :" + "Key" + key + "value" + value);
+		} catch (Exception e) {
+
+			log.error("Set Header :" + "Key" + key + "value" + value + "Failed ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Set headers for the Request when the header is a multivalue header
+	 *
+	 * @param key
+	 * @param value
+	 * @param additionalValues
+	 */
+	public void replaceHeader(String key, String value) {
+		try {
+			request.replaceHeader(key, value);
+			log.info("Replace Header :" + "Key" + key + "value" + value);
+		} catch (Exception e) {
+
+			log.error("Replace Header :" + "Key" + key + "value" + value + "Failed ", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Get Headers for the Current Request
+	 *
+	 * @return
+	 */
+	public Headers getHeadersFromResponse() {
+		Headers headers = null;
+		try {
+			headers = response.getHeaders();
+			log.info("Get Response Headers");
+		} catch (Exception e) {
+
+			log.error("Get Response Headers Failed ", e);
+			throw e;
+		}
+		return headers;
+	}
+
+	/**
+	 * Get Hedaers form Respsone by Name
+	 *
+	 * @param name
+	 * @return
+	 */
+	public String getHeaderFromResponse(String name) {
+		String header = null;
+		try {
+			header = response.getHeader(name);
+			log.info("Get Response Header for: " + name);
+		} catch (Exception e) {
+
+			log.error("Get Response Header Failed for: " + name, e);
+			throw e;
+		}
+		return header;
+	}
+
+	/**
+	 * Get Cookie from Resposne By Name
+	 *
+	 * @param name
+	 * @return String
+	 */
+	public String getCookie(String name) {
+		String cookie = null;
+		try {
+			cookie = response.getCookie(name);
+			log.info("Get Response Cookie for: " + name);
+		} catch (Exception e) {
+
+			log.error("Get Response Cookie Failed for: " + name, e);
+			throw e;
+		}
+		return cookie;
+	}
+
+	/**
+	 * Get a Map of Cookies from the Response
+	 *
+	 * @return cookieList
+	 */
+	public Map<String, String> getCookies() {
+		Map<String, String> cookieList = null;
+		try {
+			cookieList = response.getCookies();
+			log.info("Get Response Cookies List");
+		} catch (Exception e) {
+
+			log.error("Get Response Cookies List Failed", e);
+			throw e;
+		}
+		return cookieList;
+	}
+
+	/**
+	 * Get Detailed cookies from Request
+	 *
+	 * @return Cookies
+	 */
+	public Cookies getDetailedCookies() {
+		Cookies cookieList = null;
+		try {
+			cookieList = response.getDetailedCookies();
+			log.info("Get Detailed Cookies List");
+		} catch (Exception e) {
+
+			log.error("Get Detailed Cookies List Failed", e);
+			throw e;
+		}
+		return cookieList;
+	}
+
+	/**
+	 * Get Detailed cookies from Request by Name
+	 *
+	 * @param cookieName
+	 * @return
+	 */
+	public Cookie getDetailedCookies(String cookieName) {
+		Cookie cookieList = null;
+		try {
+			cookieList = response.getDetailedCookie(cookieName);
+			log.info("Get Detailed Cookie by Name: " + cookieName);
+		} catch (Exception e) {
+
+			log.error("Get Detailed Cookie by Name Failed: " + cookieName, e);
+			throw e;
+		}
+		return cookieList;
+	}
+
+	/**
+	 * Get the Resposne time for request performed in ms
+	 *
+	 * @return responseTime in ms
+	 */
+	public long getResponseTime() {
+		long responseTime = 0;
+		try {
+			responseTime = response.getTime();
+			log.info("Get Response Time", responseTime + "");
+		} catch (Exception e) {
+
+			log.error("Get Response Time Failed", e);
+			throw e;
+		}
+		return responseTime;
+	}
+
+	/**
+	 * Get Reponse time fot the performed request in the input Unit
+	 *
+	 * @param unit
+	 * @return
+	 */
+	public long getResponseTimeinMS(TimeUnit unit) {
+		long responseTime = 0;
+		try {
+			responseTime = response.getTimeIn(unit);
+
+			log.info("Get Response Time", responseTime + "");
+		} catch (Exception e) {
+
+			log.error("Get Response Time Failed", e);
+			throw e;
+		}
+		return responseTime;
+	}
+
+	/**
+	 * Perform the Type of request as the Request type GET,POST,PUT,PATCH,DELETE
+	 *
+	 * @param requestMethod
+	 * @throws Exception
+	 */
+	public void performRequest(String requestMethod) throws Exception {
+		if (requestMethod.toUpperCase().equals("GET")) {
+			getRequestResponse();
+		} else if (requestMethod.toUpperCase().equals("POST")) {
+			postRequest();
+		} else if (requestMethod.toUpperCase().equals("PATCH")) {
+			patchRequest();
+		} else if (requestMethod.toUpperCase().equals("PUT")) {
+			putRequest();
+		} else if (requestMethod.toUpperCase().equals("DELETE")) {
+			deleteRequest();
+		} else {
+			throw new Exception("Request Method not found: " + requestMethod);
+		}
+	}
+
+	/**
+	 * Peform a Post Request for the request Spefification
+	 *
+	 * @return
+	 */
+	public Response postRequest() {
+
+		try {
+			response = request.post();
+
+			log.info("Post Request");
+		} catch (Exception e) {
+
+			log.error("Post Request Failed", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Peform a Put Request for the request Spefification
+	 *
+	 * @return
+	 */
+	public Response putRequest() {
+
+		try {
+			response = request.put();
+
+			log.info("Put Request");
+		} catch (Exception e) {
+
+			log.error("Put Request Failed", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Peform a patch Request for the request Spefification
+	 *
+	 * @return
+	 */
+	public Response patchRequest() {
+
+		try {
+			response = request.patch();
+
+			log.info("Put Request");
+		} catch (Exception e) {
+
+			log.error("Put Request Failed", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Peform a Delete Request for the request Spefification
+	 *
+	 * @return
+	 */
+	public Response deleteRequest() {
+
+		try {
+			response = request.delete();
+
+			log.info("Delete Request");
+		} catch (Exception e) {
+
+			log.error("Delete Request Failed", e);
+			throw e;
+		}
+		return response;
+	}
+
+	/**
+	 * Add Query param for the request
+	 *
+	 * @param queryParamMap
+	 * @return
+	 */
+	public RequestSpecification addQueryParam(Map<String, ?> queryParamMap) {
+
+		try {
+			request.queryParams(queryParamMap);
+
+			log.info("Add Query Map to Request");
+		} catch (Exception e) {
+
+			log.error("Add Query Map to Request Failed", e);
+			throw e;
+		}
+		return request;
+	}
+
+	/**
+	 * Add Path param to Request as a key-value
+	 *
+	 * @param parameterName
+	 * @param parameterValue
+	 */
+	public void addPathParam(String parameterName, String parameterValue) {
+
+		try {
+			request.pathParam(parameterName, parameterValue);
+
+			log.info("Add Path Param to Request ");
+		} catch (Exception e) {
+
+			log.error("Add Path Param to Request  Failed", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Add Access token to the Request
+	 *
+	 * @param accessToken
+	 */
+	public void addAccessToken(String accessToken) {
+
+		try {
+
+			request.auth().oauth2(accessToken);
+
+			log.info("Add Access Token to Request " + accessToken);
+		} catch (Exception e) {
+
+			log.error("Add Access Token to Request Failed", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * parse the file at input location to JSONObject
+	 *
+	 * @param filepath
+	 * @return JSONObject
+	 * @throws Exception
+	 */
+	public JSONObject jsonToString(String filepath) throws Exception {
+		JSONObject jsonObject = null;
+		try (FileReader reader = new FileReader(filepath)) {
+			JSONParser parser = new JSONParser();
+			Object obj = parser.parse(reader);
+			jsonObject = (JSONObject) obj;
+
+		} catch (IOException | ParseException e) {
+			throw e;
+		}
+		return jsonObject;
+
+	}
+
+	/**
+	 * Set the value for a Existing Key in the JSON with the New Value
+	 *
+	 * @param jsonString
+	 * @param path
+	 * @param newValue
+	 * @return
+	 */
+	public String setProperty(String jsonString, String path, String newValue) {
+		String nJSON = null;
+		try {
+			DocumentContext context = com.jayway.jsonpath.JsonPath.parse(jsonString);
+
+			context.set(path, newValue);
+			nJSON = context.jsonString();
+			log.info("Set Property in JSON at: " + path + " value: " + newValue);
+		} catch (Exception e) {
+			log.error("Failed to Set Property in JSON at: " + path + " value: " + newValue, e);
+			throw e;
+		}
+		return nJSON;
+	}
+
+	/**
+	 * Get the content in JSON file as a String from the Test Data Directory
+	 *
+	 * @param fileName
+	 * @return String
+	 * @throws Exception
+	 */
+	public String getRequestBodyJSONString(String fileName) throws Exception {
+		File folder = new File(TESTDATADIRBODYVALID);
+		File[] listOfFiles = folder.listFiles();
+
+		File rFile = null;
+		String text = null;
+		for (File file : listOfFiles) {
+
+			if (file.getName().replace(".json", "").equals(fileName)) {
+				rFile = file;
+				break;
+			}
+
+		}
+		if (rFile == null) {
+			throw new Exception("File with Name: " + fileName + " Not found in Directory: " + TESTDATADIRBODYVALID);
+		}
+		try (FileReader reader = new FileReader(rFile)) {
+			Object object = new JSONParser().parse(reader);
+			text = ((JSONObject) object).toJSONString();
+			log.info("Parse json to String", fileName);
+		} catch (IOException | ParseException e) {
+			log.error("Parse json to String Failed: ", e);
+			throw e;
 		}
 		return text;
 	}
 
-	/**
-	 * wait Until WebElement is Visible using WebDriverWait
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitForVisibility(WebElement element, String elementName) {
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
-			wait.ignoring(NoSuchElementException.class);
-			wait.until(ExpectedConditions.visibilityOf(element));
-			log.info("Wait for Element to be visible: ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Element to be visible: ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * wait Until WebElement is Visible using WebDriverWait and Defined Wait Period
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public WebElement waitForVisibility(WebElement element, String elementName, long period) {
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), period);
-			wait.ignoring(NoSuchElementException.class).pollingEvery(Duration.ofMillis(500));
-			wait.until(ExpectedConditions.visibilityOf(element));
-			log.info("Wait for Element to be visible: ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Element to be visible: ", e);
-			throw e;
-		}
-		return element;
-	}
-
-	public boolean isPresent(WebElement element, String elementName) {
-		try {
-			element.getSize();
-			log.info("Element is Present: ", elementName);
-			return true;
-
-		} catch (NoSuchElementException e) {
-			log.info("Element not Present : ", elementName);
-			return false;
-
-		}
-
-	}
-
-	/**
-	 * Wait Until Element is Clickable
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void waitForClickAbility(WebElement element, String elementName) {
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
-			wait.ignoring(NoSuchElementException.class);
-			wait.until(ExpectedConditions.elementToBeClickable(element));
-			log.info("Wait for Element to be Clickable: ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Element to be Clickable: ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait Until Element is Clickable and Perform JS Click
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void waitForClickAbilityAndClick(WebElement element, String elementName) {
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
-			wait.ignoring(NoSuchElementException.class);
-			wait.until(ExpectedConditions.elementToBeClickable(element));
-			clickBYJS(element, elementName);
-			log.info("Wait for Element to be Clickable: ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Element to be Clickable: ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait for Text to Be Present in Textbox
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void waitForTextToBePresentInValue(WebElement element, String value, String elementName) {
-		long timeOut = explicitPeriod;
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeOut);
-			wait.ignoring(NoSuchElementException.class);
-			wait.until(ExpectedConditions.textToBePresentInElementValue(element, value));
-			log.info("Wait for Text to Present in Value: ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Text to Present in Value: ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait for Text to Be Present in Textbox
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void waitForTextToBePresentInValue(WebElement element, String value, String elementName, long timeout) {
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
-			wait.ignoring(NoSuchElementException.class);
-			wait.until(ExpectedConditions.textToBePresentInElementValue(element, value));
-			log.info("Wait for Text to Present in Value: ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Text to Present in Value: ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait Until Element is not present in DOM anymore
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitForElementToBeNotPresent(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (element.isDisplayed()) {
-					Thread.sleep(1000);
-				}
-				timeout--;
-			} catch (NoSuchElementException | StaleElementReferenceException e) {
-				log.info("Element is Not Present in DOM ", elementName);
-				break;
-			} catch (Exception e) {
-				log.info("Wait for Element Not Present in DOM failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-	}
-
-	/**
-	 * Wait Until Element is Disabled
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void waitForElementToBeDisabled(WebElement element, String elementName) {
-		try {
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
-			wait.ignoring(NoSuchElementException.class);
-			wait.until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(element)));
-			log.info("Element is Disabled ", elementName);
-		} catch (Exception e) {
-			log.info("Element is Disabled: ", elementName);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait For CUBA Loading Bar to Appear
-	 *
-	 * @throws Exception
-	 */
-	public void waitForLoadingBarToAppear() throws Exception {
-		try {
-			long timeout = explicitPeriod;
-			WebElement element = driverEngine.getWebDriver()
-					.findElement(By.xpath("//div[contains(@class,'v-loading-indicator')]"));
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
-			wait.until(new ExpectedCondition<Boolean>() {
-
-				@Override
-				public Boolean apply(WebDriver driver) {
-					boolean enabled = element.isDisplayed();
-					if (enabled) {
-						return true;
-					}
-					return false;
-				}
-
-			});
-			log.info("Wait For loading Bar to Finish", "Loading Bar");
-		} catch (NoSuchElementException e) {
-			log.info("Wait For loading Bar to Finish", "Loading Bar");
-		} catch (Exception e) {
-			log.error("Wait For loading Bar to Finish", "Loading Bar", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait For CUBA Loading Bar to complete
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitForLoadingBarToComplete() throws Exception {
-		try {
-			long timeout = explicitPeriod;
-			WebElement element = driverEngine.getWebDriver()
-					.findElement(By.xpath("//div[contains(@class,'v-loading-indicator')]"));
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
-			wait.until(new ExpectedCondition<Boolean>() {
-
-				@Override
-				public Boolean apply(WebDriver driver) {
-					boolean enabled = element.getAttribute("style").contains("none");
-					if (enabled) {
-						return true;
-					}
-					return false;
-				}
-
-			});
-			log.info("Wait For loading Bar to Finish", "Loading Bar");
-		} catch (NoSuchElementException e) {
-			log.info("Wait For loading Bar to Finish", "Loading Bar");
-		} catch (Exception e) {
-			log.error("Wait For loading Bar to Finish", "Loading Bar", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Click WebElement by JS click
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void clickBYJS(WebElement element, String elementName) {
-		try {
-			((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("arguments[0].click();", element);
-			log.info("Click by JS on: ", elementName);
-		} catch (Exception e) {
-			log.error("Click by JS on: ", elementName, e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait and Displayed and then Click WebElement by JS click
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitAndCickBYJS(WebElement element, String elementName) throws Exception {
-		waitUntilPresentAndDisplayed(element, elementName);
-		clickBYJS(element, elementName);
-	}
-
-	public void scrollAndCickBYJS(WebElement element, String elementName) throws Exception {
-		scrollIntoViewByJS(element, elementName);
-		clickBYJS(element, elementName);
-	}
-
-	/**
-	 * Wait Until element is CUBA Enabled and present in DOM , then Click WebElement
-	 * by JS click
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitUntilEnabledAndCickBYJS(WebElement element, String elementName) throws Exception {
-		waitUntilEnabledCubaButton(element, elementName);
-		clickBYJS(element, elementName);
-	}
-
-	public WebElement findByText(String text, String prependingTag) {
-		long timeout = explicitPeriod;
-		WebElement element = null;
-		do {
-			try {
-				if (prependingTag.isEmpty()) {
-					element = driverEngine.getWebDriver().findElement(By.xpath("//*[text()='" + text + "']"));
-				} else {
-					element = driverEngine.getWebDriver()
-							.findElement(By.xpath(prependingTag + "[contains(text(),'" + text + "')]"));
-				}
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException ex) {
-					ex.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Find text By Element Failed due to: ", e.getClass().getCanonicalName());
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * Finds WebElement by Complete Text
-	 *
-	 * @param text
-	 * @return WebElement
-	 */
-	public WebElement findWebElementByText(String text) {
-		long timeout = explicitPeriod;
-		WebElement element = null;
-		do {
-			try {
-				element = driverEngine.getWebDriver().findElement(By.xpath("//*[text()='" + text + "']"));
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException ex) {
-					ex.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Find text By Element Failed due to: ", e.getClass().getCanonicalName());
-				timeout = 0;
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * Finds WebElement by Contains Text
-	 *
-	 * @param text
-	 * @return WebElement
-	 */
-	public WebElement findWebElementByContainsText(String text) {
-		long timeout = explicitPeriod;
-		WebElement element = null;
-		do {
-			try {
-				element = driverEngine.getWebDriver().findElement(By.xpath("//*[contains(text(),'" + text + "')]"));
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException ex) {
-					ex.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Find text By Element Failed due to: ", e.getClass().getCanonicalName());
-				timeout = 0;
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * Wait Until WebElement is Found in DOM Ignore NoSuchElementException for Given
-	 * Timeout Period
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 *
-	 */
-	public WebElement waitUntilPresent(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				element.getTagName();
-				log.info("Element is Present: ", elementName);
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Present failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for Element to be Present Failed: " + elementName);
-		}
-		return element;
-	}
-
-	public WebElement waitUntilPresentInDOM(By by, String elementName) throws Exception {
-		WebElement element = null;
-		long timeout = explicitPeriod;
-		do {
-			try {
-				element = driverEngine.getWebDriver().findElement(by);
-				log.info("Element is Present in DOM: ", elementName);
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Present in DOM failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for Element to be Present in DOM Failed: " + elementName);
-		}
-		return element;
-	}
-
-	public Boolean isVisibleInViewport(WebElement element) {
-		boolean state = (Boolean) driverEngine.getWebDriver()
-				.executeScript("var elem = arguments[0],                 " + "  box = elem.getBoundingClientRect(),    "
-						+ "  cx = box.left + box.width / 2,         " + "  cy = box.top + box.height / 2,         "
-						+ "  e = document.elementFromPoint(cx, cy); " + "for (; e; e = e.parentElement) {         "
-						+ "  if (e === elem)                        " + "    return true;                         "
-						+ "}                                        " + "return false;                            ",
-						element);
-		return state;
-	}
-
-	public boolean isDisplayed(WebElement element, String elementName) {
-		boolean displayed = false;
-		try {
-			displayed = element.isDisplayed();
-			log.info("Is Element Displayed", elementName);
-		} catch (Exception e) {
-			log.error("Is element Displayed Check Fail", e);
-			throw e;
-		}
-		return displayed;
-	}
-
-	/**
-	 * Wait Until WebElement Displayed property return true while Ignoring
-	 * NoSuchElementException
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 *
-	 */
-	public WebElement waitUntilPresentAndDisplayed(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (!isVisibleInViewport(element)) {
-					scrollIntoViewByJS(element, elementName);
-				}
-				if (element.isDisplayed()) {
-					log.info("Element is Displayed: ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-				timeout--;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Displayed failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for Element to be displayed Failed: " + elementName);
-		}
-		return element;
-	}
-
-	/**
-	 * Wait Until Element class Attribute is enabled
-	 *
-	 * @param element
-	 * @param elementName
-	 * @return
-	 * @throws Exception
-	 */
-	public WebElement waitUntilClassEnabled(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				TimeUnit.MILLISECONDS.sleep(1000);
-				String disabled = element.getAttribute("aria-disabled");
-				if (disabled == null) {
-					log.info("Element is Enabled: ", elementName);
-					break;
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Enabled failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for Element Class to be Enabled: " + elementName);
-		}
-		return element;
-	}
-
-	/**
-	 * Enter Credentials into a Alert
-	 *
-	 * @param username
-	 * @param password
-	 */
-	public void setCredentialsinAlert(String username, String password) {
-		Alert alert = driverEngine.getWebDriver().switchTo().alert();
-		alert.sendKeys(username + "\ue004" + password);
-	}
-
-	/**
-	 * Scroll Element into ViewPort using JS
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void scrollIntoViewByJS(WebElement element, String elementName) {
-		try {
-			driverEngine.getWebDriver().executeScript("arguments[0].scrollIntoView(true);", element);
-			log.info("Scroll to WebElement ", elementName);
-		} catch (Exception e) {
-			log.error("Scroll to WebElement : ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Get Page Source
-	 *
-	 * @return
-	 */
-	public String getPageSource() {
-		String source = "";
-		try {
-			source = driverEngine.getWebDriver().getPageSource();
-			log.info("Get Page Source ", "");
-		} catch (Exception e) {
-			log.error("Get Page Source", e);
-		}
-		return source;
-	}
-
-	/**
-	 * Click the Specified webElement using Actions class
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void clickAction(WebElement element, String elementName) {
-		try {
-			Actions action = new Actions(driverEngine.getWebDriver());
-			action.click(element).build().perform();
-			log.info("Click By Action ", elementName);
-		} catch (Exception e) {
-			log.error("Click By Action : ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Click the Specified webElement using Actions class
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void rightClickAction(WebElement element, String elementName) {
-		try {
-			Actions action = new Actions(driverEngine.getWebDriver());
-			action.contextClick(element).build().perform();
-			log.info("Click By Action ", elementName);
-		} catch (Exception e) {
-			log.error("Click By Action : ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Click the Specified webElement using Actions class
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void WaitAndClickAction(WebElement element, String elementName) throws Exception {
-		waitUntilPresentAndDisplayed(element, elementName);
-		clickAction(element, elementName);
-	}
-
-	/**
-	 * Double the Specified webElement using Actions class
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void doubleClick(WebElement element, String elementName) {
-		try {
-			Actions action = new Actions(driverEngine.getWebDriver());
-			action.doubleClick(element).build().perform();
-			log.info("Scroll to WebElement ", elementName);
-		} catch (Exception e) {
-			log.error("Wait for Element to be Displayed failed: ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Double the Specified webElement using Actions class
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void authenticationLogin(String userName, String password) {
-		try {
-			Alert alert = driverEngine.getWebDriver().switchTo().alert();
-			alert.sendKeys(userName + Keys.TAB + password);
-			alert.accept();
-			log.info("Send Keys to Alert ", "Authentication Alert");
-		} catch (Exception e) {
-			log.error("Send Keys to Alert ", e);
-		}
-	}
-
-	/**
-	 * Wait Until the WebElement Enabled Property return true while Ignoring
-	 * NoSuchElementException
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public WebElement waitUntilEnabled(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				TimeUnit.MILLISECONDS.sleep(500);
-				if (element.isEnabled()) {
-					log.info("Element is Enabled: ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-				timeout--;
-			} catch (NoSuchElementException e) {
-				Thread.sleep(1000);
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Enabled failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for Element to be Enabled: " + elementName);
-		}
-		return element;
-	}
-
-	/**
-	 * Wait Until CUBA UI Buttons are not Disabled
-	 *
-	 * @param element
-	 * @param elementName Note: Specific to UI and Element Tag must Be DIV
-	 * @return
-	 * @throws Exception Note: Element Should have a "aria-disabled" Attribute
-	 *                   Otherwise condition Will always be Null
-	 */
-	public WebElement waitUntilEnabledCubaButton(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (element.getAttribute("aria-disabled") == null) {
-					log.info("Element is Enabled: ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-				timeout--;
-			} catch (NoSuchElementException e) {
-				Thread.sleep(1000);
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Enabled failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for Cuba Element to be Enabled: " + elementName);
-		}
-		return element;
-	}
-
-	/**
-	 * Wait Until CUBA UI TextBoxes are not Disabled
-	 *
-	 * @param element
-	 * @param elementName Note: Specific to UI and Element Tag must Be DIV
-	 * @return
-	 * @throws Exception
-	 */
-	public WebElement waitUntilEnabledCubaTBox(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				TimeUnit.MILLISECONDS.sleep(500);
-				if (element.getAttribute("disabled") == null) {
-					log.info("Element is Enabled: ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-				timeout--;
-			} catch (NoSuchElementException e) {
-				Thread.sleep(1000);
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Enabled failed : ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Wait for CUBA TextBox Element to be Enabled Failed: " + elementName);
-		}
-		return element;
-	}
-
-	/**
-	 * Wait for "aria-disabled" Attribute to be present and Return value as true
-	 * Specifica to CUBA Elements with "aria-disabled" parameter
-	 *
-	 * @param element
-	 * @param elementName Note: Ignoring StaleElementReferenceException and
-	 *                    NoSuchElementException class
-	 */
-	public void waitUntilDisabled(WebElement element, String elementName) {
-		try {
-			long timeout = explicitPeriod;
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
-			wait.ignoring(StaleElementReferenceException.class);
-			wait.until(new ExpectedCondition<Boolean>() {
-
-				@Override
-				public Boolean apply(WebDriver driver) {
-					String enabled = element.getAttribute("aria-disabled");
-					if (enabled.equals("true")) {
-						return true;
-					}
-					return false;
-				}
-
-			});
-			log.info("Wait until Disabled", elementName);
-		} catch (TimeoutException e) {
-			log.info("Timeout Exception Occured ", elementName);
-			throw e;
-		}
-	}
-
-	/**
-	 * Wait Until the Specified Boolean Coniditon is true
-	 *
-	 * @param element
-	 * @param elementName
-	 */
-	public void waitUntilTrue(boolean conditon, String details) {
-		try {
-			long timeout = explicitPeriod;
-			WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), timeout);
-			wait.ignoring(StaleElementReferenceException.class);
-			wait.until(new ExpectedCondition<Boolean>() {
-
-				@Override
-				public Boolean apply(WebDriver driver) {
-					if (conditon) {
-						return true;
-					}
-					return false;
-				}
-
-			});
-			log.info("Wait until Conditon Is true", details);
-		} catch (TimeoutException e) {
-			log.info("Timeout Exception Occured ", details);
-			throw e;
-		}
-	}
-
-	public void assertDisplayed(WebElement element, String elementName) throws Exception {
-		try {
-			if (element.isDisplayed() == true) {
-				log.info("Element is Displayed", elementName);
+	public void schemaValidator(String schemaFileName) throws Throwable {
+		try (InputStream stream = new FileInputStream(TESTDATADIRSCHEMA + "\\" + schemaFileName + ".json")) {
+			InputStream responseJSONStream;
+			String resposneJSON = getResponsebody();
+			JSONParser pareser = new JSONParser();
+			Object responseJSONObj = pareser.parse(resposneJSON);
+			if (responseJSONObj instanceof JSONArray) {
+				JSONObject object = new JSONObject();
+				object = (JSONObject) ((JSONArray) responseJSONObj).get(0);
+				responseJSONStream = new ByteArrayInputStream(object.toJSONString().getBytes());
 			} else {
-				throw new Exception("Element not Displayed");
+				responseJSONStream = new ByteArrayInputStream(resposneJSON.getBytes());
 			}
-		} catch (Exception e) {
-			log.info("Assert Displayed Exception Occured ", elementName);
+			org.json.JSONObject responseObject = new org.json.JSONObject(new JSONTokener(responseJSONStream));
+
+			org.json.JSONObject expectedJSONSchemaStream = new org.json.JSONObject(new JSONTokener(stream));
+			Schema schema = SchemaLoader.load(expectedJSONSchemaStream);
+
+			schema.validate(responseObject);
+
+			log.info("Schema Validation Passed ");
+		} catch (Throwable e) {
+
+			log.error("Schema Validation Failed: ", e);
 			throw e;
 		}
 	}
 
-	/**
-	 * Returns a index for the column Name Note: Specific to Tables in CUBA UI Only
-	 *
-	 * @param ColumnName
-	 * @return
-	 */
-	public int getColumnIndex(String ColumnName, List<WebElement> list) {
-		int cIndex = 1;
-		for (WebElement e : list) {
-			if (e.getText().contentEquals(ColumnName)) {
-				break;
-			}
-			cIndex++;
+	public void schemaValidator(File schemaFile) throws Throwable {
+		try (InputStream stream = new FileInputStream(schemaFile)) {
+			String resposneJSON = getResponsebody();
+			org.json.JSONObject rawSchema = new org.json.JSONObject(new JSONTokener(stream));
+			Schema schema = SchemaLoader.load(rawSchema);
+			schema.validate(new org.json.JSONObject(resposneJSON));
+			log.info("Schema Validation Passed");
+		} catch (Throwable e) {
+
+			log.error("Schema Validation Failed: ", e);
+			throw e;
 		}
-		return cIndex;
 	}
 
-	/**
-	 * Returns Map of Index by ColumnaNames Input List Should contain header
-	 * Elements Note: Specific to Tables in CUBA UI Only
-	 *
-	 * @param elements
-	 * @return
-	 */
-	public Map<String, Integer> getColumnIndexMap(List<WebElement> elements) {
-		Map<String, Integer> map = new HashMap<String, Integer>();
-		for (int i = 0; i < elements.size(); i++) {
-			map.put(elements.get(i).getText(), i + 1);
+	public String getDataByType(String datatype, String length) {
+
+		String value = null;
+		int numericalLength = 0;
+		try {
+			numericalLength = Integer.parseInt(length);
+			if (datatype.toUpperCase().equals("STRING")) {
+				value = randomString(numericalLength);
+
+			}
+			if (datatype.toUpperCase().equals("ALPHANUMERIC")) {
+				value = randomAlphaNumeric(numericalLength);
+
+			}
+			if (datatype.toUpperCase().equals("SPECIALCHAR")) {
+				value = randomSpecialChar(numericalLength);
+
+			}
+			if (datatype.toUpperCase().equals("SPECIALSTRING")) {
+				value = randomSpecialCharString(numericalLength);
+
+			}
+			if (datatype.toUpperCase().equals("UUID")) {
+				value = getUUID();
+			}
+			log.info("get Data of type: " + datatype + " value: " + value);
+			return value;
+		} catch (Exception e) {
+			log.error("get Data of type:" + datatype + " Failed: ", e);
+			throw e;
+		}
+
+	}
+
+	public Map<String, String> getTestDataMap(String tcID, String dataRow) throws Exception {
+
+		Map<String, String> map = null;
+		try (FileReader file = new FileReader(TESTDATADIRBODYREQUESTDATA + "\\" + requestDataFile + ".json")) {
+
+			JSONParser parser = new JSONParser();
+
+			JSONObject object = (JSONObject) parser.parse(file);
+			JSONObject tcData = (JSONObject) object.get(tcID);
+			JSONObject iterationData = (JSONObject) tcData.get(dataRow);
+			map = new Gson().fromJson(iterationData.toJSONString(), HashMap.class);
+			log.info("Get Data Map for Row: " + dataRow + " For TC: " + tcID);
+		} catch (Exception e) {
+			log.error("Failed to Get Data Map for Row: " + dataRow + " For TC: " + tcID, e);
+			throw e;
 		}
 		return map;
 	}
 
 	/**
-	 * GET Table Row input WebElement
+	 * A string of input length containing chars from [a-z][A-Z]
 	 *
-	 * @param map
-	 * @param row
-	 * @param columnName
+	 * @param length
 	 * @return
 	 */
-	public WebElement getRowElement(Map<String, Integer> map, int row, String columnName) {
-		int cIndex = map.get(columnName);
-		WebElement element = findBy(By.xpath("//tr[" + row + "]//td[" + cIndex + "]//div//input"));
-		return element;
-	}
-
-	/**
-	 * Clicks a Specified valued in the specified ColumnName Note:Specific to Tables
-	 * in CUBA UI Only
-	 *
-	 * @param ColumnName
-	 * @param valueToSelect
-	 */
-	public void selectCellValue(String ColumnName, String valueToSelect, List<WebElement> webList) {
-		int column = getColumnIndex(ColumnName, webList);
-		List<WebElement> list = driverEngine.getWebDriver()
-				.findElements(By.xpath("//tr//td[" + column + "]//div[text()]"));
-		for (WebElement e : list) {
-			if (e.getText().equals(valueToSelect)) {
-				scrollIntoViewByJS(e, valueToSelect);
-				doubleClick(e, valueToSelect);
-				break;
-			}
-		}
-	}
-
-	public int getRowIndex(String ColumnName, String valueToSelect, List<WebElement> webList) {
-		int column = getColumnIndex(ColumnName, webList);
-		int rowIndex = 1;
-		List<WebElement> list = driverEngine.getWebDriver()
-				.findElements(By.xpath("//tr//td[" + column + "]//div[text()]"));
-		for (WebElement e : list) {
-			if (e.getText().equals(valueToSelect)) {
-				break;
-			}
-			rowIndex++;
-		}
-		return rowIndex;
-	}
-
-	public boolean waitForJSandJQueryToLoad() {
-		WebDriverWait wait = new WebDriverWait(driverEngine.getWebDriver(), explicitPeriod);
-		// wait for jQuery to load
-		ExpectedCondition<Boolean> jQueryLoad = new ExpectedCondition<Boolean>() {
-
-			@Override
-			public Boolean apply(WebDriver driver) {
-				try {
-					return ((Long) ((JavascriptExecutor) driverEngine.getWebDriver())
-							.executeScript("return jQuery.active") == 0);
-				} catch (Exception e) {
-					// no jQuery present
-					return true;
-				}
-			}
-
-		};
-		// wait for Javascript to load
-		ExpectedCondition<Boolean> jsLoad = new ExpectedCondition<Boolean>() {
-
-			@Override
-			public Boolean apply(WebDriver driver) {
-				return ((JavascriptExecutor) driverEngine.getWebDriver()).executeScript("return document.readyState")
-						.toString().equals("complete");
-			}
-
-		};
-		return wait.until(jQueryLoad) && wait.until(jsLoad);
-	}
-
-	public void waitForStalenessOf(WebElement element, String elementName) {
-		long timeout = explicitPeriod;
+	public String randomString(int length) {
+		int leftLimit = 97; // letter 'a'
+		int rightLimit = 122; // letter 'z'
+		String generatedString = null;
+		Random random = new Random();
 		try {
-			WebDriverWait wait = new WebDriverWait(getDriverEngine().getWebDriver(), timeout);
-			wait.until(ExpectedConditions.stalenessOf(element));
-			log.info("Wait For Staleness of : ", elementName);
+			generatedString = random.ints(leftLimit, rightLimit + 1).limit(length)
+					.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+			log.info("Get Random String value: " + generatedString);
 		} catch (Exception e) {
-			log.info("Wait For Staleness of : ", elementName);
+			log.error("Get Random String Failed: ", e);
 			throw e;
 		}
+		return generatedString;
 	}
 
 	/**
-	 * FInd element by By object and wait for explicit Period
+	 * A string of input length containing chars from [a-z][A-Z][1-9]
 	 *
-	 * @param by
-	 * @return WebElement
-	 */
-	public WebElement findBy(By by) {
-		long timeout = explicitPeriod;
-		WebElement element = null;
-		do {
-			try {
-				element = driverEngine.getWebDriver().findElement(by);
-				log.info("Element is Found: ", "");
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("FInd Element failed: ", "");
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * FInd element by By object and wait for explicit Period
-	 *
-	 * @param by
-	 * @return WebElement
-	 */
-	public WebElement findBy(By by, long timeout) {
-		WebElement element = null;
-		do {
-			try {
-				element = driverEngine.getWebDriver().findElement(by);
-				log.info("Element is Found: ", "");
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("FInd Element failed: ", "");
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * FInd element List by By object
-	 *
-	 * @param by
-	 * @return WebElement
-	 */
-	public List<WebElement> findsBy(By by) {
-		long timeout = explicitPeriod;
-		List<WebElement> elementList = null;
-		do {
-			try {
-				elementList = driverEngine.getWebDriver().findElements(by);
-				log.info("Element is Found: ", "");
-				break;
-			} catch (NoSuchElementException e) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-				timeout--;
-			} catch (Exception e) {
-				log.info("FInd Element failed: ", "");
-				throw e;
-			}
-		} while (timeout > 0);
-		return elementList;
-	}
-
-	/**
-	 * Wait Until Element is not DIsplayed
-	 *
-	 * @param element
-	 * @param elementName
+	 * @param length
 	 * @return
-	 * @throws Exception
 	 */
-	public WebElement waitUntilNotDisplayed(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (!element.isDisplayed()) {
-					log.info("Element is Not Displayed: ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element to be Not Displayed failed: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	/**
-	 * Wait Until Value of Textbxo is not empty
-	 *
-	 * @param element
-	 * @param elementName
-	 * @return
-	 * @throws Exception
-	 */
-	public WebElement waitUntilValueisNotEmpty(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (!element.getAttribute("value").isEmpty()) {
-					log.info("Wait for Element Value is not Empty: ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-				timeout--;
-			} catch (Exception e) {
-				log.info("Wait for Element Value is not Empty: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		return element;
-	}
-
-	public void clickByJSAndWaitUntilNotPresent(WebElement element, String elementName) throws Exception {
-		clickBYJS(element, elementName);
-		waitUntilNotPresent(element, elementName);
-	}
-
-	/**
-	 * Wait Until Element is not present in DOM
-	 *
-	 * @param element
-	 * @param elementName
-	 * @return
-	 * @throws Exception
-	 */
-	public void waitUntilNotPresent(WebElement element, String elementName) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (element.isDisplayed()) {
-					log.info("Element is Not Present in DOM Anymore: ", elementName);
-					Thread.sleep(1000);
-					timeout--;
-				}
-			} catch (NoSuchElementException | StaleElementReferenceException e) {
-				break;
-			} catch (Exception e) {
-				log.info("Element is Not Present in DOM Anymore: ", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Timeout while waiting for Element to be not present in DOM");
-		}
-	}
-
-	/**
-	 * Wait Until the Inner text of the WebElement changes
-	 *
-	 * @param element
-	 * @param elementName
-	 * @throws Exception
-	 */
-	public void waitforTextToChange(WebElement element, String elementName, String originaltext) throws Exception {
-		long timeout = explicitPeriod;
-		do {
-			try {
-				if (!element.getText().equals(originaltext)) {
-					log.info("Element Text Changed ", elementName);
-					break;
-				}
-				Thread.sleep(1000);
-			} catch (Exception e) {
-				log.info("Wait for Element Text Changed Failed", elementName);
-				throw e;
-			}
-		} while (timeout > 0);
-		if (timeout == 0) {
-			throw new Exception("Timeout while waiting for Element Text to Change");
-		}
-	}
-
-	/**
-	 * Switch to Other window than current Note: works Properly only when two
-	 * windows are open
-	 */
-	public void switchToOtherOpenedWindow() {
+	public String randomAlphaNumeric(int length) {
+		int leftLimit = 48; // letter 'a'
+		int rightLimit = 122; // letter 'z'
+		String generatedString = null;
+		Random random = new Random();
 		try {
-			Thread.sleep(5000);
-			WebDriver driver = driverEngine.getWebDriver();
-			String curentHandle = driver.getWindowHandle();
-			Set<String> handles = driver.getWindowHandles();
-			for (String string : handles) {
-				if (!string.equals(curentHandle)) {
-					driver.switchTo().window(string);
-					break;
-				}
-			}
-			log.info("Switch to newly opened window ", "");
+			generatedString = random.ints(leftLimit, rightLimit + 1).limit(length)
+					.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+			log.info("Get Random Alphanumeric value: " + generatedString);
 		} catch (Exception e) {
-			log.error("Switch to newly opened window ", e);
+			log.error("Get Random Alphanumeric Failed: ", e);
+			throw e;
 		}
+		return generatedString;
 	}
 
 	/**
-	 * Return the Webelement Attribue value as a String
+	 * A string of input length containing special chars from [~!@#$%^&*()_+{}|:?><]
 	 *
-	 * @param element
-	 * @param attribute
-	 * @param elementName
+	 * @param length
 	 * @return
 	 */
-	public String getAttributeValue(WebElement element, String attribute, String elementName) {
+	public String randomSpecialChar(int length) {
+		StringBuilder sb = new StringBuilder(length);
+		try {
+			final String alphabet = "~!@#$%^&*()_+{}|:?><";
+			final int N = alphabet.length();
+			Random rd = new Random();
+
+			for (int i = 0; i < length; i++) {
+				sb.append(alphabet.charAt(rd.nextInt(N)));
+			}
+			log.info("Get Random Special Characters: " + sb.toString());
+		} catch (Exception e) {
+			log.error("Get Random Special Characters Failed: ", e);
+			throw e;
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * A string of input length containing special chars from [~!@#$%^&*()_+{}|:?><]
+	 * and Alpahbets from [a-z][A-Z]
+	 *
+	 * @param length
+	 * @return
+	 */
+	public String randomSpecialCharString(int length) {
+		String finalString = null;
+		try {
+			int chars = length / 2;
+			int sprcialChars = length - chars;
+
+			String charString = randomString(chars);
+			String specialCharSting = randomSpecialChar(sprcialChars);
+			finalString = charString + specialCharSting;
+			log.info("Get Random Special Characters: " + finalString);
+		} catch (Exception e) {
+			log.error("Get Random Special Characters Failed: ", e);
+			throw e;
+		}
+		return finalString;
+
+	}
+
+	/**
+	 * Get the Value of a Property by JSONPath as a String
+	 *
+	 * @param path
+	 * @return
+	 */
+	public String getStringValueFromResponse(String jsonPath) {
 		String value = null;
 		try {
-			value = element.getAttribute(attribute);
-			log.info("Get Attribute Value for ", elementName + ": " + value);
+			String jsonString = getResponsebody();
+			DocumentContext context = com.jayway.jsonpath.JsonPath.parse(jsonString);
+
+			value = context.read(jsonPath).toString();
+
+			log.info("Get Property in JSON as String at: " + jsonPath + " value: " + value);
 		} catch (Exception e) {
-			log.error("Get Attribute Value Failed for ", e);
+			log.error("Failed to Get Property in JSON as String at: " + jsonPath + " value: ", e);
+			throw e;
 		}
 		return value;
 	}
 
-	public String getBrowsername() {
-		Capabilities cap = ((RemoteWebDriver) driverEngine.getWebDriver().getWrappedDriver()).getCapabilities();
-		return cap.getBrowserName().toLowerCase();
+	/**
+	 * Get the Value of a Property by JSONPath as a String from a JSON String
+	 *
+	 * @param path
+	 * @return
+	 */
+	public String getStringValueFromJSONString(String jsonPath, String jsonString) {
+		String value = null;
+		try {
+
+			DocumentContext context = com.jayway.jsonpath.JsonPath.parse(jsonString);
+
+			value = context.read(jsonPath).toString();
+
+			log.info("Get Property From JSON as String at: " + jsonPath + " value: " + value);
+		} catch (Exception e) {
+			log.error("Failed to Get Property From JSON as String at: " + jsonPath + " value: ", e);
+			throw e;
+		}
+		return value;
 	}
 
 	/**
-	 * Designed for Tables only in CUBA UI, Maynot work for All cuba Tables
-	 *
+	 * Get the Body of the Current Request
+	 * 
 	 * @return
 	 */
-	public Map<String, Integer> getHeadersIndex() {
+	public String getRequestBody() {
+		String body = null;
 		try {
-			Map<String, Integer> tableHeader = new HashMap<String, Integer>();
-			List<WebElement> headersList = driverEngine.getWebDriver()
-					.findElements(By.xpath("//div[@class='v-table-header']//tr//td//div[3]"));
-			Iterator<WebElement> itr = headersList.iterator();
-			int column = 1;
-			while (itr.hasNext()) {
-				tableHeader.put(itr.next().getText(), column);
-				column++;
+			QueryableRequestSpecification queryable = SpecificationQuerier.query(request);
+			if (queryable.getBody() != null) {
+
+				body = queryable.getBody().toString();
+
 			}
-			log.info("Get Table Headers map by Index ", "");
-			return tableHeader;
-
+			log.info("Get Request Body");
 		} catch (Exception e) {
-
-			log.error("Get Table Headers map by Index ", e);
+			log.error("Get Request Body Failed", e);
 			throw e;
 		}
+		return body;
 	}
 
 	/**
-	 * Get List of WebElement under the specified column
-	 *
-	 * @param tableElement
-	 * @param ColumnName
+	 * Get Value of the Path param Added in Request
+	 * 
+	 * @param paramName
 	 * @return
 	 */
-	public List<WebElement> getColumnElementsByColumnName(String ColumnName) {
+	public String getPathParamValue(String paramName) {
+		String value = null;
 		try {
-			Map<String, Integer> map = getHeadersIndex();
-			int cIndex = 0;
-			if (map != null) {
-				cIndex = map.get(ColumnName);
-			}
-			WebDriver driver = ConcurrentEngine.getEngine().getWebDriver();
-			List<WebElement> columnElements = driver
-					.findElements(By.xpath("//tr//td[@class='v-table-cell-content'][" + cIndex + "]"));
-			log.info("Get List of WebElements under a Column ", "");
-			return columnElements;
+
+			value = request.getPathParams().get(paramName);
+			log.info("Get Path Param:" + paramName + " value: " + value);
 		} catch (Exception e) {
-			log.error("Get List of WebElements under a Column Failed", e);
+			log.error("Get Path Param Failed:" + paramName, e);
+			throw e;
+		}
+		return value;
+
+	}
+
+	/**
+	 * Remove cookie by Name
+	 *
+	 * @param cookieName
+	 */
+	public void removeCookie(String cookieName) {
+		try {
+			request.removeCookie(cookieName);
+			log.info("Remove Cookie: " + cookieName);
+		} catch (Exception e) {
+			log.error("Remove Cookie Failed:" + cookieName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove cookie
+	 *
+	 * @param cookieName
+	 */
+	public void removeCookie(Cookie cookie) {
+		try {
+			request.removeCookie(cookie);
+			log.info("Remove Cookie ");
+		} catch (Exception e) {
+			log.error("Remove Cookie Failed", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove all Cookies
+	 */
+	public void removeAllCookies() {
+		try {
+			request.removeCookies();
+			log.info("Remove All Cookie: ");
+		} catch (Exception e) {
+			log.error("Remove All Cookie Failed", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove All cookies
+	 *
+	 * @param parameterName
+	 */
+	public void removeAllCookies(String parameterName) {
+		try {
+			request.removeFormParam(parameterName);
+			log.info("Remove Form parameter: " + parameterName);
+		} catch (Exception e) {
+			log.error("Remove Form parameter Failed:" + parameterName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove Header By name
+	 *
+	 * @param headerName
+	 */
+	public void removeHeader(String headerName) {
+		try {
+			request.removeHeader(headerName);
+			log.info("Remove Header: " + headerName);
+		} catch (Exception e) {
+			log.error("Remove Header Failed" + headerName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove All Headers
+	 */
+	public void removeHeader() {
+		try {
+			request.removeHeaders();
+			log.info("Remove All Header: ");
+		} catch (Exception e) {
+			log.error("Remove All Header Failed", e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove All Headers
+	 */
+	public void removeNamedPathParam(String parameterName) {
+		try {
+			request.removeNamedPathParam(parameterName);
+			log.info("Remove NamedPathParam: " + parameterName);
+		} catch (Exception e) {
+			log.error("Remove NamedPathParam Failed" + parameterName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove param
+	 *
+	 * @param parameterName
+	 */
+	public void removeParam(String parameterName) {
+		try {
+			request.removeParam(parameterName);
+			log.info("Remove Param: " + parameterName);
+		} catch (Exception e) {
+			log.error("Remove Param Failed" + parameterName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove Path param
+	 *
+	 * @param pathParameterName
+	 */
+	public void removePathParam(String pathParameterName) {
+		try {
+			request.removePathParam(pathParameterName);
+			log.info("Remove Path Param: " + pathParameterName);
+		} catch (Exception e) {
+			log.error("Remove Path Param Failed:" + pathParameterName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Remove query param
+	 *
+	 * @param queryParamName
+	 */
+	public void removeQueryParam(String queryParamName) {
+		try {
+			request.removeQueryParam(queryParamName);
+			log.info("Remove Query Param: " + queryParamName);
+		} catch (Exception e) {
+			log.error("Remove Query Param Failed:" + queryParamName, e);
+			throw e;
+		}
+
+	}
+
+	/**
+	 * Removed Unnamed Path Param by Name
+	 *
+	 * @param paramName
+	 */
+	public void removeUnnamedPathParam(String paramName) {
+		try {
+			request.removeUnnamedPathParam(paramName);
+			log.info("Remove Unnamed Path Param: " + paramName);
+		} catch (Exception e) {
+			log.error("Remove Unnamed Path Param Failed:" + paramName, e);
+			throw e;
+		}
+
+	}
+
+	public void removeUnnamedPathParamByValue(String parameterValue) {
+		try {
+			request.removeUnnamedPathParamByValue(parameterValue);
+			log.info("Remove Unnamed Path Param by value: " + parameterValue);
+		} catch (Exception e) {
+			log.error("Remove Unnamed Path Param by value Failed:" + parameterValue, e);
 			throw e;
 		}
 
 	}
 }
-****************************************
-package com.tab.af.cucumber;
+***************************************************************
+package com.tab.af.utilities;
 
-import cucumber.runtime.CucumberException;
-import gherkin.events.PickleEvent;
+import org.aeonbits.owner.Config;
+import org.aeonbits.owner.Config.Sources;
 
-/**
- * The only purpose of this class is to move parse errors from the DataProvider to the test
- * execution of the TestNG tests.
- *
- * @see TestNGCucumberRunner#provideScenarios()
- */
-class CucumberExceptionWrapper implements PickleEventWrapper {
+@Sources({ "file:src/main/resources/Config.properties" })
+public interface ConfigProperties extends Config {
+	@DefaultValue("true")
+	@Key("extent.report")
+	public String extentReport();
 
-  private CucumberException exception;
+	@Key("report.directory.windows")
+	public String extentWindowsDirectory();
 
-  CucumberExceptionWrapper(CucumberException e) {
-    this.exception = e;
-  }
+	@Key("reports.dir")
+	public String extentReportDirectory();
 
-  @Override
-  public PickleEvent getPickleEvent(){
-    throw this.exception;
-  }
+	@DefaultValue("local")
+	@Key("run.type")
+	public String runType();
+
+	@DefaultValue("2426")
+	@Key("grid.port.number")
+	public String gridPortNumber();
+
+	@Key("grid.url")
+	public String gridURL();
+
+	@DefaultValue("60")
+	@Key("explicit.wait.timeout")
+	public String explicitWaitPeriod();
+
+	@Key("firefox.binary.path")
+	public String firefoxBinaryPath();
+
+	@DefaultValue("false")
+	@Key("Selenium.Event.log")
+	public String seleniumEventLog();
+
+	@Key("chrome.binary.version")
+	public String firefoxBinaryVersion();
+
+	@Key("ie.binary.version")
+	public String internetExplorerBinaryVersion();
+
+	@Key("chrome.binary.version")
+	public String chromeBinaryVersion();
+
+	@Key("ebank.int.url")
+	public String eBankIntURL();
+
+	@Key("ebank.admin.user")
+	public String eBankAdminUser();
+
+	@Key("ebank.admin.password")
+	public String eBankAdminPassword();
+
+	@Key("edge.int.url")
+	public String edgeIntURL();
+
+	@Key("edge.user.login")
+	public String edgeUsername();
+
+	@Key("edge.user.loginpassword")
+	public String edgePassword();
+
+	@Key("eprecision.int.url")
+	public String ePrecisionIntUrl();
+
+	@Key("onboarding.env")
+	public String onboardingEnvironment();
+
+	@Key("onboarding.acpt.url")
+	public String onboardingAcptUrl();
+
+	@Key("onboarding.int.url")
+	public String onboardingIntUrl();
+
+	@Key("equipment.financing.int.url")
+	public String eFinancingIntUrl();
+
+	@Key("onboarding.int.db")
+	public String onboardingIntDB();
+
+	@Key("onboarding.user.name")
+	public String onboardingUsername();
+
+	@Key("onboarding.user.password")
+	public String onboardingPassword();
+
+	@DefaultValue("admin")
+	@Key("onboarding.admin.user.name")
+	public String onboardingAdminUsername();
+
+	@DefaultValue("abc123")
+	@Key("onboarding.admin.user.password")
+	public String onboardingAdminPassword();
+
+	@Key("daint.int.url")
+	public String daIntUrl();
+
+	@DefaultValue("60")
+	@Key("page.load.wait")
+	public String pageLoadTimeout();
+
+	@DefaultValue("true")
+	@Key("screenshot.passed.step")
+	public String screenshotPassedStep();
+
+	@DefaultValue("true")
+	@Key("screenshot.failed.step")
+	public String screenshotFailedStep();
 
 }
-*******************************************
-package com.tab.af.cucumber;
+************************************************************
+package com.tab.af.utilities;
 
-import cucumber.api.testng.CucumberFeatureWrapper;
-import cucumber.runtime.model.CucumberFeature;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.Date;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
-class CucumberFeatureWrapperImpl implements CucumberFeatureWrapper {
+import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 
-  private final CucumberFeature cucumberFeature;
+import io.github.bonigarcia.wdm.WebDriverManager;
 
-  CucumberFeatureWrapperImpl(CucumberFeature cucumberFeature) {
-    this.cucumberFeature = cucumberFeature;
-  }
+public class CookieStore {
 
-  @Override
-  public String toString(){
-    return "\"" + cucumberFeature.getGherkinFeature().getFeature().getName() + "\"";
+	static Set<Cookie> cookies;
 
-  }
-
-}
-****************************************************
-package com.tab.af.cucumber;
-
-import cucumber.api.testng.AbstractTestNGCucumberTests;
-import gherkin.events.PickleEvent;
-
-/**
- * The only purpose of this interface is to be able to provide a custom
- * 
- * <pre>
- * toString()
- * </pre>
- * 
- * , making TestNG reports look more descriptive.
- *
- * @see AbstractTestNGCucumberTests#runScenario(cucumber.api.testng.PickleEventWrapper,
- *      cucumber.api.testng.CucumberFeatureWrapper)
- */
-public interface PickleEventWrapper {
-
-  PickleEvent getPickleEvent();
-
-}
-**********************************************
-package com.tab.af.cucumber;
-
-import gherkin.events.PickleEvent;
-
-class PickleEventWrapperImpl implements PickleEventWrapper {
-
-  private final PickleEvent pickleEvent;
-
-  PickleEventWrapperImpl(PickleEvent pickleEvent) {
-    this.pickleEvent = pickleEvent;
-  }
-
-  @Override
-  public PickleEvent getPickleEvent(){
-    return pickleEvent;
-  }
-
-  @Override
-  public String toString(){
-    return "\"" + pickleEvent.pickle.getName() + "\"";
-  }
-
-}
-********************************************
-package com.tab.af.cucumber;
-
-import org.testng.SkipException;
-
-import cucumber.api.Result;
-import cucumber.api.event.EventHandler;
-import cucumber.api.event.TestCaseFinished;
-import cucumber.runner.EventBus;
-import cucumber.runtime.CucumberException;
-
-class TestCaseResultListener {
-
-	static final String UNDEFINED_MESSAGE = "There are undefined steps";
-
-	static final String SKIPPED_MESSAGE = "This scenario is skipped";
-
-	private final EventBus bus;
-
-	private boolean strict;
-
-	private Result result;
-
-	private final EventHandler<TestCaseFinished> testCaseFinishedHandler = new EventHandler<TestCaseFinished>() {
-
-		@Override
-		public void receive(TestCaseFinished event) {
-			receiveResult(event.result);
-		}
-
-	};
-
-	TestCaseResultListener(EventBus bus, boolean strict) {
-		this.strict = strict;
-		this.bus = bus;
-		bus.registerHandlerFor(TestCaseFinished.class, testCaseFinishedHandler);
-	}
-
-	void finishExecutionUnit() {
-		bus.removeHandlerFor(TestCaseFinished.class, testCaseFinishedHandler);
-	}
-
-	void receiveResult(Result result) {
-		this.result = result;
-	}
-
-	boolean isPassed() {
-		return result == null || result.is(Result.Type.PASSED);
-	}
-
-	Throwable getError() {
-		if (result == null) {
-			return null;
-		}
-		switch (result.getStatus()) {
-		case FAILED:
-		case AMBIGUOUS:
-			return result.getError();
-		case PENDING:
-			if (strict) {
-				return result.getError();
+	public void getCookie() {
+		WebDriverManager.chromedriver().setup();
+		WebDriver driver = new ChromeDriver();
+		driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
+		driver.navigate().to("https://onboardingint.tabbank.com/app/#!");
+		((JavascriptExecutor) driver).executeScript("arguments[0].value='';",
+				driver.findElement(By.xpath("//*[@cuba-id='passwordField']")));
+		driver.findElement(By.xpath("//*[@cuba-id='passwordField']")).sendKeys("abc123");
+		driver.findElement(By.xpath("//*[text()='Submit']//..//parent::div")).click();
+		driver.findElement(By.xpath("//*[@cuba-id='accounting']")).click();
+		File file = new File("Cookies.data");
+		try {
+			// Delete old file if exists
+			file.delete();
+			file.createNewFile();
+			FileWriter fileWrite = new FileWriter(file);
+			BufferedWriter Bwrite = new BufferedWriter(fileWrite);
+			// loop for getting the cookie information
+			// loop for getting the cookie information
+			for (Cookie ck : driver.manage().getCookies()) {
+				Bwrite.write((ck.getName() + ";" + ck.getValue() + ";" + ck.getDomain() + ";" + ck.getPath() + ";"
+						+ ck.getExpiry() + ";" + ck.isSecure()));
+				Bwrite.newLine();
 			}
-			return new SkipException(result.getErrorMessage(), result.getError());
-		case UNDEFINED:
-			if (strict) {
-				return new CucumberException(UNDEFINED_MESSAGE);
-			}
-			return new SkipException(UNDEFINED_MESSAGE);
-		case SKIPPED:
-			Throwable error = result.getError();
-			if (error != null) {
-				if (error instanceof SkipException) {
-					return error;
+			Bwrite.close();
+			fileWrite.close();
+			putCookie();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		driver.quit();
+	}
+
+	public void putCookie() {
+		try {
+			File file = new File("Cookies.data");
+			FileReader fileReader = new FileReader(file);
+			BufferedReader Buffreader = new BufferedReader(fileReader);
+			String strline;
+			WebDriver driver = new ChromeDriver();
+			Cookie ck = null;
+			while ((strline = Buffreader.readLine()) != null) {
+				StringTokenizer token = new StringTokenizer(strline, ";");
+				while (token.hasMoreTokens()) {
+					String name = token.nextToken();
+					String value = token.nextToken();
+					String domain = token.nextToken();
+					String path = token.nextToken();
+					Date expiry = null;
+					String val = null;
+					if (!(token.nextToken() == null)) {
+						expiry = new Date(val);
+					}
+					Boolean isSecure = new Boolean(token.nextToken()).booleanValue();
+					ck = new Cookie(name, value, domain, path, expiry, isSecure);
+					System.out.println(ck);
 				}
-				return new SkipException(result.getErrorMessage(), error);
+				Buffreader.close();
+				fileReader.close();
+				// This will add the stored cookie to your current session
+				// driver.get("https://onboardingint.tabbank.com/app/#!");
+				driver.get("http://www.example.com/this404page");
+				driver.manage().addCookie(ck);
+				driver.get("https://onboardingint.tabbank.com/app/#!");
+				((JavascriptExecutor) driver).executeScript("location.reload(true);", "");
 			}
-			return new SkipException(SKIPPED_MESSAGE);
-		case PASSED:
-			return null;
-		default:
-			throw new IllegalStateException("Unexpected result status: " + result.getStatus());
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 
 }
 *******************************************************
-package com.tab.af.cucumber;
+package com.tab.af.utilities;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.mail.BodyPart;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
-import org.testng.ITestContext;
+public class EmailReporter {
 
-import cucumber.api.event.TestRunFinished;
-import cucumber.api.event.TestRunStarted;
-import cucumber.api.testng.CucumberFeatureWrapper;
-import cucumber.runner.EventBus;
-import cucumber.runner.Runner;
-import cucumber.runner.ThreadLocalRunnerSupplier;
-import cucumber.runner.TimeService;
-import cucumber.runner.TimeServiceEventBus;
-import cucumber.runtime.BackendModuleBackendSupplier;
-import cucumber.runtime.ClassFinder;
-import cucumber.runtime.CucumberException;
-import cucumber.runtime.FeaturePathFeatureSupplier;
-import cucumber.runtime.RuntimeOptions;
-import cucumber.runtime.RuntimeOptionsFactory;
-import cucumber.runtime.filter.Filters;
-import cucumber.runtime.formatter.PluginFactory;
-import cucumber.runtime.formatter.Plugins;
-import cucumber.runtime.io.MultiLoader;
-import cucumber.runtime.io.ResourceLoader;
-import cucumber.runtime.io.ResourceLoaderClassFinder;
-import cucumber.runtime.model.CucumberFeature;
-import cucumber.runtime.model.FeatureLoader;
-import gherkin.events.PickleEvent;
+  public static void mailTestNGReport(){
+    String user = "";
+    String pass = "";
+    // Map<String,String> mailTo = new HashMap<String,String>();
+    List<String> mailTo = new ArrayList();
+    mailTo.add("");
+    mailTo.add("");
+    Properties props = new Properties();
+    props.put("mail.smtp.host", "smtp.gmail.com");
+    props.put("mail.smtp.port", "587");
+    props.put("mail.smtp.auth", "true");
+    props.put("mail.smtp.starttls.enable", "true");
+    // props.put("mail.smtp.host", "127.0.0.1");
+    // props.put("mail.smtp.port", "25");
+    Session session = Session.getInstance(props);
+    try {
+      session = Session.getInstance(props, new javax.mail.Authenticator() {
 
-/**
- * Glue code for running Cucumber via TestNG.
- */
-public class TestNGCucumberRunner {
+        @Override
+        protected PasswordAuthentication getPasswordAuthentication(){
+          return new PasswordAuthentication(user, pass);
+        }
 
-	private final EventBus bus;
-
-	private final Filters filters;
-
-	private final FeaturePathFeatureSupplier featureSupplier;
-
-	private final ThreadLocalRunnerSupplier runnerSupplier;
-
-	private final RuntimeOptions runtimeOptions;
-
-	private final Plugins plugins;
-
-	/**
-	 * Bootstrap the cucumber runtime
-	 *
-	 * @param clazz Which has the {@link cucumber.api.CucumberOptions} and
-	 *              {@link org.testng.annotations.Test} annotations
-	 */
-	public TestNGCucumberRunner(ITestContext context, Class clazz) {
-		Map<String, String> allParameters = context.getCurrentXmlTest().getAllParameters();
-		ClassLoader classLoader = clazz.getClassLoader();
-		ResourceLoader resourceLoader = new MultiLoader(classLoader);
-
-		RuntimeOptionsFactory runtimeOptionsFactory = new RuntimeOptionsFactory(clazz);
-		runtimeOptions = runtimeOptionsFactory.create();
-		// tags
-		if (allParameters.containsKey("tags")) {
-			runtimeOptions.getTagFilters().add(allParameters.getOrDefault("tags", "@smoke"));
-		}
-
-		ClassFinder classFinder = new ResourceLoaderClassFinder(resourceLoader, classLoader);
-		BackendModuleBackendSupplier backendSupplier = new BackendModuleBackendSupplier(resourceLoader, classFinder,
-				runtimeOptions);
-		bus = new TimeServiceEventBus(TimeService.SYSTEM);
-		plugins = new Plugins(classLoader, new PluginFactory(), runtimeOptions);
-		FeatureLoader featureLoader = new FeatureLoader(resourceLoader);
-		filters = new Filters(runtimeOptions);
-		this.runnerSupplier = new ThreadLocalRunnerSupplier(runtimeOptions, bus, backendSupplier);
-		featureSupplier = new FeaturePathFeatureSupplier(featureLoader, runtimeOptions);
-	}
-
-	public void runScenario(PickleEvent pickle) throws Throwable {
-		// Possibly invoked in a multi-threaded context
-		Runner runner = runnerSupplier.get();
-		TestCaseResultListener testCaseResultListener = new TestCaseResultListener(runner.getBus(),
-				runtimeOptions.isStrict());
-		runner.runPickle(pickle);
-		testCaseResultListener.finishExecutionUnit();
-
-		if (!testCaseResultListener.isPassed()) {
-			throw testCaseResultListener.getError();
-		}
-	}
-
-	public void finish() {
-		bus.send(new TestRunFinished(bus.getTime(), bus.getTimeMillis()));
-	}
-
-	/**
-	 * @return returns the cucumber scenarios as a two dimensional array of
-	 *         {@link PickleEventWrapper} scenarios combined with their
-	 *         {@link CucumberFeatureWrapper} feature.
-	 */
-	public Object[][] provideScenarios() {
-		try {
-			List<Object[]> scenarios = new ArrayList<Object[]>();
-			List<CucumberFeature> features = getFeatures();
-			for (CucumberFeature feature : features) {
-				for (PickleEvent pickle : feature.getPickles()) {
-					if (filters.matchesFilters(pickle)) {
-						scenarios.add(new Object[] { new PickleEventWrapperImpl(pickle),
-								new CucumberFeatureWrapperImpl(feature) });
-					}
-				}
-			}
-			return scenarios.toArray(new Object[][] {});
-		} catch (CucumberException e) {
-			return new Object[][] { new Object[] { new CucumberExceptionWrapper(e), null } };
-		}
-	}
-
-	List<CucumberFeature> getFeatures() {
-		plugins.setSerialEventBusOnEventListenerPlugins(bus);
-
-		List<CucumberFeature> features = featureSupplier.get();
-		bus.send(new TestRunStarted(bus.getTime(), bus.getTimeMillis()));
-		for (CucumberFeature feature : features) {
-			feature.sendTestSourceRead(bus);
-		}
-		return features;
-	}
+      });
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    try {
+      Message message = new MimeMessage(session);
+      message.setFrom(new InternetAddress(user));
+      for (String mail : mailTo) {
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mail));
+      }
+      String filename =
+          System.getProperty("user.dir") + "\\target\\SummaryReports\\Summary Report.html";
+      BodyPart messageBodyPart1 = new MimeBodyPart();
+      messageBodyPart1.setText("Summary test run Report");
+      MimeBodyPart messageBodyPart2 = new MimeBodyPart();
+      DataSource source = new FileDataSource(filename);
+      messageBodyPart2.setDataHandler(new DataHandler(source));
+      messageBodyPart2.setFileName(filename);
+      Multipart multipart = new MimeMultipart();
+      multipart.addBodyPart(messageBodyPart1);
+      multipart.addBodyPart(messageBodyPart2);
+      message.setContent(multipart);
+      Transport.send(message);
+    } catch (MessagingException e) {
+      e.printStackTrace();
+    }
+  }
 
 }
-***********************************************
-package com.tab.af.engine;
+*******************************************************
+package com.tab.af.utilities;
 
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.firefox.FirefoxOptions;
-import org.openqa.selenium.ie.InternetExplorerOptions;
-
-import com.google.gson.Gson;
-import com.tab.af.testbase.TestBase;
-
-public class BrowserCapabilities {
-
-	public Capabilities getCapabilities(String browserName) throws IOException, ParseException {
-		JSONParser parser = new JSONParser();
-		Map<String, String> map = new HashMap<>();
-		try (FileReader reader = new FileReader(
-				System.getProperty("user.dir") + "\\src\\main\\resources\\capabilities.json")) {
-			Object obj = parser.parse(reader);
-			JSONObject parentObject = (JSONObject) obj;
-			JSONObject browser = (JSONObject) parentObject.get(browserName);
-			JSONObject arguments = (JSONObject) browser.get("arguments");
-			JSONObject capabilities = (JSONObject) browser.get("capabilities");
-			if (browserName.equalsIgnoreCase("chrome")) {
-				map = new Gson().fromJson(arguments.toString(), Map.class);
-				ChromeOptions options = new ChromeOptions();
-				Set<String> keys = map.keySet();
-				for (String key : keys) {
-					options.addArguments(map.get(key));
-				}
-				options.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
-				options.setExperimentalOption("useAutomationExtension", false);
-				Map<String, Object> prefs = new HashMap<>();
-				prefs.put("credentials_enable_service", false);
-				prefs.put("password_manager_enabled", false);
-				options.setExperimentalOption("prefs", prefs);
-				// File file = new File(System.getProperty("user.dir") +
-				// "\\src\\main\\resources\\XPath-Helper_v2.0.2 (1).crx");
-				// options.addExtensions(file);
-				map.clear();
-				map = new Gson().fromJson(capabilities.toString(), Map.class);
-				keys = map.keySet();
-				for (String key : keys) {
-					options.setCapability(key, map.get(key));
-				}
-				return options;
-			}
-			if (browserName.equalsIgnoreCase("firefox")) {
-				map = new Gson().fromJson(arguments.toString(), Map.class);
-				FirefoxOptions options = new FirefoxOptions();
-				if (TestBase.prop.runType().equals("local")) {
-					options.setBinary(TestBase.prop.firefoxBinaryPath());
-				}
-				Set<String> keys = map.keySet();
-				for (String key : keys) {
-					options.addArguments(map.get(key));
-				}
-				map.clear();
-				map = new Gson().fromJson(capabilities.toString(), Map.class);
-				keys = map.keySet();
-				for (String key : keys) {
-					options.setCapability(key, map.get(key));
-				}
-				return options;
-			}
-			if (browserName.equalsIgnoreCase("ie")) {
-				InternetExplorerOptions options = new InternetExplorerOptions();
-				map = new Gson().fromJson(capabilities.toString(), Map.class);
-				Set<String> keys = map.keySet();
-				for (String key : keys) {
-					options.setCapability(key, map.get(key));
-				}
-				return options;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-}
-******************************************************
-package com.tab.af.engine;
-
-import static org.testng.Assert.assertNotNull;
-
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.openqa.selenium.Capabilities;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.NumberToTextConverter;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import com.tab.af.testbase.TestBase;
+public class ExcelReader {
 
-public class ConcurrentEngine {
-
-	private static ConcurrentHashMap<Long, DriverEngine> engines = new ConcurrentHashMap<>();
-
-	public static DriverEngine getEngine() {
-		return engines.get(Thread.currentThread().getId());
-	}
-
-	public static void createEngine(Capabilities caps, String browserName, boolean remoteExecution) throws Exception {
+	public static List<HashMap<String, String>> ReturnMap(String sheetName) {
+		List<HashMap<String, String>> mydata = null;
+		FileInputStream fis = null;
+		String FilePath = System.getProperty("user.dir") + "\\src\\test\\resources\\TestData\\TestDataSheet.xlsx";
 		try {
-			DriverEngine engine = new DriverEngine();
-			engine.setUpWebDriver(browserName, caps, remoteExecution);
-			assertNotNull(engine.getWebDriver().getWrappedDriver(), "Webdriver was not set up correctly.");
-			engines.putIfAbsent(Thread.currentThread().getId(), engine);
+			fis = new FileInputStream(FilePath);
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		sheetName = "OnBoarding";
+		try (XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
+			XSSFSheet sheet = workbook.getSheet(sheetName);
+			mydata = new ArrayList<HashMap<String, String>>();
+			Row HeaderRow = sheet.getRow(0);
+			for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+				Row currentRow = sheet.getRow(i);
+				HashMap<String, String> currentHash = new HashMap<String, String>();
+				for (int j = 0; j < currentRow.getPhysicalNumberOfCells(); j++) {
+					Cell currentCell = currentRow.getCell(j);
+					switch (currentCell.getCellType()) {
+					case STRING:
+						currentHash.put(HeaderRow.getCell(j).getStringCellValue(), currentCell.getStringCellValue());
+						break;
+					case NUMERIC:
+						currentHash.put(HeaderRow.getCell(j).getStringCellValue(),
+								String.valueOf(currentCell.getNumericCellValue()));
+						break;
+					default:
+						try {
+							throw new Exception("Cell Type Not Identified");
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				mydata.add(currentHash);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return mydata;
 	}
 
-	public static void destroyEngine() {
-		if (engines.containsKey(Thread.currentThread().getId())) {
-			if (!TestBase.prop.runType().equalsIgnoreCase("api")
-					|| !getEngine().getWebDriver().toString().contains("null")) {
-				{
-					cleanUpDriverProcesses();
+	public static ConcurrentHashMap<String, List<String>> fillData(String sheetName) throws IOException {
+		FileInputStream fis = null;
+		XSSFWorkbook workbook = null;
+		String FilePath = System.getProperty("user.dir") + "\\src\\test\\resources\\TestData\\TestDataSheet.xlsx";
+		try {
+			fis = new FileInputStream(FilePath);
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		sheetName = "OnBoarding";
+		try {
+			workbook = new XSSFWorkbook(fis);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		XSSFSheet sheet = workbook.getSheet(sheetName);
+		// ColumnName row
+		ConcurrentHashMap<String, List<String>> hm = new ConcurrentHashMap<String, List<String>>();
+		List<String> val;
+		XSSFRow headerRow = sheet.getRow(0);
+		for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
+			String columnName = headerRow.getCell(i).getStringCellValue();
+			val = new ArrayList<String>();
+			for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
+				Cell cell = sheet.getRow(j).getCell(i);
+				if (cell.getCellType() == CellType.STRING) {
+					val.add(cell.getStringCellValue());
+				} else if (cell.getCellType() == CellType.NUMERIC) {
+					val.add(NumberToTextConverter.toText(cell.getNumericCellValue()));
 				}
 			}
-			engines.remove(Thread.currentThread().getId());
+			hm.put(columnName, val);
 		}
+		try {
+			if (fis != null) {
+				fis.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return hm;
 	}
 
-	public static void closeDriver() {
-		getEngine().getWebDriver().close();
-	}
-
-	public static void cleanUpDriverProcesses() {
-		getEngine().getWebDriver().quit();
+	public static void get() throws IOException {
+		ConcurrentHashMap<String, List<String>> m = fillData(null);
+		m.get("user").get(0);
 	}
 
 }
 *********************************************************
-package com.tab.af.engine;
+package com.tab.af.utilities;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import com.codoid.products.exception.FilloException;
+import com.codoid.products.fillo.Connection;
+import com.codoid.products.fillo.Fillo;
+import com.codoid.products.fillo.Recordset;
 
-import org.openqa.selenium.Capabilities;
-import org.openqa.selenium.SessionNotCreatedException;
-import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxOptions;
-import org.openqa.selenium.ie.InternetExplorerDriver;
-import org.openqa.selenium.ie.InternetExplorerOptions;
-import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.support.ThreadGuard;
-import org.openqa.selenium.support.events.EventFiringWebDriver;
+public class Fillio {
 
-import com.tab.af.actions.ShadowActions;
-import com.tab.af.actions.WebActions;
-import com.tab.af.reporting.ReportLibrary;
-import com.tab.af.testbase.TestBase;
+  public static void UpdateTestResultsToExcel(String testDataFilePath, String sheetName,
+      String tcStatus, String testCaseId){
+    Connection conn = null;
+    Fillo fillo = new Fillo();
+    try {
+      conn = fillo.getConnection(
+          "C:\\Users\\abhay\\git\\Tabparallel\\src\\test\\resources\\TestData\\TestDataSheet.xlsx");
+      String query = String.format("UPDATE %s SET TestCaseStatus='%s' where TestCaseID='%s'",
+          sheetName, tcStatus, testCaseId);
+      conn.executeUpdate(query);
+    } catch (FilloException e) {
+      e.printStackTrace();
+    }
+  }
 
-import io.github.bonigarcia.wdm.WebDriverManager;
+  private static Map<String, Set<String>> kiqKeySet = new HashMap();
 
-public class DriverEngine {
+  public static void getTestDataInMap() throws Exception{
+    String question =
+        "According to our records, within the last two years you purchased veterinary insurance for which one of the following pets?";
+    String testDataFile =
+        System.getProperty("user.dir") + "\\src\\main\\resources\\data\\KIQKeys.xlsx";
+    String sheetName = "ANSWERKEYS";
+    if (question
+        .contains("From the list below, what is the area code for phone number ending in")) {
+      question = "From the list below, what is the area code for phone number ending in";
+    }
+    String query = String.format("SELECT * FROM " + sheetName);
+    Fillo fillo = new Fillo();
+    Connection conn = null;
+    System.setProperty("ROW", "1");
+    System.setProperty("COLUMN", "1");
+    Recordset recordset = null;
+    try {
+      conn = fillo.getConnection(testDataFile);
+      recordset = conn.executeQuery(query);
+      Set<String> set = new HashSet<String>();
+      while (recordset.next()) {
+        ArrayList<String> mm = new ArrayList<String>();
+        // for (int i=1;i<recordset.getFieldNames().size();i++) {
+        //
+        // set.add(recordset.getField(i).name());
+        //
+        // }
+        for (String string : recordset.getFieldNames()) {
+          mm.add(string);
+        }
+        kiqKeySet.put(recordset.getField(0).name(), set);
+        System.out.print("sd");
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new Exception("Exception Occured While Readin KIQ KeyMap Excel");
+    }
+    conn.close();
+  }
 
-	private EventFiringWebDriver webDriver;
+}
+**********************************************************
+package com.tab.af.utilities;
 
-	private WebActions webActions;
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
-	private ReportLibrary reportLibrary;
+public class Helpers {
+	public void getScenarioIndex(String filePath) {
+		File file = new File(filePath);
 
-	private ShadowActions shadowActions;
+		try (Scanner scanner = new Scanner(file)) {
 
-	private String browser;
-
-	private String browserVersion;
-
-	private WebDriverEvents webDriverEvents = WebDriverEvents.getInstance();
-
-	public String getBrowser() {
-		return browser;
-	}
-
-	public void setBrowser(String browser) {
-		this.browser = browser;
-	}
-
-	public String getBrowserVersion() {
-		return browserVersion;
-	}
-
-	public void setBrowserVersion(String browserVersion) {
-		this.browserVersion = browserVersion;
-	}
-
-	public DriverEngine() {
-		initialize();
-	}
-
-	public void initialize() {
-		initalizeWebActions();
-		initalizeReportLibrary();
-		initalizeShadowActions();
-	}
-
-	private void initalizeWebActions() {
-		webActions = new WebActions(this);
-	}
-
-	private void initalizeReportLibrary() {
-		reportLibrary = new ReportLibrary(this);
-	}
-
-	private void initalizeShadowActions() {
-		shadowActions = new ShadowActions(this);
-	}
-
-	public WebActions getWebActions() {
-		return webActions;
-	}
-
-	public ReportLibrary getReportLibrary() {
-		return reportLibrary;
-	}
-
-	public EventFiringWebDriver getWebDriver() {
-		return webDriver;
-	}
-
-	public ShadowActions getShadowActions() {
-		return shadowActions;
-	}
-
-	public void setWebDriver(EventFiringWebDriver webDriver) {
-		this.webDriver = webDriver;
-	}
-
-	public void setUpWebDriver(String browserType, Capabilities caps, boolean remoteExecution) throws Exception {
-		selectDriverType(browserType, caps, remoteExecution);
-	}
-
-	private final void selectDriverType(String browserType, Capabilities caps, boolean remoteExecution)
-			throws Exception {
-		if (remoteExecution)
-			setUpRemoteWebDriver(browserType, caps);
-		else
-			setUpLocalWebDriver(browserType, caps);
-	}
-
-	private void setUpRemoteWebDriver(String browser, Capabilities caps) throws Exception {
-		try {
-			webDriver = new EventFiringWebDriver(ThreadGuard.protect(createRemoteDriver(caps)));
-			webDriver.manage().window().maximize();
-			if (Boolean.parseBoolean(TestBase.prop.seleniumEventLog())) {
-				webDriver.register(webDriverEvents);
+			int index = 1;
+			while (scanner.hasNext()) {
+				String text = scanner.nextLine();
+				if (text.contains("Scenario:")) {
+					System.out.print(index + ":");
+				}
+				index++;
 			}
-		} catch (MalformedURLException e) {
-			System.out.println("setUpRemoteWebDriver, The url provided was malformed.");
-			throw e;
-		} catch (SessionNotCreatedException e) {
-			System.out.println("setUpRemoteWebDriver, The session could not be created.");
-			throw e;
-		} catch (WebDriverException e) {
-			System.out.println(
-					"setUpRemoteWebDriver, The webdriver created on one thread was accessed by another thread or the session could not be created");
-			throw e;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
-	private RemoteWebDriver createRemoteDriver(Capabilities caps) throws MalformedURLException {
-		RemoteWebDriver remoteWebDriver;
-		String hubURL = System.getProperty("grid.url");
-		switch ("grid") {
-		case "grid":
-			remoteWebDriver = new RemoteWebDriver(new URL(hubURL), caps);
-			break;
-		default:
-			System.out.println("an attempt to create a remote web driver for grid is failed");
-			remoteWebDriver = new RemoteWebDriver(new URL(hubURL), caps);
+	public void addTagsToScenario(String filePath) {
+
+		File file = new File(filePath);
+		List<String> arr = new ArrayList<String>();
+
+		try (Scanner scanner = new Scanner(file)) {
+
+			int i = 0;
+			while (scanner.hasNext()) {
+
+				String text = scanner.nextLine();
+				if (text.contains("Scenario:")) {
+					String name = text.trim().split(" ")[1];
+					String tags = arr.get(i - 1);
+					arr.add(i - 1, tags + " " + "@" + name);
+				}
+				arr.add(i, text);
+
+				i++;
+			}
+			for (String string : arr) {
+				System.out.println(string);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		return remoteWebDriver;
 	}
 
-	private void setUpLocalWebDriver(String browserType, Capabilities caps) throws Exception {
-		EventFiringWebDriver eventDriver;
-		switch (browserType.toUpperCase()) {
-		case "CHROME":
-			eventDriver = setUpLocalChromeDriver(caps);
-			break;
-		case "FIREFOX":
-			eventDriver = setUpLocalFirefoxDriver(caps);
-			break;
-		case "IE":
-			eventDriver = setUpLocalIeDriver(caps);
-			break;
-		default:
-			throw new IllegalArgumentException(browserType + " is not supported. Please choose another browser.");
+	public String getshortenedStackTraceMessage(Exception e, int maxLines) {
+		StringWriter writer = new StringWriter();
+		e.printStackTrace(new PrintWriter(writer));
+		String[] lines = writer.toString().split("\n");
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < Math.min(lines.length, maxLines); i++) {
+			sb.append(lines[i]).append("\n");
 		}
-		webDriver = eventDriver;
-		// #############
-		if (Boolean.parseBoolean(TestBase.prop.seleniumEventLog())) {
-			webDriver.register(webDriverEvents);
-		}
-		webDriver.manage().window().maximize();
-		setBrowser(caps.getBrowserName());
-		setBrowserVersion(caps.getVersion());
+		return sb.toString();
 	}
 
-	private EventFiringWebDriver setUpLocalChromeDriver(Capabilities caps) {
-		EventFiringWebDriver driver;
-		ChromeOptions options = (ChromeOptions) caps;
-		WebDriverManager.chromedriver().version(TestBase.prop.chromeBinaryVersion()).setup();
-		if (caps == null) {
-			driver = new EventFiringWebDriver(ThreadGuard.protect(new ChromeDriver()));
-		} else {
-			driver = new EventFiringWebDriver(ThreadGuard.protect(new ChromeDriver(options)));
+	public void getFeatureScenarioIndexDuplicateScenarios() {
+		String prevname = "";
+		File file = new File("C:\\Users\\achaudhary\\Desktop\\d.txt");
+
+		try (Scanner scanner = new Scanner(file)) {
+
+			int index = 1;
+			while (scanner.hasNext()) {
+				String text = scanner.nextLine();
+				if (text.contains("Scenario:")) {
+					if (prevname == "") {
+						prevname = text.trim();
+						continue;
+					}
+
+					String currname = text.trim();
+					if (prevname.equals(currname)) {
+						System.out.print(currname);
+					}
+				}
+				index = index + 1;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		return driver;
 	}
 
-	private EventFiringWebDriver setUpLocalFirefoxDriver(Capabilities caps) {
-		EventFiringWebDriver driver;
-		FirefoxOptions options = (FirefoxOptions) caps;
-		WebDriverManager.firefoxdriver().version(TestBase.prop.firefoxBinaryVersion()).setup();
-		if (caps == null) {
-			driver = new EventFiringWebDriver(ThreadGuard.protect(new FirefoxDriver()));
-		} else {
-			driver = new EventFiringWebDriver(ThreadGuard.protect(new FirefoxDriver(options)));
+	public void cleanDownloadDirectory() {
+		String home = System.getProperty("user.home");
+		File dir = new File(home + "/Downloads/");
+		File[] dirContents = dir.listFiles();
+		for (File file : dirContents) {
+			file.delete();
 		}
-		return driver;
-	}
-
-	private EventFiringWebDriver setUpLocalIeDriver(Capabilities caps) {
-		EventFiringWebDriver driver;
-		InternetExplorerOptions options = (InternetExplorerOptions) caps;
-		WebDriverManager.iedriver().version(TestBase.prop.internetExplorerBinaryVersion()).arch32().setup();
-		if (caps == null) {
-			driver = new EventFiringWebDriver(ThreadGuard.protect(new InternetExplorerDriver()));
-		} else {
-			driver = new EventFiringWebDriver(ThreadGuard.protect(new InternetExplorerDriver(options)));
-		}
-		return driver;
 	}
 
 }
-********************************************************
-package com.tab.af.engine;
+*********************************************************************
+package com.tab.af.utilities;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
-public class GridSetup {
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-	public String startGrid(String portNumber) throws UnknownHostException {
-		String url = "http://" + InetAddress.getLocalHost().getHostAddress() + ":" + portNumber;
-		String consoleURL = url + "/grid/console";
-		HttpURLConnection huc = null;
-		try {
-			huc = (HttpURLConnection) (new URL(consoleURL).openConnection());
-			huc.setRequestMethod("HEAD");
-			huc.connect();
-			if (huc.getResponseCode() == 200) {
-				System.out.println("Hub Already running");
-			}
-		} catch (Exception e) {
-			if (e.getMessage().contains("Connection refused")) {
-				System.out.println("Hub is not Started");
-				// For Hidden Mode Append " /B " After Start
-				String hubPath = System.getProperty("user.dir") + "\\grid\\hub.bat";
-				String command = "cmd.exe /C Start  " + hubPath;
-				try {
-					Runtime.getRuntime().exec(command);
-					// wait so as to Let Hub Initializes Properly
-					Thread.sleep(5000);
-					System.out.println("Hub Started");
-				} catch (InterruptedException | IOException ex) {
-					ex.printStackTrace();
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+public class JSONConverter {
+
+	private static final String STATEKEY1 = "STATE";
+
+	private static final String STATEKEY2 = "DL STATE";
+
+	private static final String STATEKEY3 = "beststate";
+
+	private static final String STATEKEY4 = "verstate";
+
+	private static final String STATEKEY5 = "rep1_st";
+
+	private static final String STATEKEY6 = "bus_st";
+
+	private static final String DOBKEY = "bus_st";
+
+	@SuppressWarnings("deprecation")
+	public static void convertExcelToJSONByColumnNameAsKey(String inputFilePath, String OutputFilePath) {
+
+		File file = new File(inputFilePath);
+		JsonObject sheetsJsonObject = new JsonObject();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		String prettyJson = "";
+		try (Workbook workbook = new XSSFWorkbook(file)) {
+			// For single sheet data either remove others or set loop to 0
+			for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+				JsonArray sheetArray = new JsonArray();
+				ArrayList<String> columnNames = new ArrayList<String>();
+				Sheet sheet = workbook.getSheetAt(i);
+				Iterator<Row> sheetIterator = sheet.iterator();
+				while (sheetIterator.hasNext()) {
+					Row currentRow = sheetIterator.next();
+					JsonObject jsonObject = new JsonObject();
+					if (currentRow.getRowNum() != 0) {
+						for (int j = 0; j < columnNames.size(); j++) {
+							if (currentRow.getCell(j) != null) {
+								if (currentRow.getCell(j).getCellType() == CellType.BLANK) {
+									jsonObject.addProperty(columnNames.get(j), "");
+								} else {
+									currentRow.getCell(j).setCellType(CellType.STRING);
+									if (columnNames.get(j).equalsIgnoreCase(STATEKEY1)
+											|| columnNames.get(j).equalsIgnoreCase(STATEKEY2)
+											|| columnNames.get(j).equalsIgnoreCase(STATEKEY3)
+											|| columnNames.get(j).equalsIgnoreCase(STATEKEY4)
+											|| columnNames.get(j).equalsIgnoreCase(STATEKEY5)
+											|| columnNames.get(j).equalsIgnoreCase(STATEKEY6)) {
+										String val = stateName.get(currentRow.getCell(j).getStringCellValue());
+										if (val == null) {
+											System.out.print("Break");
+										}
+										jsonObject.addProperty(columnNames.get(j), val);
+									} else if (columnNames.get(j).equalsIgnoreCase(DOBKEY)) {
+										String val = currentRow.getCell(j).getStringCellValue();
+										if (val.length() < 8) {
+											val = "0101" + val;
+											jsonObject.addProperty(columnNames.get(j), val);
+										}
+									} else {
+										jsonObject.addProperty(columnNames.get(j),
+												currentRow.getCell(j).getStringCellValue().trim());
+									}
+								}
+							} else {
+								jsonObject.addProperty(columnNames.get(j), "");
+							}
+						}
+						sheetArray.add(jsonObject);
+					} else {
+						// store column names
+						for (int k = 0; k < currentRow.getPhysicalNumberOfCells(); k++) {
+							columnNames.add(currentRow.getCell(k).getStringCellValue());
+						}
+					}
 				}
-			} else {
+				sheetsJsonObject.add(workbook.getSheetName(i), sheetArray);
+				prettyJson = gson.toJson(sheetsJsonObject);
+
+				// Write to Converted test Data JSON
+				try (FileWriter files = new FileWriter(OutputFilePath)) {
+					files.append(prettyJson);
+					files.flush();
+				}
+			}
+		} catch (IOException | InvalidFormatException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * A Map of USA States , Abbreviation:StateName Key is Abbreviation and Value is
+	 * full State Name
+	 */
+	public static final Map<String, String> stateName;
+	static {
+		stateName = new HashMap<String, String>();
+		stateName.put("AL", "Alabama");
+		stateName.put("AK", "Alaska");
+		stateName.put("AB", "Alberta");
+		stateName.put("AZ", "Arizona");
+		stateName.put("AR", "Arkansas");
+		stateName.put("BC", "British Columbia");
+		stateName.put("CA", "California");
+		stateName.put("CO", "Colorado");
+		stateName.put("CT", "Connecticut");
+		stateName.put("DE", "Delaware");
+		stateName.put("DC", "District Of Columbia");
+		stateName.put("FL", "Florida");
+		stateName.put("GA", "Georgia");
+		stateName.put("GU", "Guam");
+		stateName.put("HI", "Hawaii");
+		stateName.put("ID", "Idaho");
+		stateName.put("IL", "Illinois");
+		stateName.put("IN", "Indiana");
+		stateName.put("IA", "Iowa");
+		stateName.put("KS", "Kansas");
+		stateName.put("KY", "Kentucky");
+		stateName.put("LA", "Louisiana");
+		stateName.put("ME", "Maine");
+		stateName.put("MB", "Manitoba");
+		stateName.put("MD", "Maryland");
+		stateName.put("MA", "Massachusetts");
+		stateName.put("MI", "Michigan");
+		stateName.put("MN", "Minnesota");
+		stateName.put("MS", "Mississippi");
+		stateName.put("MO", "Missouri");
+		stateName.put("MT", "Montana");
+		stateName.put("NE", "Nebraska");
+		stateName.put("NV", "Nevada");
+		stateName.put("NB", "New Brunswick");
+		stateName.put("NH", "New Hampshire");
+		stateName.put("NJ", "New Jersey");
+		stateName.put("NM", "New Mexico");
+		stateName.put("NY", "New York");
+		stateName.put("NF", "Newfoundland");
+		stateName.put("NC", "North Carolina");
+		stateName.put("ND", "North Dakota");
+		stateName.put("NT", "Northwest Territories");
+		stateName.put("NS", "Nova Scotia");
+		stateName.put("NU", "Nunavut");
+		stateName.put("OH", "Ohio");
+		stateName.put("OK", "Oklahoma");
+		stateName.put("ON", "Ontario");
+		stateName.put("OR", "Oregon");
+		stateName.put("PA", "Pennsylvania");
+		stateName.put("PE", "Prince Edward Island");
+		stateName.put("PR", "Puerto Rico");
+		stateName.put("QC", "Quebec");
+		stateName.put("RI", "Rhode Island");
+		stateName.put("SK", "Saskatchewan");
+		stateName.put("SC", "South Carolina");
+		stateName.put("SD", "South Dakota");
+		stateName.put("TN", "Tennessee");
+		stateName.put("TX", "Texas");
+		stateName.put("UT", "Utah");
+		stateName.put("VT", "Vermont");
+		stateName.put("VI", "Virgin Islands");
+		stateName.put("VA", "Virginia");
+		stateName.put("WA", "Washington");
+		stateName.put("WV", "West Virginia");
+		stateName.put("WI", "Wisconsin");
+		stateName.put("WY", "Wyoming");
+		stateName.put("YT", "Yukon Territory");
+	}
+
+}
+**************************************************************
+package com.tab.af.utilities;
+
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+public class JSONReader {
+
+	private static JSONReader instance;
+
+	private static final String DIRECTORY = System.getProperty("user.dir");
+
+	private static final String DEPOSITPATH = DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json";
+
+	private static final String LOANPATH = DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Loan.json";
+
+	private static final String INDIVIUDALOANPATH = DIRECTORY
+			+ "\\src\\main\\resources\\OnBoardTestData\\Loan Individual.json";
+
+	private static ConcurrentHashMap<Integer, JSONObject> depositDataMap = new ConcurrentHashMap<>();
+
+	private static ConcurrentHashMap<Integer, JSONObject> loanDataMap = new ConcurrentHashMap<>();
+
+	private static ConcurrentHashMap<Integer, JSONObject> loanIndividualDataMap = new ConcurrentHashMap<>();
+
+	private static volatile AtomicInteger depositArrayIndex = new AtomicInteger();
+
+	private static volatile AtomicInteger loanArrayindex = new AtomicInteger();
+
+	private static volatile AtomicInteger loanIndividualArrayIndex = new AtomicInteger();
+
+	private static JSONArray postDataArrayDeposits = new JSONArray();
+
+	private static JSONArray preDataArrayDeposits = new JSONArray();
+
+	private static JSONArray postDataArrayLoan = new JSONArray();
+
+	private static JSONArray preDataArrayLoan = new JSONArray();
+
+	private JSONReader() {
+	}
+
+	public static JSONReader getInstance() {
+		if (instance == null) {
+			instance = new JSONReader();
+		}
+		return instance;
+	}
+
+	/**
+	 * Returns a New Deposit Data Test Data Map with Next Index
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public ConcurrentHashMap<String, String> getDepositMap() throws Exception {
+		ConcurrentHashMap<String, String> dataMap = null;
+		if (depositDataMap.isEmpty()) {
+			loadDepositMap();
+		}
+		JSONObject dataAtIndex = depositDataMap.get(depositArrayIndex.getAndIncrement());
+		dataMap = jsonToMap(dataAtIndex.toJSONString());
+		return dataMap;
+	}
+
+	public void loadDepositMap() throws Exception {
+		JSONParser jsonParser = new JSONParser();
+		JSONArray arr;
+		try (FileReader reader = new FileReader(DEPOSITPATH)) {
+			Object obj = jsonParser.parse(reader);
+			arr = (JSONArray) obj;
+		} catch (Exception e) {
+			throw e;
+		}
+		for (int i = 0; i < arr.size(); i++) {
+			depositDataMap.put(i, (JSONObject) arr.get(i));
+		}
+	}
+
+	public ConcurrentHashMap<String, String> getLoanMap() throws Exception {
+		ConcurrentHashMap<String, String> dataMap = null;
+		if (loanDataMap.isEmpty()) {
+			loadLoanDataMap();
+		}
+		JSONObject dataAtIndex = loanDataMap.get(loanArrayindex.getAndIncrement());
+		dataMap = jsonToMap(dataAtIndex.toJSONString());
+		// preDataArrayLoan.remove(dataAtIndex);
+		return dataMap;
+	}
+
+	public void loadLoanDataMap() throws Exception {
+		JSONParser jsonParser = new JSONParser();
+		JSONArray arr;
+		try (FileReader reader = new FileReader(LOANPATH)) {
+			Object obj = jsonParser.parse(reader);
+			arr = (JSONArray) obj;
+		} catch (Exception e) {
+			throw e;
+		}
+		for (int i = 0; i < arr.size(); i++) {
+			loanDataMap.put(i, (JSONObject) arr.get(i));
+		}
+	}
+
+	public ConcurrentHashMap<String, String> getIndividualMap() throws Exception {
+		ConcurrentHashMap<String, String> dataMap = null;
+		JSONObject dataAtIndex = null;
+		if (loanIndividualDataMap.isEmpty()) {
+			loadIndividualLoanDataMap();
+		}
+		dataAtIndex = loanIndividualDataMap.get(loanIndividualArrayIndex.getAndIncrement());
+		dataMap = jsonToMap(dataAtIndex.toString());
+		// preDataArrayLoanIndividual.remove(dataAtIndex);
+		return dataMap;
+	}
+
+	private ConcurrentHashMap<String, String> jsonToMap(String json)
+			throws JsonParseException, JsonMappingException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		ConcurrentHashMap<String, String> map = mapper.readValue(json, ConcurrentHashMap.class);
+		return map;
+	}
+
+	public void loadIndividualLoanDataMap() throws Exception {
+		JSONParser jsonParser = new JSONParser();
+		JSONArray arr;
+		try (FileReader reader = new FileReader(INDIVIUDALOANPATH)) {
+			Object obj = jsonParser.parse(reader);
+			arr = (JSONArray) obj;
+		} catch (Exception e) {
+			throw e;
+		}
+		for (int i = 0; i < arr.size(); i++) {
+			loanIndividualDataMap.put(i, (JSONObject) arr.get(i));
+		}
+	}
+
+	public static void flushTestDataToJSON() {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+		if (!preDataArrayDeposits.isEmpty()) {
+			try (FileWriter file = new FileWriter(
+					DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json")) {
+				file.append(gson.toJson(preDataArrayDeposits));
+				file.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to PREDATA");
 				e.printStackTrace();
 			}
 		}
-		return url + "/wd/hub";
+		if (!postDataArrayDeposits.isEmpty()) {
+			try (FileWriter writer = new FileWriter(
+					DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\DepositsPostData.json", true)) {
+				String formattedString = gson.toJson(postDataArrayDeposits);
+				writer.append(formattedString);
+				writer.append(",");
+				writer.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to POSTDATA");
+				e.printStackTrace();
+			}
+		}
+		if (!preDataArrayLoan.isEmpty()) {
+			try (FileWriter file = new FileWriter(DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Loan.json")) {
+				file.append(gson.toJson(preDataArrayLoan));
+				file.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to PREDATA");
+				e.printStackTrace();
+			}
+		}
+		if (!postDataArrayLoan.isEmpty()) {
+			try (FileWriter writer = new FileWriter(
+					DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\LoanPostData.json", true)) {
+				String formattedString = gson.toJson(postDataArrayLoan);
+				writer.append(formattedString);
+				writer.append(",");
+				writer.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to POSTDATA");
+				e.printStackTrace();
+			}
+		}
 	}
 
 }
-**********************************************
-package com.tab.af.engine;
+**************************************************************
+package com.tab.af.utilities;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.joda.time.DateTime;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+public class JSONReaderBackup {
+
+	public ConcurrentHashMap<String, String> getFirstObjectMap() {
+		String dir = System.getProperty("user.dir");
+		ConcurrentHashMap<String, String> cMap = new ConcurrentHashMap<String, String>();
+		Object lock = new Object();
+		String formattedString = null;
+		JSONParser jsonParser = new JSONParser();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		synchronized (lock) {
+			try {
+				FileReader reader = new FileReader(dir + "\\src\\main\\resources\\data\\Deposits.json");
+				// Read JSON file
+				Object obj = jsonParser.parse(reader);
+				JSONObject parentObject = (JSONObject) obj;
+				JSONArray dataArray = (JSONArray) parentObject.get("UserDetails");
+				JSONObject dataAtZero = (JSONObject) dataArray.get(0);
+				cMap = new Gson().fromJson(dataAtZero.toString(), ConcurrentHashMap.class);
+				dataAtZero.put("Data Used", true);
+				dataAtZero.put("Used Date", DateTime.now().toString());
+				try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\data\\PostData.json", true)) {
+					formattedString = gson.toJson(dataAtZero);
+					file.append(formattedString);
+					file.flush();
+				} catch (Exception e) {
+					System.out.print("Exception Occured While Writing to POSTDATA");
+					e.printStackTrace();
+				}
+				dataArray.remove(dataAtZero);
+				try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\data\\Deposits.json")) {
+					formattedString = gson.toJson(parentObject);
+					file.append(formattedString);
+					file.flush();
+				} catch (Exception e) {
+					System.out.print("Exception Occured While Writing to PREDATA");
+					e.printStackTrace();
+				}
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Reading Input JSON");
+			}
+			// System.out.println(cMap);
+			return cMap;
+		}
+	}
+
+	@SuppressWarnings("deprecation")
+	public void convertExcelToJSONByColumnNameAsKey() {
+		String dir = System.getProperty("user.dir");
+		// Below Enter the Path of Input Excel
+		File file = new File("C:\\Users\\achaudhary\\Downloads\\edited loans data.xlsx");
+		JsonObject sheetsJsonObject = new JsonObject();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		Workbook workbook = null;
+		String prettyJson = "";
+		try {
+			workbook = new XSSFWorkbook(file);
+		} catch (InvalidFormatException | IOException e) {
+			e.printStackTrace();
+		}
+		// For single sheet data either remove others or set loop to 0
+		for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+			JsonArray sheetArray = new JsonArray();
+			ArrayList<String> columnNames = new ArrayList<String>();
+			Sheet sheet = workbook.getSheetAt(i);
+			Iterator<Row> sheetIterator = sheet.iterator();
+			while (sheetIterator.hasNext()) {
+				Row currentRow = sheetIterator.next();
+				JsonObject jsonObject = new JsonObject();
+				if (currentRow.getRowNum() != 0) {
+					for (int j = 0; j < columnNames.size(); j++) {
+						if (currentRow.getCell(j) != null) {
+							if (currentRow.getCell(j).getCellType() == CellType.BLANK) {
+								jsonObject.addProperty(columnNames.get(j), "");
+							} else {
+								currentRow.getCell(j).setCellType(CellType.STRING);
+								String columnName = columnNames.get(j);
+								if (columnName.equals("DL STATE") || columnName.equals("STATE")) {
+									jsonObject.addProperty(columnName,
+											stateName.get(currentRow.getCell(j).getStringCellValue().trim()));
+								} else {
+									jsonObject.addProperty(columnNames.get(j),
+											currentRow.getCell(j).getStringCellValue());
+								}
+							}
+						} else {
+							jsonObject.addProperty(columnNames.get(j), "");
+						}
+					}
+					sheetArray.add(jsonObject);
+				} else {
+					// store column names
+					for (int k = 0; k < currentRow.getPhysicalNumberOfCells(); k++) {
+						columnNames.add(currentRow.getCell(k).getStringCellValue());
+					}
+				}
+			}
+			sheetsJsonObject.add(workbook.getSheetName(i), sheetArray);
+			prettyJson = gson.toJson(sheetsJsonObject);
+		}
+		// Write to Converted test Data JSON
+		try (FileWriter files = new FileWriter(dir + "\\src\\main\\resources\\data\\CompleteLoanData.json")) {
+			files.append(prettyJson);
+			files.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static final Map<String, String> stateName;
+	static {
+		stateName = new HashMap<String, String>();
+		stateName.put("AL", "Alabama");
+		stateName.put("AK", "Alaska");
+		stateName.put("AB", "Alberta");
+		stateName.put("AZ", "Arizona");
+		stateName.put("AR", "Arkansas");
+		stateName.put("BC", "British Columbia");
+		stateName.put("CA", "California");
+		stateName.put("CO", "Colorado");
+		stateName.put("CT", "Connecticut");
+		stateName.put("DE", "Delaware");
+		stateName.put("DC", "District Of Columbia");
+		stateName.put("FL", "Florida");
+		stateName.put("GA", "Georgia");
+		stateName.put("GU", "Guam");
+		stateName.put("HI", "Hawaii");
+		stateName.put("ID", "Idaho");
+		stateName.put("IL", "Illinois");
+		stateName.put("IN", "Indiana");
+		stateName.put("IA", "Iowa");
+		stateName.put("KS", "Kansas");
+		stateName.put("KY", "Kentucky");
+		stateName.put("LA", "Louisiana");
+		stateName.put("ME", "Maine");
+		stateName.put("MB", "Manitoba");
+		stateName.put("MD", "Maryland");
+		stateName.put("MA", "Massachusetts");
+		stateName.put("MI", "Michigan");
+		stateName.put("MN", "Minnesota");
+		stateName.put("MS", "Mississippi");
+		stateName.put("MO", "Missouri");
+		stateName.put("MT", "Montana");
+		stateName.put("NE", "Nebraska");
+		stateName.put("NV", "Nevada");
+		stateName.put("NB", "New Brunswick");
+		stateName.put("NH", "New Hampshire");
+		stateName.put("NJ", "New Jersey");
+		stateName.put("NM", "New Mexico");
+		stateName.put("NY", "New York");
+		stateName.put("NF", "Newfoundland");
+		stateName.put("NC", "North Carolina");
+		stateName.put("ND", "North Dakota");
+		stateName.put("NT", "Northwest Territories");
+		stateName.put("NS", "Nova Scotia");
+		stateName.put("NU", "Nunavut");
+		stateName.put("OH", "Ohio");
+		stateName.put("OK", "Oklahoma");
+		stateName.put("ON", "Ontario");
+		stateName.put("OR", "Oregon");
+		stateName.put("PA", "Pennsylvania");
+		stateName.put("PE", "Prince Edward Island");
+		stateName.put("PR", "Puerto Rico");
+		stateName.put("QC", "Quebec");
+		stateName.put("RI", "Rhode Island");
+		stateName.put("SK", "Saskatchewan");
+		stateName.put("SC", "South Carolina");
+		stateName.put("SD", "South Dakota");
+		stateName.put("TN", "Tennessee");
+		stateName.put("TX", "Texas");
+		stateName.put("UT", "Utah");
+		stateName.put("VT", "Vermont");
+		stateName.put("VI", "Virgin Islands");
+		stateName.put("VA", "Virginia");
+		stateName.put("WA", "Washington");
+		stateName.put("WV", "West Virginia");
+		stateName.put("WI", "Wisconsin");
+		stateName.put("WY", "Wyoming");
+		stateName.put("YT", "Yukon Territory");
+	}
+
+	private static volatile AtomicInteger arrindex = new AtomicInteger();
+
+	private static JSONArray postDataArrayDeposits = new JSONArray();
+
+	private static JSONArray preDataArrayDeposits = new JSONArray();
+
+	private static volatile AtomicInteger arrLoanindex = new AtomicInteger();
+
+	private static JSONArray postDataArrayLoan = new JSONArray();
+
+	private static JSONArray preDataArrayLoan = new JSONArray();
+
+	private static volatile AtomicInteger arrLoanIndividualindex = new AtomicInteger();
+
+	private static JSONArray postDataArrayLoanIndividual = new JSONArray();
+
+	private static JSONArray preDataArrayLoanIndividual = new JSONArray();
+
+	/**
+	 * Returns a New Deposit Data Test Data Map with Next Index
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public ConcurrentHashMap<String, String> getDepositMap() throws Exception {
+		JSONObject dataAtIndex = null;
+		String dir = System.getProperty("user.dir");
+		Object lock = new Object();
+		JSONParser jsonParser = new JSONParser();
+		try (FileReader reader = new FileReader(dir + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json")) {
+			// Read JSON file
+			Object obj = jsonParser.parse(reader);
+			JSONArray arr = (JSONArray) obj;
+			if (preDataArrayDeposits.isEmpty()) {
+				preDataArrayDeposits = (JSONArray) obj;
+			}
+			dataAtIndex = (JSONObject) arr.get(arrindex.getAndIncrement());
+			synchronized (lock) {
+				preDataArrayDeposits.remove(dataAtIndex);
+				dataAtIndex.put("Used Date", DateTime.now().toString());
+				postDataArrayDeposits.add(dataAtIndex);
+			}
+		} catch (Exception e) {
+			throw new Exception("Exception Occued While Reading Deposit's TestData" + e.getMessage());
+		}
+		return getMap(dataAtIndex.toString());
+	}
+
+	public ConcurrentHashMap<String, String> getLoanMap() throws Exception {
+		JSONObject dataAtIndex = null;
+		String dir = System.getProperty("user.dir");
+		Object lock = new Object();
+		JSONParser jsonParser = new JSONParser();
+		try (FileReader reader = new FileReader(dir + "\\src\\main\\resources\\OnBoardTestData\\Loan.json")) {
+			// Read JSON file
+			Object obj = jsonParser.parse(reader);
+			JSONArray arr = (JSONArray) obj;
+			if (preDataArrayLoan.isEmpty()) {
+				preDataArrayLoan = (JSONArray) obj;
+			}
+			dataAtIndex = (JSONObject) arr.get(arrLoanindex.getAndIncrement());
+			synchronized (lock) {
+				preDataArrayLoan.remove(dataAtIndex);
+				dataAtIndex.put("Used Date", DateTime.now().toString());
+				postDataArrayLoan.add(dataAtIndex);
+			}
+		} catch (Exception e) {
+			throw new Exception("Exception Occued While Reading LOAN's TestData" + e.getMessage());
+		}
+		return getMap(dataAtIndex.toString());
+	}
+
+	public ConcurrentHashMap<String, String> getIndividualMap() throws Exception {
+		JSONObject dataAtIndex = null;
+		String dir = System.getProperty("user.dir");
+		Object lock = new Object();
+		JSONParser jsonParser = new JSONParser();
+		try (FileReader reader = new FileReader(
+				dir + "\\src\\main\\resources\\OnBoardTestData\\Loan Individual.json")) {
+			// Read JSON file
+			Object obj = jsonParser.parse(reader);
+			JSONArray arr = (JSONArray) obj;
+			if (preDataArrayLoanIndividual.isEmpty()) {
+				preDataArrayLoanIndividual = (JSONArray) obj;
+			}
+			dataAtIndex = (JSONObject) arr.get(arrLoanIndividualindex.getAndIncrement());
+			synchronized (lock) {
+				preDataArrayLoanIndividual.remove(dataAtIndex);
+				dataAtIndex.put("Used Date", DateTime.now().toString());
+				postDataArrayLoanIndividual.add(dataAtIndex);
+			}
+		} catch (Exception e) {
+			throw new Exception("Exception Occued While Reading LOAN's Indiviudal TestData" + e.getMessage());
+		}
+		return getMap(dataAtIndex.toString());
+	}
+
+	public static void flushTestDataToJSON() {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String dir = System.getProperty("user.dir");
+		if (!preDataArrayDeposits.isEmpty()) {
+			try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json")) {
+				file.append(gson.toJson(preDataArrayDeposits));
+				file.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to PREDATA");
+				e.printStackTrace();
+			}
+		}
+		if (!postDataArrayDeposits.isEmpty()) {
+			try (FileWriter writer = new FileWriter(
+					dir + "\\src\\main\\resources\\OnBoardTestData\\DepositsPostData.json", true)) {
+				String formattedString = gson.toJson(postDataArrayDeposits);
+				writer.append(formattedString);
+				writer.append(",");
+				writer.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to POSTDATA");
+				e.printStackTrace();
+			}
+		}
+		if (!preDataArrayLoan.isEmpty()) {
+			try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\OnBoardTestData\\Loan.json")) {
+				file.append(gson.toJson(preDataArrayLoan));
+				file.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to PREDATA");
+				e.printStackTrace();
+			}
+		}
+		if (!postDataArrayLoan.isEmpty()) {
+			try (FileWriter writer = new FileWriter(dir + "\\src\\main\\resources\\OnBoardTestData\\LoanPostData.json",
+					true)) {
+				String formattedString = gson.toJson(postDataArrayLoan);
+				writer.append(formattedString);
+				writer.append(",");
+				writer.flush();
+			} catch (Exception e) {
+				System.out.print("Exception Occured While Writing to POSTDATA");
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@SuppressWarnings("deprecation")
+	public static void convertExcelToJSONByColumnNameAsKey(String path) {
+		// Below Enter the Path of Input Excel
+		File file = new File(path);
+		JsonObject sheetsJsonObject = new JsonObject();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		Workbook workbook = null;
+		String prettyJson = "";
+		try {
+			workbook = new XSSFWorkbook(file);
+		} catch (InvalidFormatException | IOException e) {
+			e.printStackTrace();
+		}
+		// For single sheet data either remove others or set loop to 0
+		for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+			JsonArray sheetArray = new JsonArray();
+			ArrayList<String> columnNames = new ArrayList<String>();
+			Sheet sheet = workbook.getSheetAt(i);
+			Iterator<Row> sheetIterator = sheet.iterator();
+			while (sheetIterator.hasNext()) {
+				Row currentRow = sheetIterator.next();
+				JsonObject jsonObject = new JsonObject();
+				if (currentRow.getRowNum() != 0) {
+					for (int j = 0; j < columnNames.size(); j++) {
+						if (currentRow.getCell(j) != null) {
+							if (currentRow.getCell(j).getCellType() == CellType.BLANK) {
+								jsonObject.addProperty(columnNames.get(j), "");
+							} else {
+								currentRow.getCell(j).setCellType(CellType.STRING);
+								if (columnNames.get(j).equalsIgnoreCase("bus_st")
+										|| columnNames.get(j).equalsIgnoreCase("rep1_st")
+										|| columnNames.get(j).equalsIgnoreCase("verstate")
+										|| columnNames.get(j).equalsIgnoreCase("beststate")
+										|| columnNames.get(j).equalsIgnoreCase("DL STATE")
+										|| columnNames.get(j).equalsIgnoreCase("STATE")) {
+									String val = stateName.get(currentRow.getCell(j).getStringCellValue());
+									if (val == null) {
+										System.out.print("Break");
+									}
+									jsonObject.addProperty(columnNames.get(j), val);
+								} else if (columnNames.get(j).equalsIgnoreCase("DOB/YOB")) {
+									String val = currentRow.getCell(j).getStringCellValue();
+									if (val.length() < 7) {
+										val = "0101" + val;
+										jsonObject.addProperty(columnNames.get(j), val);
+									}
+								} else {
+									jsonObject.addProperty(columnNames.get(j),
+											currentRow.getCell(j).getStringCellValue().trim());
+								}
+							}
+						} else {
+							jsonObject.addProperty(columnNames.get(j), "");
+						}
+					}
+					sheetArray.add(jsonObject);
+				} else {
+					// store column names
+					for (int k = 0; k < currentRow.getPhysicalNumberOfCells(); k++) {
+						columnNames.add(currentRow.getCell(k).getStringCellValue());
+					}
+				}
+			}
+			sheetsJsonObject.add(workbook.getSheetName(i), sheetArray);
+			prettyJson = gson.toJson(sheetsJsonObject);
+		}
+		// Write to Converted test Data JSON
+		try (FileWriter files = new FileWriter("C:\\Users\\achaudhary\\Downloads\\CompleteLoanIndividual.json")) {
+			files.append(prettyJson);
+			files.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public ConcurrentHashMap<String, String> getMap(String json)
+			throws JsonParseException, JsonMappingException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		ConcurrentHashMap<String, String> map = mapper.readValue(json, ConcurrentHashMap.class);
+		return map;
+	}
+
+	public static void main(String[] Args) throws ClassNotFoundException, SQLException {
+	}
+
+}
+********************************************
+package com.tab.af.utilities;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.openqa.selenium.By;
-import org.openqa.selenium.OutputType;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.events.WebDriverEventListener;
+import org.openqa.selenium.chrome.ChromeDriver;
 
-import com.tab.af.testbase.TestBase;
+import com.tab.af.engine.ConcurrentEngine;
 
-public class WebDriverEvents implements WebDriverEventListener {
+public class WebTable {
+	private WebElement table;
 
-	private static Logger log;
-
-	private static WebDriverEvents webDriverEvents = null;
-
-	private WebDriverEvents() {
-	}
-
-	public synchronized static WebDriverEvents getInstance() {
-		if (Boolean.parseBoolean(TestBase.prop.seleniumEventLog())) {
-			if (log == null) {
-				setupEvents();
-			}
-			if (webDriverEvents == null) {
-				webDriverEvents = new WebDriverEvents();
-			}
-		}
-		return webDriverEvents;
-	}
-
-	private static void setupEvents() {
-		String dir = System.getProperty("user.dir") + "\\src\\test\\resources\\logs\\";
-		String date = DateTime.now().toString("MMddyyyyhhmmss");
-		File file = new File(dir + "Event Log " + date + ".txt");
-		if (file.exists()) {
-			file.delete();
-		}
-		FileHandler fh = null;
-		log = Logger.getLogger("Webdriver Logger");
+	public <T> WebTable(T table) {
 		try {
-			fh = new FileHandler(file.getPath(), true);
-			log.addHandler(fh);
-			log.setUseParentHandlers(false);
-			SimpleFormatter formatter = new SimpleFormatter();
-			fh.setFormatter(formatter);
-		} catch (SecurityException | IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (fh != null) {
-				fh.close();
+
+			WebDriver driver = new ChromeDriver();
+			if (table instanceof String) {
+				String c = "//*[@cuba-id=\"" + table + "\"]";
+
+			} else if (table instanceof WebElement) {
+
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+
 	}
 
-	@Override
-	public void beforeAlertAccept(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Alert Accept");
+	public Map<String, Integer> getHeadersIndex(WebElement tableElement) {
+		Map<String, Integer> tableHeader = new HashMap<String, Integer>();
+		List<WebElement> headersList = tableElement
+				.findElements(By.xpath("//div[@class='v-table-header']//tr//td//div[3]"));
+		Iterator<WebElement> itr = headersList.iterator();
+		int column = 1;
+		while (itr.hasNext()) {
+			tableHeader.put(itr.next().getText(), column);
+			column++;
+		}
+		return tableHeader;
 	}
 
-	@Override
-	public void afterAlertAccept(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Alert Accept");
+	public List<WebElement> getColumnElementsByColumnName(WebElement tableElement, String ColumnName) {
+		Map<String, Integer> map = getHeadersIndex(tableElement);
+		int cIndex = 0;
+		if (map != null) {
+			cIndex = map.get(ColumnName);
+		}
+		WebDriver driver = ConcurrentEngine.getEngine().getWebDriver();
+		List<WebElement> columnElements = driver
+				.findElements(By.xpath("//tr//td[@class='v-table-cell-content'][" + cIndex + "]"));
+		return columnElements;
 	}
 
-	@Override
-	public void afterAlertDismiss(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Alert Dismiss");
+	// get the number of rows present
+	public int getRowCount() {
+		WebElement dataTable = table.findElement(By.xpath("//table[@class=\"v-table-table\"]"));
+		int noOfRows = dataTable.findElements(By.tagName("tr")).size() - 1;
+		return noOfRows;
 	}
 
-	@Override
-	public void beforeAlertDismiss(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Alert Accept");
+	// get the number of columns present
+	public int getColumnCount() {
+		int noOfCols = table.findElements(By.xpath("//tr[2]/td")).size();
+		return noOfCols;
 	}
 
-	@Override
-	public void beforeNavigateTo(String url, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate to :" + url);
+	// get the nuber of rows and columns and return it as Map
+	public Map<String, Integer> getTableSize() {
+		Map<String, Integer> tableSize = new HashMap<>();
+		tableSize.put("rows", getRowCount());
+		tableSize.put("columns", getColumnCount());
+		return tableSize;
 	}
 
-	@Override
-	public void afterNavigateTo(String url, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Navigate to :" + url + "in Browser: ");
+	// get row data and return it as list
+	public List<String> rowData(int rowNumber) throws Exception {
+		if (rowNumber == 0) {
+			throw new Exception("Row number starts from 1");
+		}
+		rowNumber = rowNumber + 1;
+		List<WebElement> row = table.findElements(By.xpath("//tr[" + rowNumber + "]/td"));
+		List<String> rData = new ArrayList<>();
+		for (WebElement webElement : row) {
+			rData.add(webElement.getText());
+		}
+		return rData;
 	}
 
-	@Override
-	public void beforeNavigateBack(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Back");
+	// get the column data and return as list
+	public List<String> columnData(int columnNumber) throws Exception {
+		if (columnNumber == 0) {
+			throw new Exception("Column number starts from 1");
+		}
+		List<WebElement> column = table.findElements(By.xpath("//tr/td[" + columnNumber + "]"));
+		List<String> cData = new ArrayList<>();
+		for (WebElement webElement : column) {
+			cData.add(webElement.getText());
+		}
+		return cData;
 	}
 
-	@Override
-	public void afterNavigateBack(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Navigate Back");
+	// get all the data from the table
+	public List<List<String>> getAllData() {
+		// get number of rows
+		int noOfRows = table.findElements(By.xpath("//tr")).size() - 1;
+		// get number of columns
+		int noOfColumns = table.findElements(By.xpath("//tr[2]/td")).size();
+		List<List<String>> allData = new ArrayList<List<String>>();
+		// iterate over the rows, to ignore the headers we have started the i with '1'
+		for (int i = 2; i < noOfRows; i++) {
+			// reset the row data every time
+			List<String> ro = new ArrayList<String>();
+			// iterate over columns
+			for (int j = 1; j < noOfColumns; j++) {
+				// get text from the i th row and j th column
+				ro.add(table.findElement(By.xpath("//tr[" + i + "]/td[" + j + "]")).getText());
+			}
+			// add the row data to allData of the table
+			allData.add(ro);
+		}
+		return allData;
 	}
 
-	@Override
-	public void beforeNavigateForward(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Forward");
+	// verify presence of the text/data
+	public boolean presenceOfData(String data) {
+		// verify the data by getting the size of the element matches based on the
+		// text/data passed
+		int dataSize = table.findElements(By.xpath("//td[normalize-space(text())='" + data + "']")).size();
+		boolean presence = false;
+		if (dataSize > 0) {
+			presence = true;
+		}
+		return presence;
 	}
 
-	@Override
-	public void afterNavigateForward(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Navigate Forward");
+	// get the data from a specific cell
+	public String getCellData(int rowNumber, int columnNumber) throws Exception {
+		if (rowNumber == 0) {
+			throw new Exception("Row number starts from 1");
+		}
+		rowNumber = rowNumber + 1;
+		String cellData = table.findElement(By.xpath("//tr[" + rowNumber + "]/td[" + columnNumber + "]")).getText();
+		return cellData;
 	}
 
-	@Override
-	public void beforeNavigateRefresh(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Refresh");
-	}
+	public static void main(String[] Args) throws Exception {
 
-	@Override
-	public void afterNavigateRefresh(WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Navigate Refresh");
-	}
+		try (Connection connenction = DriverManager.getConnection(
+				"jdbc:sqlserver://ogvsqlcoreint01\\Customer360_schema:1433;user=apiuser; password=99*-api")) {
+			try (Statement statement = connenction.createStatement()) {
+				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 
-	@Override
-	public void beforeFindBy(By by, WebElement element, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before FindBy");
-	}
+				String query = "select * from cego.EntityPerson where entity_id='E1A105B5-7F17-4B6D-8F70-7EBFB49478D5';";
 
-	@Override
-	public void afterFindBy(By by, WebElement element, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before FindBy " + by.toString());
-	}
+				statement.execute(query);
+				ResultSet set = statement.getResultSet();
 
-	@Override
-	public void beforeClickOn(WebElement element, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Click on: " + element.toString());
-	}
+			}
+		} catch (SQLException | ClassNotFoundException e) {
+			throw e;
+		}
 
-	@Override
-	public void afterClickOn(WebElement element, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Click on: " + element.toString());
-	}
-
-	@Override
-	public void beforeChangeValueOf(WebElement element, WebDriver driver, CharSequence[] keysToSend) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Change value of: " + element.toString()
-				+ " value to Send: " + keysToSend[0].toString());
-	}
-
-	@Override
-	public void afterChangeValueOf(WebElement element, WebDriver driver, CharSequence[] keysToSend) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Change value of: " + element.toString()
-				+ " value to Send: " + keysToSend[0].toString());
-	}
-
-	@Override
-	public void beforeScript(String script, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Executing Script: " + script);
-	}
-
-	@Override
-	public void afterScript(String script, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Executing Script: " + script);
-	}
-
-	@Override
-	public void beforeSwitchToWindow(String windowName, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Before Switch to Window: " + windowName);
-	}
-
-	@Override
-	public void afterSwitchToWindow(String windowName, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " After Switch to Window: " + windowName);
-	}
-
-	@Override
-	public void onException(Throwable throwable, WebDriver driver) {
-		log.info("Thread: " + Thread.currentThread().getName() + " Exception Encountered: " + throwable.getMessage());
-	}
-
-	@Override
-	public <X> void beforeGetScreenshotAs(OutputType<X> target) {
-	}
-
-	@Override
-	public <X> void afterGetScreenshotAs(OutputType<X> target, X screenshot) {
-	}
-
-	@Override
-	public void beforeGetText(WebElement element, WebDriver driver) {
-	}
-
-	@Override
-	public void afterGetText(WebElement element, WebDriver driver, String text) {
 	}
 
 }
