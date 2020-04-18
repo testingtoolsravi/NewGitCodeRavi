@@ -1,36 +1,268 @@
-package com.tab.af.api.runners;
+package com.tab.af.testbase;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.reflect.Method;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+import java.util.Properties;
 
+import org.aeonbits.owner.ConfigFactory;
+import org.joda.time.DateTime;
+import org.openqa.selenium.Capabilities;
+import org.testng.IExecutionListener;
+import org.testng.ITestContext;
+import org.testng.ITestResult;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Listeners;
+import org.testng.annotations.Test;
+
+import com.tab.af.cucumber.PickleEventWrapper;
+import com.tab.af.cucumber.TestNGCucumberRunner;
+import com.tab.af.engine.BrowserCapabilities;
+import com.tab.af.engine.ConcurrentEngine;
+import com.tab.af.engine.GridSetup;
+import com.tab.af.reporting.ExtentManager;
 import com.tab.af.reporting.ExtentSummary;
-import com.tab.af.testbase.TestBase;
+import com.tab.af.reporting.ExtentTestManager;
+import com.tab.af.reporting.JSONReportBuilder;
+import com.tab.af.rest.OutPutJSON;
+import com.tab.af.utilities.ConfigProperties;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.Scenario;
-import cucumber.api.java.After;
-import cucumber.api.java.Before;
+import cucumber.api.testng.CucumberFeatureWrapper;
 
-@CucumberOptions(features = { "src/test/resources/features" }, glue = { "com.tab.af.api",
-		"com.tab.af.testbase" }, monochrome = true, plugin = { "json:target/cucumber-reports/cucumber.json",
-				"rerun:target/APIRerun.txt" }
+@Listeners(TestBase.class)
+public class TestBase implements IExecutionListener {
 
-)
-public class APITestRunner extends TestBase {
+	public static Properties apiProp;
+	public static ConfigProperties prop;
+	private String apiPropertiesFile = "api.properties";
 
-	@Before
-	public void before(Scenario scenario) throws Exception {
+	private boolean remoteExecution;
+
+	private static String extentReport;
+
+	private static String reportPath;
+
+	private String browser;
+
+	private static String reportDirectoryName;
+
+	private static final String DATETIMEFORMAT = "E dd MMM yyyy HH-mm-ss";
+
+	private TestNGCucumberRunner testNGCukesRunner;
+
+	private JSONReportBuilder executionSummaryReport = JSONReportBuilder.getInstance();
+
+	private BrowserCapabilities cap = new BrowserCapabilities();
+	private OutPutJSON outputJSON = OutPutJSON.getinstance();
+
+	@Override
+	public void onExecutionStart() {
+		defaultOnExecutionStart();
+	}
+
+	public void defaultOnExecutionStart() {
+		loadProperties();
+		setUpExtent();
+		setupExtentSummary();
+		if (prop.runType().equals("api")) {
+			loadAPIProperties();
+			setUpOutputTestDataDirectory();
+		}
+	}
+
+	public void loadProperties() {
+		prop = ConfigFactory.create(ConfigProperties.class);
 
 	}
 
-	@After(order = 1)
-	public void after(Scenario scenario) throws IOException {
-		String name = scenario.getName();
-		if (scenario.isFailed()) {
-			ExtentSummary.logFailTest(name);
+	public void loadAPIProperties() {
+		try (InputStreamReader input = new InputStreamReader(
+				getClass().getClassLoader().getResourceAsStream(apiPropertiesFile))) {
+			apiProp = new Properties();
 
-		} else {
-			ExtentSummary.logPassTest(name);
+			apiProp.load(input);
+
+		} catch (Exception e) {
+			System.out.println("loadProperties There was a problem loading API properties file.");
+			e.printStackTrace();
 		}
+	}
+
+	public void setUpExtent() {
+
+		if (prop.extentReport().equals("true")) {
+			reportDirectoryName = prop.extentWindowsDirectory();
+			reportPath = new File(System.getProperty("user.dir")) + reportDirectoryName + "Test Execution Reports "
+					+ DateTime.now().toString(DATETIMEFORMAT);
+			String fullPath = reportPath;
+			File screenshotDirectory = new File(fullPath);
+			screenshotDirectory.mkdirs();
+
+			System.setProperty("extent.Report.Directory", fullPath);
+		}
+
+	}
+
+	public void setUpOutputTestDataDirectory() {
+
+		String outputDir = new File(System.getProperty("user.dir")) + "\\outputdata";
+		File directory = new File(outputDir);
+		directory.mkdirs();
+		File file = new File(outputDir + "\\TestData" + DateTime.now().toString(" MMDDyyyyhhmmss") + ".txt");
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+
+		System.setProperty("api.output.file", file.getPath());
+		System.setProperty("api.test.data.Directory", outputDir);
+	}
+
+	public void setupExtentSummary() {
+		ExtentSummary.createSummaryInstance();
+	}
+
+	@BeforeClass
+	public void beforeClass(ITestContext context) throws Exception {
+		if (!prop.runType().equalsIgnoreCase("api")) {
+			setRemoteExecution();
+		}
+		testNGCukesRunner = new TestNGCucumberRunner(context, this.getClass());
+
+	}
+
+	public void setRemoteExecution() throws UnknownHostException {
+		if (prop.runType().equalsIgnoreCase("grid")) {
+			remoteExecution = true;
+		}
+		if (remoteExecution == true) {
+			GridSetup initializeGrid = new GridSetup();
+			System.setProperty("grid.url", initializeGrid.startGrid(prop.gridPortNumber()));
+		}
+	}
+
+	@BeforeMethod
+	public void beforeMethod(ITestContext context, Method method) throws Exception {
+		if (!prop.runType().equals("api")) {
+
+			try {
+				engineSetUp(context);
+			} catch (Exception e) {
+				throw e;
+			}
+		}
+	}
+
+	protected void engineSetUp(ITestContext context) throws Exception {
+
+		if (!prop.runType().equalsIgnoreCase("api")) {
+			setTestParameters(context);
+			Capabilities caps = cap.getCapabilities(browser);
+			ConcurrentEngine.createEngine(caps, browser, remoteExecution);
+		}
+	}
+
+	@Test(groups = "cucumber", description = "Runs Cucumber Scenarios", dataProvider = "scenarios")
+	public void runScenario(PickleEventWrapper pickleWrapper, CucumberFeatureWrapper featurewrapper) throws Throwable {
+		try {
+
+			String featureFileTopTag = pickleWrapper.getPickleEvent().pickle.getTags().get(0).getName();
+			String currentScenarioName = pickleWrapper.getPickleEvent().pickle.getName();
+			reportSetup(currentScenarioName, featureFileTopTag);
+			assignReportTag(featureFileTopTag);
+			outputJSON.setTestName(currentScenarioName);
+			testNGCukesRunner.runScenario(pickleWrapper.getPickleEvent());
+		} catch (Exception e) {
+			ExtentTestManager.getTest().fail(e);
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+	@AfterMethod(alwaysRun = true)
+	public void afterMethod(ITestResult result) throws Throwable {
+		driverTearDown();
+		flushExtentManager();
+		ExtentSummary.flushSummaryReport();
+		if (prop.runType().equalsIgnoreCase("api")) {
+			outputJSON.flushOPData();
+		}
+	}
+
+	public void driverTearDown() {
+		ConcurrentEngine.destroyEngine();
+	}
+
+	@AfterClass(alwaysRun = true)
+	public void afterClass() {
+		testNGCukesRunner.finish();
+	}
+
+	@AfterSuite
+	public final void afterSuite() throws Exception {
+	}
+
+	@DataProvider(parallel = true)
+	public Object[][] scenarios() {
+		return testNGCukesRunner.provideScenarios();
+	}
+
+	@Override
+	public void onExecutionFinish() {
+		executionSummaryReport.generateMasterThoughtsSummary();
+		executionSummaryReport.generateReportBuilderSummary();
+
+		System.out.println("Finished at " + new SimpleDateFormat("yyy_MM-dd HH:mm:ss").format(new Date()));
+
+	}
+
+	private void setTestParameters(ITestContext context) {
+		browser = System.getProperty("browser");
+		Map<String, String> allParameters = context.getCurrentXmlTest().getAllParameters();
+		for (Map.Entry<String, String> entry : allParameters.entrySet()) {
+			if (entry.getKey().equals("browser")) {
+				browser = entry.getValue();
+			}
+		}
+	}
+
+	public void flushExtentManager() {
+		if (extentReport.equalsIgnoreCase("true")) {
+			if (ExtentManager.getInstance() != null) {
+				ExtentManager.flushInstance();
+				ExtentTestManager.removeTest();
+			}
+		}
+	}
+
+	public void reportSetup(String currentScenarioName, String category) {
+		extentReport = prop.extentReport();
+		if (extentReport.equalsIgnoreCase("true")) {
+			ExtentManager.setupInstance(currentScenarioName);
+			if (prop.runType().equals("api")) {
+				ExtentTestManager.createTest("Scenario: " + currentScenarioName);
+				ExtentSummary.createTest("Scenario: " + currentScenarioName, category);
+			} else {
+				ExtentTestManager.createTest("Scenario: " + currentScenarioName + " " + browser);
+				ExtentSummary.createTest("Scenario: " + currentScenarioName + " " + browser, category);
+			}
+		}
+	}
+
+	public void assignReportTag(String featureFileTopTag) {
+		ExtentTestManager.assignCategory(featureFileTopTag);
 	}
 
 }
