@@ -1,17 +1,36 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+package com.tab.af.api.runners;
 
-<suite name="Suite" parallel="tests" thread-count="1"
-	data-provider-thread-count="1">
-	<listeners>
-		<listener class-name="com.tab.af.reporting.ExtentNG" />
-	</listeners>
-	<test thread-count="1" name="Tests on chrome" enabled="true"
-		parallel="methods">
-		<parameter name="browser" value=""></parameter>
-		<parameter name="tags" value="@MUL-770"></parameter>
-		<classes>
-			<class name="com.tab.af.api.runners.APITestRunner" />
-		</classes>
-	</test>
-</suite>
+import java.io.IOException;
+
+import com.tab.af.reporting.ExtentSummary;
+import com.tab.af.testbase.TestBase;
+
+import cucumber.api.CucumberOptions;
+import cucumber.api.Scenario;
+import cucumber.api.java.After;
+import cucumber.api.java.Before;
+
+@CucumberOptions(features = { "src/test/resources/features" }, glue = { "com.tab.af.api",
+		"com.tab.af.testbase" }, monochrome = true, plugin = { "json:target/cucumber-reports/cucumber.json",
+				"rerun:target/APIRerun.txt" }
+
+)
+public class APITestRunner extends TestBase {
+
+	@Before
+	public void before(Scenario scenario) throws Exception {
+
+	}
+
+	@After(order = 1)
+	public void after(Scenario scenario) throws IOException {
+		String name = scenario.getName();
+		if (scenario.isFailed()) {
+			ExtentSummary.logFailTest(name);
+
+		} else {
+			ExtentSummary.logPassTest(name);
+		}
+	}
+
+}
