@@ -1,1298 +1,959 @@
-{
-    "bankId": {
-        "value": "6fb17583-1e49-4435-bb74-a14fe0996723"
-    },
-    "accountId": {
-        "value": "36C89433-694A-4651-ACC3-0001E5E4E961"
-    },
-    "productType": "saving",
-    "accountNickName": "string",
-    "initialBalance": 123.321,
-    "givenName": "TAB",
-    "surname": "BANK",
-    "customerId": "480BA94E-455B-42E1-8801-000101ECF90C",
-    "productCode": "240-OP",
-    "branchId": "3FADEC89-1220-43D3-90A5-00004C6165ED",
-    "accountRoutingScheme": "IBAN",
-    "accountRoutingAddress": "DE91 1000 0000"
+package com.tab.af.web.runners;
+
+import java.io.IOException;
+
+import org.openqa.selenium.OutputType;
+
+import com.tab.af.engine.ConcurrentEngine;
+import com.tab.af.reporting.ExtentSummary;
+import com.tab.af.testbase.TestBase;
+import com.tab.af.web.pages.BasePage;
+
+import cucumber.api.CucumberOptions;
+import cucumber.api.Scenario;
+import cucumber.api.java.After;
+import cucumber.api.java.Before;
+
+@CucumberOptions(features = { "src/test/resources/features" }, glue = { "com.tab.af.web",
+		"com.tab.af.testbase" }, plugin = { "pretty", "rerun:target/WebRerun.txt",
+				"json:target/cucumber-reports/cucumber.json" })
+public class WebTestRunner extends TestBase {
+
+	@Before
+	public void before(Scenario scenario) throws Exception {
+	}
+
+	@After()
+	public void removeUsedData() {
+		BasePage.removeTestData();
+	}
+
+	@After
+	public void after(Scenario scenario) throws IOException {
+		String name = scenario.getName();
+		if (scenario.isFailed()) {
+			byte[] bytes = (ConcurrentEngine.getEngine().getWebDriver()).getScreenshotAs(OutputType.BYTES);
+			scenario.embed(bytes, "image/png");
+			ExtentSummary.logFailTest(name);
+
+		} else {
+			ExtentSummary.logPassTest(name);
+		}
+	}
+
+}
+*****************************************
+package com.tab.af.web.runners;
+
+import java.io.IOException;
+import org.openqa.selenium.OutputType;
+import com.tab.af.engine.ConcurrentEngine;
+import com.tab.af.testbase.TestBase;
+import com.tab.af.web.pages.BasePage;
+import cucumber.api.CucumberOptions;
+import cucumber.api.Scenario;
+import cucumber.api.java.After;
+
+@CucumberOptions(features = {"@target/WebRerun.txt"} ,
+    glue = {"com.tab.af.web", "com.tab.af.testbase"} , plugin = {"pretty"})
+public class FailTestRun extends TestBase {
+
+  @After()
+  public void removeUsedData(){
+    BasePage.removeTestData();
+  }
+
+  @After
+  public void after(Scenario scenario) throws IOException{
+    if (scenario.isFailed()) {
+      byte[] bytes =
+          (ConcurrentEngine.getEngine().getWebDriver()).getScreenshotAs(OutputType.BYTES);
+      scenario.embed(bytes, "image/png");
     }
-******************************************
-{
-    "national_identifier": "UK97ZZZ1234567890",
-    "full_name": "uk",
-    "swift_bic": "IIIGGB22",
-    "logo_url": "https://static.openbankproject.com/images/sandbox/bank_x.png",
-    "id": "510BA94E-455B-42E1-8801-000101ECF90E",
-    "short_name": "uk",
-    "bank_routing": {
-        "scheme": "Bank_ID",
-        "address": "gh.29.uk"
-    },
-    "website_url": "https://www.example.com"
+  }
+
+}
+**************************************************************************
+package com.tab.af.web.pages;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import com.github.javafaker.Faker;
+import com.tab.af.actions.ShadowActions;
+import com.tab.af.actions.WebActions;
+import com.tab.af.engine.ConcurrentEngine;
+import com.tab.af.reporting.ReportLibrary;
+import com.tab.af.testbase.TestBase;
+import com.tab.af.utilities.JSONReader;
+import com.tab.af.web.pages.OnBoarding.OnBoardApplicants;
+
+public abstract class BasePage<T> {
+
+	private static ConcurrentHashMap<Long, Map<String, String>> testDataMap = new ConcurrentHashMap<Long, Map<String, String>>();
+
+	private static ConcurrentHashMap<Long, Map<OnBoardApplicants, Map<String, String>>> applicant = new ConcurrentHashMap();
+
+	protected WebDriver driver;
+
+	protected WebActions webActions = ConcurrentEngine.getEngine().getWebActions();
+
+	protected ReportLibrary report = ConcurrentEngine.getEngine().getReportLibrary();
+
+	private final long PAGELOADTIMEOUT = Long.parseLong(TestBase.prop.pageLoadTimeout());
+
+	protected JSONReader json = JSONReader.getInstance();
+
+	protected Globals global = new Globals();
+
+	protected Faker faker = new Faker();
+
+	protected ShadowActions shadow = ConcurrentEngine.getEngine().getShadowActions();
+
+	public BasePage() {
+		this.driver = ConcurrentEngine.getEngine().getWebDriver();
+	}
+
+	public T base(Class<T> pageClass) {
+		T page = null;
+		try {
+			page = PageFactory.initElements(ConcurrentEngine.getEngine().getWebDriver(), pageClass);
+			ExpectedCondition pageLoadCondition = ((BasePage) page).getPageLoadCondition();
+			waitForPageToLoad(pageLoadCondition);
+		} catch (TimeoutException e) {
+			// To Shorten the Message in the Summary Report
+			report.reportHardFail(e, "Scenario Failed on Page : " + pageClass.getName());
+		}
+		return page;
+	}
+
+	private void waitForPageToLoad(ExpectedCondition<?> pageLoadCondition) {
+		WebDriverWait wait = new WebDriverWait(driver, PAGELOADTIMEOUT);
+		wait.until(pageLoadCondition);
+	}
+
+	/**
+	 * Returns the Map Associated with the Current Thread for Main Applicant or Loan
+	 * Company and to Store the Data for the test Associated
+	 * 
+	 * @return dataMap<String,String>
+	 */
+	public Map<String, String> getTestDataMap() {
+		return testDataMap.get(Thread.currentThread().getId());
+	}
+
+	public void setTestDataMap(Map<String, String> map) {
+		testDataMap.put(Thread.currentThread().getId(), map);
+	}
+
+	protected abstract ExpectedCondition getPageLoadCondition();
+
+	/**
+	 * Get Test Data For Multiple Applicants Using OnBoardApplicants ENUM by Thread
+	 * 
+	 * @return
+	 */
+	public Map<String, String> getApplicant(OnBoardApplicants applicantNo) {
+		if (applicant.containsKey(Thread.currentThread().getId())) {
+			Map<OnBoardApplicants, Map<String, String>> map = applicant.get(Thread.currentThread().getId());
+			return map.get(applicantNo);
+		}
+		return null;
+	}
+
+	/**
+	 * Set Test Data for Multiple Applicant Using OnBoardApplicants ENUM by Thread
+	 * 
+	 * @param map
+	 */
+	public void setApplicant(OnBoardApplicants applicantNo, Map map) {
+		Map<OnBoardApplicants, Map<String, String>> hmap = new HashMap<OnBoardApplicants, Map<String, String>>();
+		if (applicant.containsKey(Thread.currentThread().getId())) {
+			hmap = applicant.get(Thread.currentThread().getId());
+			hmap.put(applicantNo, map);
+		} else {
+			hmap.put(applicantNo, map);
+			applicant.put(Thread.currentThread().getId(), hmap);
+		}
+	}
+
+	public static void removeTestData() {
+		if (testDataMap.get(Thread.currentThread().getId()) != null) {
+			testDataMap.remove(Thread.currentThread().getId());
+			if (applicant.get(Thread.currentThread().getId()) != null) {
+				applicant.remove(Thread.currentThread().getId());
+			}
+		}
+	}
+
+}
+*******************************************************
+package com.tab.af.web.pages;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.Assert;
+
+public class Globals {
+
+	private List<String> email = new ArrayList<String>();
+
+	private List<String> drivlingLicenseState = new ArrayList<String>();
+
+	private static Map<String, Set<String>> kiqKeyMap = new HashMap();
+
+	private static final String KIQSHEETPATH = System.getProperty("user.dir")
+			+ "\\src\\main\\resources\\OnBoardTestData\\KIQKeys.xlsx";
+
+	private static final String KIQANSWERSHEETNAME = "ANSWERKEYS";
+
+	/**
+	 * Fetch Build Version from Source Code of Onboard UI
+	 *
+	 * @param Source
+	 * @return
+	 */
+	private String getBuildVersionFromSource(String Source) {
+		int a = Source.indexOf("\"applicationVersion\": ");
+		int b = Source.indexOf("});");
+		String m = Source.substring(a, b);
+		return m.replace("applicationVersion", "").replace("\"", "").replace(":", "");
+	}
+
+	/**
+	 * Validate whether the Download Directory contains File with Specified Name and
+	 * then Delete
+	 *
+	 * @param fileName
+	 * @return
+	 */
+	public boolean isFileDownloaded(String fileName) {
+		String home = System.getProperty("user.home");
+		File directory = new File(home + "/Downloads/");
+		File[] files = directory.listFiles(File::isFile);
+		long lastModifiedTime = Long.MIN_VALUE;
+		File chosenFile = null;
+		if (files != null) {
+			for (File file : files) {
+				if (file.lastModified() > lastModifiedTime) {
+					chosenFile = file;
+					lastModifiedTime = file.lastModified();
+				}
+			}
+		}
+		return chosenFile.getName().contains(fileName);
+	}
+
+	/**
+	 * List of Email which are least likely to be flagged by System
+	 *
+	 * @return Email String
+	 */
+	public String lowRiskEmail() {
+		if (email.size() == 0) {
+			email.add("johnsmith1975@gmail.com");
+			email.add("stephensmith@gmail.com");
+			email.add("billsmith@yahoo.com");
+			email.add("bobsmith@aol.com");
+		}
+		return email.get(new Random().nextInt(email.size()));
+	}
+
+	/**
+	 * Get a Random State from List of Available State in Onboarding UI
+	 *
+	 * @return
+	 */
+	public String getDrivingLicenseState() {
+		if (drivlingLicenseState.size() == 0) {
+			drivlingLicenseState.add("Alabama");
+			drivlingLicenseState.add("Alaska");
+			drivlingLicenseState.add("Arizona");
+			drivlingLicenseState.add("Arkansas");
+			drivlingLicenseState.add("California");
+			drivlingLicenseState.add("Colorado");
+			drivlingLicenseState.add("Connecticut");
+			drivlingLicenseState.add("Delaware");
+			drivlingLicenseState.add("Distrcit of Columbia");
+			drivlingLicenseState.add("Florida");
+			return drivlingLicenseState.get(new Random().nextInt(email.size()));
+		}
+		return drivlingLicenseState.get(new Random().nextInt(email.size()));
+	}
+
+	/**
+	 * Format yyyyMMdd date to MMddyyyy
+	 *
+	 * @param input
+	 * @return
+	 */
+	public String formatDateString(String input) {
+		SimpleDateFormat inSDF = new SimpleDateFormat("yyyyMMdd");
+		SimpleDateFormat outSDF = new SimpleDateFormat("MMddyyyy");
+		Date date = null;
+		try {
+			date = inSDF.parse(input);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		input = outSDF.format(date);
+		return input;
+	}
+
+	/**
+	 * Format the input value to Specified Output Format
+	 * 
+	 * @param input
+	 * @param inputFormat
+	 * @param ouputFormat
+	 * @return
+	 */
+	public String formatDateString(String input, String inputFormat, String ouputFormat) {
+		String output = null;
+		SimpleDateFormat inSDF = new SimpleDateFormat(inputFormat);
+		SimpleDateFormat outSDF = new SimpleDateFormat(inputFormat);
+		Date date = null;
+		try {
+			date = inSDF.parse(input);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		output = outSDF.format(date);
+		return output;
+	}
+
+	@SuppressWarnings("deprecation")
+	public void setKIQKeyMap() throws Exception {
+
+		try (FileInputStream fis = new FileInputStream(KIQSHEETPATH)) {
+
+			try (XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
+				XSSFSheet sheet = workbook.getSheet(KIQANSWERSHEETNAME);
+				for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+					Set<String> keySet = new HashSet<String>();
+					Row currentRow = sheet.getRow(i);
+					for (int j = 1; j < currentRow.getPhysicalNumberOfCells(); j++) {
+						Cell currentCell = currentRow.getCell(j, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+						try {
+							if (currentCell.getCellType() == CellType.STRING) {
+								keySet.add(currentCell.getStringCellValue());
+							} else if (currentCell.getCellType() == CellType.BLANK) {
+								/////////////
+							} else {
+								currentCell.setCellType(CellType.STRING);
+								keySet.add(currentCell.getStringCellValue());
+							}
+						} catch (NullPointerException ee) {
+							System.out.print("sdsd");
+						}
+						kiqKeyMap.put(currentRow.getCell(0).getStringCellValue(), keySet);
+					}
+				}
+			}
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			throw new Exception("Exception Occured While Reading KIQ KeyMap Excel");
+		}
+	}
+
+	public Map<String, Set<String>> getKIQKeyMap() throws Exception {
+		if (kiqKeyMap.isEmpty()) {
+			setKIQKeyMap();
+		}
+		return kiqKeyMap;
+	}
+
+	public void assertEquals(String actualText, String expectedText) throws Exception {
+		if (actualText.equals(expectedText)) {
+			Assert.assertTrue(true);
+		} else {
+			throw new Exception("Assert Equals Fail Expected: " + expectedText + ",Actual: " + actualText);
+		}
+	}
+
+	public void assertEquals(boolean actual, boolean expected) throws Exception {
+		if (actual == expected) {
+			Assert.assertTrue(true);
+		} else {
+			throw new Exception("Assert Equals Fail Expected: " + expected + ",Actual: " + actual);
+		}
+	}
+
+	public void assertEquals(int actual, int expected) throws Exception {
+		if (actual == expected) {
+			Assert.assertTrue(true);
+		} else {
+			throw new Exception("Assert Equals Fail Expected: " + expected + ",Actual: " + actual);
+		}
+	}
+
 }
 **************************************************
-{
-	"TC_0001": {
-		"testdata1": {
-			"Status Code": "201",
-			"Status Line": "201 Created"
+package com.tab.af.api.steps;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.everit.json.schema.ValidationException;
+import org.testng.Assert;
+
+import com.tab.af.reporting.ReportLibrary;
+import com.tab.af.rest.RestActions;
+import com.tab.af.testbase.TestBase;
+
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.restassured.http.ContentType;
+
+public class OBPSteps {
+
+	private ReportLibrary report = new ReportLibrary();
+	private RestActions rest = new RestActions();
+	private Properties prop = TestBase.apiProp;
+	private Map<String, String> headerMap = new HashMap();
+	private Map<String, String> dataMap = new HashMap();
+	private String currentRequestBody;
+
+	@Given("Setup Base URI for the {string} Request")
+	public void setup_Base_URI_for_the_Request(String requestMethod) {
+
+		try {
+			rest.setupRequest();
+			rest.setRequestTimeout();
+			rest.setBaseURI(prop.getProperty("baseURI"));
+			rest.setRelaxedHTTPSValidationProtocolAsSSL();
+			if (!requestMethod.equals("GET")) {
+				rest.setContentType(ContentType.JSON);
+			}
+			report.logPass("Setup Request base for " + requestMethod);
+		} catch (Exception e) {
+
+			report.logHardFail("Request Setup  for " + requestMethod + " failed", e);
 		}
-	},
-	"TC_0002": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "1234567891",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12345678@#$%^&*",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0003": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "1234567891",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12345678@#$%^&*",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0004": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0005": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0006": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0007": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "201",
-			"Status Line": "201 Created"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0008": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "1234567891",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "123456789@#$%^&*(&*(#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0009": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "1234567891",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "123456789@#$%^&*(&*(#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0010": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "123456789112345678912",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12345646$%$^$%%453",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0011": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabhay",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12351#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0012": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcde",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "#$#$#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0013": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcd",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "#$#$$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0014": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcd",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "#$#$$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0015": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefabcdefabcdefabcdefabcdefabcdef",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12351#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0016": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefabcdef",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12351#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0017": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefabcdefabcdefabcdefabcdefabcdef",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12351#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0018": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefabcdefabcdefabcdefabcdefabc",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12351#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0019": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcd123abcd123abcd123",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "12351#$#",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
+
+	}
+
+	@Given("Setup Request Endpoint for {string}")
+	public void setup_Request_Endpoint_for(String requestName, DataTable table) {
+
+		try {
+			List<List<String>> tableList = table.asLists(String.class);
+			for (List<String> list : tableList) {
+				if (list.get(0).contains("basepath")) {
+					rest.setBasePath(prop.getProperty(list.get(1)));
+					continue;
+				}
+				if (list.get(0).contains("pathparam")) {
+					rest.setPathParams(list.get(1), prop.getProperty(list.get(2)));
+				}
+			}
+
+			report.logPass("Setup Requst Endpoint for: " + requestName);
+		} catch (Exception e) {
+
+			report.logHardFail("Setup Requst Endpoint for: " + requestName + " failed", e);
 		}
 	}
-}
-**********************************************************
-{
-	"TC_0001": {
-		"testdata1": { 
-			"Status Code": "201",
-			"Status Line": "201 Created"
-		}
-	},
-	"TC_0003": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0004": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0005": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata2": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		},
-		"testdata3": {
-			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0006": {
-		"testdata1": {
-			"value": "123456789",
-			"Status Code": "401",
-			"Status Line": "401 Unauthorized"
-		}
-	},
-	"TC_0007": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0008": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0009": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh11",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0010": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "1234567891",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh11",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0011": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefghijklmonpqestuvaxyzabhcdefghy",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0012": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "abcdefghijklmonpqestuvaxyzabhcd",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0013": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh11",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0014": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "123456789123456789123",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		}
-	},
-	"TC_0015": {
-		"testdata1": {
-			"value": "",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata2": {
-			"value": "1234567891",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
-		},
-		"testdata3": {
-			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhd",
-			"Status Code": "400",
-			"Status Line": "400 Bad Request"
+
+	@When("Users adds the Headers Parameters for {string}")
+	public void users_adds_the_Headers_Parameters_for(String key) {
+		try {
+			headerMap = rest.getHeadersMapFromProperties(key);
+
+			rest.addHeadersToRequest(headerMap);
+			report.logPass("Add headers to Request for:" + key);
+		} catch (Exception e) {
+
+			report.logHardFail("Add headers to request for:" + key + " failed", e);
 		}
 	}
+
+	@When("user adds the Request body from {string}")
+	public void user_adds_the_Request_body_from(String requestBodyFileName) {
+
+		try {
+			currentRequestBody = rest.getRequestBodyJSONString(requestBodyFileName);
+			rest.addRequestBody(currentRequestBody);
+			report.logPass("Add Body to Request from " + requestBodyFileName);
+		} catch (Exception e) {
+
+			report.logHardFail("Add Body to Request" + requestBodyFileName + " failed", e);
+		}
+
+	}
+
+	@Given("Load Test Data File {string}")
+	public void load_Test_Data_File(String fileName) {
+		try {
+			rest.setRequestDataFile(fileName);
+			report.logPass("Test Data File Load" + fileName);
+		} catch (Exception e) {
+
+			report.logHardFail("Add Body to Request" + fileName + " failed", e);
+		}
+
+	}
+
+	@When("User sends a {string} Request")
+	public void user_sends_a_Request(String requestMethod) {
+		try {
+
+			rest.performRequest(requestMethod);
+
+			report.logPass("Send " + requestMethod + " Request");
+		} catch (Exception e) {
+
+			report.logHardFail("Send " + requestMethod + " Request failed", e);
+		}
+	}
+
+	@Then("Status code and Line of Response should match {string} and {string}")
+	public void status_code_and_Line_of_Response_should_match_and(String statCodeKey, String statLineKey) {
+		String responseStatusCode = null;
+		String responseStatusLine = null;
+		try {
+			responseStatusCode = String.valueOf(rest.getStatusCode());
+			String expectedStatusCode = dataMap.get(statCodeKey);
+			Assert.assertEquals(responseStatusCode, expectedStatusCode);
+			report.logPass("Status Code Validated Expected: " + expectedStatusCode + " Actual: " + responseStatusCode);
+			responseStatusLine = rest.getStatusLine();
+			String expectedStatusLine = dataMap.get(statLineKey);
+			Assert.assertTrue(responseStatusLine.contains(expectedStatusLine));
+			report.logPass("Status Line Validated Expected: " + expectedStatusLine + " Actual: " + responseStatusLine);
+		} catch (AssertionError e) {
+
+			report.logHardFail("Status code or Line Validation failed", e);
+		}
+	}
+
+	@Then("The Schema of Response JSON should match the Expected Schema from {string}")
+	public void the_Schema_of_Response_JSON_should_match_the_Expected_Schema_from(String schemaFileName) {
+		try {
+
+			rest.schemaValidator(schemaFileName);
+			report.logPass("JSon Schema Validation Passed with File: " + schemaFileName);
+		} catch (Throwable e) {
+			if (e instanceof ValidationException) {
+
+				List<ValidationException> vExceptions = ((ValidationException) e).getCausingExceptions();
+				for (ValidationException validationException : vExceptions) {
+					report.logFail("Schema Validation Failed: ", validationException);
+				}
+			}
+			report.logHardFail("JSon Schema Validation Failed: ", e);
+		}
+	}
+
+	@When("user changes the {string} header")
+	public void user_changes_the_header(String headerName) {
+
+		try {
+			String newHeaderValue = dataMap.get("value");
+			rest.replaceHeader(headerName, newHeaderValue);
+
+			report.logPass("Replace Header" + headerName + "with new Value: " + newHeaderValue);
+		} catch (Exception e) {
+
+			report.logHardFail("Replace Header " + headerName + "with new Value:  failed", e);
+		}
+	}
+
+	@When("user changes the {string} header with a {string} {string} with {string}")
+	public void user_changes_the_header_with_a_with(String headerName, String tcID, String dataRow, String key) {
+		try {
+			String newHeaderValue = "";
+			rest.replaceHeader(headerName, newHeaderValue);
+
+			report.logPass("Replace Header" + headerName + "with new Value: " + newHeaderValue);
+		} catch (Exception e) {
+
+			report.logHardFail("Replace Header " + headerName + "with new Value:  failed", e);
+		}
+	}
+
+	@When("User changes updates the {string} value in the Request Body")
+	public void user_changes_updates_the_value_in_the_Request_Body(String path) {
+
+		try {
+			String newValue = dataMap.get("value");
+			String modifiedRequestBody = rest.setProperty(currentRequestBody, path, newValue);
+			rest.addRequestBody(modifiedRequestBody);
+			report.logPass("Replace Request Body at Path: " + path + "with Value:" + newValue);
+		} catch (Exception e) {
+
+			report.logHardFail("Replace Request Body at Path: " + path + " failed", e);
+		}
+	}
+
+	@When("User Loads data for Test Case {string} and test data {string}")
+	public void user_Loads_data_for_Test_Case_and_test_data(String testCaseID, String dataRow) {
+		try {
+			dataMap = rest.getTestDataMap(testCaseID, dataRow);
+			report.logPass("Load Test Data for" + testCaseID + "with row:" + dataRow);
+		} catch (Exception e) {
+
+			report.logHardFail("Load Test Data for" + testCaseID + "with row:" + dataRow + " failed", e);
+		}
+	}
+
+	@Then("The Response body should contain same {string} as the path Param {string}")
+	public void the_Response_body_should_contain_same_as_the_path_Param(String path1, String param1) {
+		try {
+
+			String response1 = rest.getStringValueFromResponse(path1);
+			String expectedValue1 = rest.getPathParamValue(param1);
+			Assert.assertEquals(response1.toUpperCase(), expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Request at path: " + path1 + " Expected Value: "
+					+ expectedValue1 + " Actual value: " + response1);
+		} catch (AssertionError e) {
+
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("The {string} in response should be same as request body {string}")
+	public void the_in_response_should_be_same_as_request_body(String responsePath, String requestPath) {
+		String responseValue = null;
+		String requestValue = null;
+		try {
+
+			responseValue = rest.getStringValueFromResponse(responsePath);
+			requestValue = rest.getStringValueFromJSONString(requestPath, rest.getRequestBody());
+			Assert.assertEquals(responseValue.toUpperCase(), requestValue.toUpperCase());
+			report.logPass(
+					"Validate Response Body Content Matches the Request Body content at Response path: " + responsePath
+							+ " RequestPath: " + requestPath + " Response Value: " + " Request value: " + requestValue);
+		} catch (AssertionError e) {
+
+			report.logHardFail("Validate Response Body Content Matches the Request Body content at Response path: "
+					+ responsePath + " RequestPath: " + requestPath + " Response Value: " + " Request value: "
+					+ requestValue + " Failed", e);
+		}
+	}
+
+	@When("user removes the {string} Header from Request")
+	public void user_removes_the_Header_from_Request(String headerName) {
+		try {
+
+			rest.removeHeader(headerName);
+
+			report.logPass("Remove Header " + headerName + "From Request");
+		} catch (Exception e) {
+
+			report.logHardFail("Remove Header " + headerName + "From Request Failed", e);
+		}
+	}
+
+	@Given("User changes the path param {string}")
+	public void user_changes_the_path_param(String param) {
+
+		try {
+			String value = dataMap.get("value");
+			rest.setPathParams(param, value);
+			report.logPass("Change path param:" + param + " to: " + value);
+		} catch (Exception e) {
+
+			report.logHardFail("Change path param:" + param + "Failed", e);
+		}
+	}
+
+	@Then("I validate Response body of Get All Entitlements contains path Params BANK_ID {string}")
+	public void i_validate_Response_body_of_Get_All_Entitlements_contains_path_Params_BANK_ID(String param1) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.list[0].bank_id");
+			String expectedValue1 = rest.getPathParamValue(param1);
+			Assert.assertEquals(response1, expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate that Response body of Get Accounts At All Banks contains path Params {string}")
+	public void i_validate_that_Response_body_of_Get_Accounts_At_All_Banks_contains_path_Params(String param1) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.accounts[0].bank_id");
+			String expectedValue1 = rest.getPathParamValue(param1);
+			Assert.assertEquals(response1, expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate that Response body of Get Accounts At Bank Minimal contains path Params {string}")
+	public void i_validate_that_Response_body_of_Get_Accounts_At_Bank_Minimal_contains_path_Params(String param1) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.accounts[0].bank_id");
+			String expectedValue1 = rest.getPathParamValue(param1);
+			Assert.assertEquals(response1, expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate that Response body of Get Customer By Customer ID should contain path Params {string} and {string}")
+	public void i_validate_that_Response_body_of_Get_Customer_By_Customer_ID_should_contain_path_Params_and(
+			String param1, String param2) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.customers[0].customer_id");
+			String response2 = rest.getStringValueFromResponse("$.customers[0].bank_id");
+			String expectedValue1 = rest.getPathParamValue(param1);
+			String expectedValue2 = rest.getPathParamValue(param2);
+			Assert.assertEquals(response1, expectedValue1);
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+			Assert.assertEquals(response2, expectedValue2);
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue2
+					+ " Actual value: " + response2);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate Response body of Get Entitlements For User contains path Params BANK_ID {string}")
+	public void i_validate_Response_body_of_Get_Entitlements_For_User_contains_path_Params_BANK_ID(String bankID) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.list[0].bank_id");
+			String expectedValue1 = rest.getPathParamValue(bankID);
+			Assert.assertEquals(response1, expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate Response body of Get Entitlements For Users At Bank contains path Params BANK_ID {string}")
+	public void i_validate_Response_body_of_Get_Entitlements_For_Users_At_Bank_contains_path_Params_BANK_ID(
+			String bankID) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.list[0].bank_id");
+			String expectedValue1 = rest.getPathParamValue(bankID);
+			Assert.assertEquals(response1, expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate Response body of Get User By Email Address contains path Params BANK_ID {string} and EMAIL_ID {string}")
+	public void i_validate_Response_body_of_Get_User_By_Email_Address_contains_path_Params_BANK_ID_and_EMAIL_ID(
+			String bankID, String emailID) {
+		try {
+			String respEmailID = rest.getStringValueFromResponse("$.users[0].email");
+			String respBankID = rest.getStringValueFromResponse("$.users[0].entitlements.list[0].bank_id");
+			String expBankID = rest.getPathParamValue(bankID);
+			String expEmailID = rest.getPathParamValue(emailID);
+			Assert.assertEquals(respEmailID, expEmailID);
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expBankID + " Actual value: "
+					+ respEmailID);
+			Assert.assertEquals(respBankID, expBankID.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expEmailID
+					+ " Actual value: " + respBankID);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
+	@Then("I validate that Response body of Get Bank contains path Params {string}")
+	public void i_validate_that_Response_body_of_Get_Bank_contains_path_Params(String param1) {
+		try {
+			String response1 = rest.getStringValueFromResponse("$.id");
+			String expectedValue1 = rest.getPathParamValue(param1);
+			Assert.assertEquals(response1, expectedValue1.toUpperCase());
+			report.logPass("Validate Response Body Content Matches the Expected Value: " + expectedValue1
+					+ " Actual value: " + response1);
+		} catch (AssertionError e) {
+			report.logHardFail("Validate Response Body Content Matches the Request Failed ", e);
+		}
+	}
+
 }
+
 
 ******************************************************
-client_secret=d6F69Ac802E1465Fb6Efc21c255f8d64
-client_id=f2a7d0f86ee740ad8b9b688cf135f1c4
-X-Correlation-ID=uuid
-sessionId=uuid
-**********************************************
-client_secret=d6F69Ac802E1465Fb6Efc21c255f8d64
-client_id=f2a7d0f86ee740ad8b9b688cf135f1c4
-X-Correlation-ID=uuid
-sessionId=uuid
-***********************************************
-{
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "http://example.com/example.json",
-    "type": "object",
-    "title": "The Root Schema",
-    "description": "The root schema comprises the entire JSON document.",
-    "required": [
-        "bankId",
-        "accountId",
-        "productType",
-        "accountNickName",
-        "initialBalance",
-        "givenName",
-        "surname",
-        "customerId",
-        "productCode",
-        "branchId",
-        "accountRoutingScheme",
-        "accountRoutingAddress"
-    ],
-    "properties": {
-        "bankId": {
-            "$id": "#/properties/bankId",
-            "type": "object",
-            "title": "The Bankid Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": {},
-            "examples": [
-                {
-                    "value": "3FADEC89-1220-43D3-90A5-00004C6165ED"
-                }
-            ],
-            "required": [
-                "value"
-            ],
-            "properties": {
-                "value": {
-                    "$id": "#/properties/bankId/properties/value",
-                    "type": "string",
-                    "title": "The Value Schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "default": "",
-                    "examples": [
-                        "3FADEC89-1220-43D3-90A5-00004C6165ED"
-                    ]
-                }
-            }
-        },
-        "accountId": {
-            "$id": "#/properties/accountId",
-            "type": "object",
-            "title": "The Accountid Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": {},
-            "examples": [
-                {
-                    "value": "3FADEC89-1220-43D3-90A5-00004C6165ED"
-                }
-            ],
-            "required": [
-                "value"
-            ],
-            "properties": {
-                "value": {
-                    "$id": "#/properties/accountId/properties/value",
-                    "type": "string",
-                    "title": "The Value Schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "default": "",
-                    "examples": [
-                        "3FADEC89-1220-43D3-90A5-00004C6165ED"
-                    ]
-                }
-            }
-        },
-        "productType": {
-            "$id": "#/properties/productType",
-            "type": "string",
-            "title": "The Producttype Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "saving"
-            ]
-        },
-        "accountNickName": {
-            "$id": "#/properties/accountNickName",
-            "type": "string",
-            "title": "The Accountnickname Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "string"
-            ]
-        },
-        "initialBalance": {
-            "$id": "#/properties/initialBalance",
-            "type": "number",
-            "title": "The Initialbalance Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": 0,
-            "examples": [
-                123.321
-            ]
-        },
-        "givenName": {
-            "$id": "#/properties/givenName",
-            "type": "string",
-            "title": "The Givenname Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "TAB"
-            ]
-        },
-        "surname": {
-            "$id": "#/properties/surname",
-            "type": "string",
-            "title": "The Surname Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "BANK"
-            ]
-        },
-        "customerId": {
-            "$id": "#/properties/customerId",
-            "type": "string",
-            "title": "The Customerid Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "3FADEC89-1220-43D3-90A5-00004C6165ED"
-            ]
-        },
-        "productCode": {
-            "$id": "#/properties/productCode",
-            "type": "string",
-            "title": "The Productcode Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "240-OP"
-            ]
-        },
-        "branchId": {
-            "$id": "#/properties/branchId",
-            "type": "string",
-            "title": "The Branchid Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "3FADEC89-1220-43D3-90A5-00004C6165ED"
-            ]
-        },
-        "accountRoutingScheme": {
-            "$id": "#/properties/accountRoutingScheme",
-            "type": "string",
-            "title": "The Accountroutingscheme Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "IBAN"
-            ]
-        },
-        "accountRoutingAddress": {
-            "$id": "#/properties/accountRoutingAddress",
-            "type": "string",
-            "title": "The Accountroutingaddress Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "DE91 1000 0000"
-            ]
-        }
-    }
-}
-*********************************************
-{
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "http://example.com/example.json",
-    "type": "object",
-    "title": "The Root Schema",
-    "description": "The root schema comprises the entire JSON document.",
-    "required": [
-        "national_identifier",
-        "full_name",
-        "swift_bic",
-        "logo_url",
-        "id",
-        "short_name",
-        "bank_routing",
-        "website_url"
-    ],
-    "properties": {
-        "national_identifier": {
-            "$id": "#/properties/national_identifier",
-            "type": "string",
-            "title": "The National_identifier Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "UK97ZZZ1234567890"
-            ]
-        },
-        "full_name": {
-            "$id": "#/properties/full_name",
-            "type": "string",
-            "title": "The Full_name Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "uk"
-            ]
-        },
-        "swift_bic": {
-            "$id": "#/properties/swift_bic",
-            "type": "string",
-            "title": "The Swift_bic Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "IIIGGB22"
-            ]
-        },
-        "logo_url": {
-            "$id": "#/properties/logo_url",
-            "type": "string",
-            "title": "The Logo_url Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "https://static.openbankproject.com/images/sandbox/bank_x.png"
-            ]
-        },
-        "id": {
-            "$id": "#/properties/id",
-            "type": "string",
-            "title": "The Id Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "510BA94E-455B-42E1-8801-000101ECF90E"
-            ]
-        },
-        "short_name": {
-            "$id": "#/properties/short_name",
-            "type": "string",
-            "title": "The Short_name Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "uk"
-            ]
-        },
-        "bank_routing": {
-            "$id": "#/properties/bank_routing",
-            "type": "object",
-            "title": "The Bank_routing Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": {},
-            "examples": [
-                {
-                    "scheme": "Bank_ID",
-                    "address": "gh.29.uk"
-                }
-            ],
-            "required": [
-                "scheme",
-                "address"
-            ],
-            "properties": {
-                "scheme": {
-                    "$id": "#/properties/bank_routing/properties/scheme",
-                    "type": "string",
-                    "title": "The Scheme Schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "default": "",
-                    "examples": [
-                        "Bank_ID"
-                    ]
-                },
-                "address": {
-                    "$id": "#/properties/bank_routing/properties/address",
-                    "type": "string",
-                    "title": "The Address Schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "default": "",
-                    "examples": [
-                        "gh.29.uk"
-                    ]
-                }
-            }
-        },
-        "website_url": {
-            "$id": "#/properties/website_url",
-            "type": "string",
-            "title": "The Website_url Schema",
-            "description": "An explanation about the purpose of this instance.",
-            "default": "",
-            "examples": [
-                "https://www.example.com"
-            ]
-        }
-    }
-}
-************************************************
-baseURI=https://mulefabricint.tab.com/openbanking-experience-api/v1/
 
+package com.tab.af.web.steps;
 
-BANK_ID=6fb17583-1e49-4435-bb74-a14fe0996723
-Card_ID=873359F6-96BC-4DDF-A4E6-00148577BA4F
-USER_ID=D9E5041C-0EEF-453F-9AFE-0001481FC686
-ACCOUNT_ID=8E5A7E5D-F51F-46DE-8241-90A046E0D292
-VIEW_ID=3FADEC89-1220-43D3-90A5-00004C616678
-ACCOUNT_ID_2=3FADEC89-1220-43D3-90A5-00004C6165ED 
-CUSTOMER_ID=C9D5C2D8-FDF5-42A3-AF5B-0003338D1077
-KYC_DOCUMENT_ID=BE5F49D6-ECA3-46FD-B4FB-9FA55CFB473C
+import java.util.List;
+import java.util.Map;
 
-#create Customer
-create.customer=banks/{BANK_ID}/customers
-create.customer.BANK_ID=6fb17583-1e49-4435-bb74-a14fe0996723
+import com.tab.af.web.pages.OnBoarding.ApplicationCreation;
+import com.tab.af.web.pages.OnBoarding.ApplicationEditor;
+import com.tab.af.web.pages.OnBoarding.ApplicationsHome;
+import com.tab.af.web.pages.OnBoarding.DepositTasks;
+import com.tab.af.web.pages.OnBoarding.LoanTasks;
+import com.tab.af.web.pages.OnBoarding.Login;
+import com.tab.af.web.pages.OnBoarding.OnBoardApplicants;
 
-#create Bank
-create.bank=banks
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
 
-#getUserByID
-getuserby.user_id=banks/{BANK_ID}/users/user_id/{USER_ID}
-getuserby.user_id.USER_ID=D9E5041C-0EEF-453F-9AFE-0001481FC686
-getuserby.user_id.BANK_ID=6fb17583-1e49-4435-bb74-a14fe0996723
+public class OnboardingSteps {
 
-******************************************
-{
-	"chrome": {
-		"arguments": {
-			"arg1": "--disable-infobars",
-			"arg2": "--start-maximized",
-			"arg3": "--ignore-certificate-errors" ,
-			"arg4":"--window-size=1920,1080"
+	Login login = new Login();
 
-			 
-		},
-		"capabilities": {
-			"browserName": "chrome",
-			"os":"Windows"
-			
-		}
-		
-	},
-	"firefox": {
-		"arguments": {
-			 
-		},
-		"capabilities": {
-			"browserName": "firefox",
-			"os":"Windows",
-			"binary":"C:\\Users\\achaudhary\\AppData\\Local\\Mozilla Firefox\\firefox.exe"
-			
-		}
-	},
-	"ie": {
-		"arguments": {
-			 
-		},
-		"capabilities": {
-			"browserName": "internet explorer",
-			"os":"Windows"
-			
-		}
+	ApplicationsHome home = new ApplicationsHome();
+
+	ApplicationCreation app = new ApplicationCreation();
+
+	DepositTasks depositTask = new DepositTasks();
+
+	LoanTasks loanTask = new LoanTasks();
+
+	ApplicationEditor appEditor = new ApplicationEditor();
+
+	@Given("user logged into Onboarding")
+	public void user_logged_into_Onboarding() {
+
+		login = login.openOnboarding();
+		home = login.loginToApplication();
 	}
 
-
-}
-***************************************************
-#run.type=local
-#run.type=grid
-run.type=api
-
-#System
-application.name=Tab automation
-
-
-#Reporting
-extent.report=true
-report.directory.windows=\\reports\\
-report.file.name=extent-report.html
-date.format=MM-dd-yyyy_HH-mm-ss
-report.directory.environment.separator=-
-screenshot.passed.step=true
-screenshot.failed.step=true
-
-#INT DB 
-onboarding.int.db=jdbc:sqlserver://ogvsqlcoreint01\\int.onboarding:1433;user=jdbcuser; password=99*-Jdbc
-cego.int.db=jdbc:sqlserver://ogvsqlcoreint01\\Customer360_schema:1433;user=apiuser; password=99*-api
-
-#Browser Binary versions
-grid.port.number=2426
-chrome.binary.version=79.0.3945
-firefox.binary.version=v0.24.0
-ie.binary.version=3.14.0
-firefox.binary.path=C:\\Users\\achaudhary\\AppData\\Local\\Mozilla Firefox\\firefox.exe
-
-#Timeouts
-page.load.wait=60
-explicit.wait.timeout=60
-fluent.wait.timeout=60 
-polling.interval=500
-file.Download.Timeout=15000
-
-# Selenium Events 
-Selenium.Event.log=false
-isEmailReport=false
- 
-#Application URLS
-# acpt,int
-#Onboarding
-onboarding.env=int
-onboarding.int.url=https://onboardingint.tabbank.com/app/#!
-onboarding.acpt.url=https://achaudhary:Okok@123@onboardingacpt.tabbank.com/app/#!
-onboarding.user.name=admin
-onboarding.user.password=abc123
-onboarding.admin.user.name=rvennam
-onboarding.admin.user.password=abc123
-
-#equipment financing
-equipment.financing.int.url=https://equipment-financing.int.tabbank.com/
-
-#EBank
-ebank.int.url=https://ebankint.tabbank.com/app/#!
-ebank.admin.user=auto01
-ebank.admin.password=abc123
-
-#EPrecision
-eprecision.int.url=https://eprecision.int.tabbank.com/
-
-#Daint
-daint.int.url=https://daint.tabbank.com/
-
-#task Group to Assign
-onboarding.int.bankgroup=OLD_TAB Bank
-onboarding.acpt.bankgroup=TAB Bank
-
-#EDGe
-edge.int.url= http://rmaddula:*YPh9u8i@edgeint.tabbank.com:8080/app/#!
-edge.user.login=admin
-edge.user.loginpassword=abc123
-*********************************************
-# Root logger option
-log4j.rootLogger=INFO, file, stdout
-# configuration to print into file
-log4j.appender.file=org.apache.log4j.RollingFileAppender
-log4j.appender.file.File=./src/test/resources/logs/Steplogs.log
-log4j.appender.LOGFILE.RollingPolicy=org.apache.log4j.rolling.TimeBasedRollingPolicy
-log4j.appender.LOGFILE.RollingPolicy.FileNamePattern=/logs/Steplog_%d{yyyy-MM-dd}.log
-log4j.appender.file.MaxFileSize=12MB
-log4j.appender.file.MaxBackupIndex=10
-log4j.appender.file.layout=org.apache.log4j.PatternLayout
-log4j.appender.file.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
-# configuration to print on console
-log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-log4j.appender.stdout.Target=System.out
-log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
-***********************************
-var getShadowElement = function getShadowElement(object,selector) {
-	return object.shadowRoot.querySelector(selector);
-};
-
-var getAllShadowElement = function getAllShadowElement(object,selector) {
-	return object.shadowRoot.querySelectorAll(selector);
-};
-
-var getAttribute = function getAttribute(object,attribute) {
-	return object.getAttribute(attribute);
-};
-
-var isVisible = function isVisible(object) {
-	var visible = object.offsetWidth;
-	if(visible>0) {
-		return true;
-	} else {
-		return false;
+	@Given("User is Starting to create a Product")
+	public void user_is_Starting_to_create_a_Product() {
+		app = home.openApplications();
 	}
-};
 
-var scrollTo = function scrollTo(object) {
-	object.scrollIntoView({block: "center", inline: "nearest"});
-};
-
-var getParentElement = function getParentElement(object) {
-	if(object.parentNode.nodeName=="#document-fragment") {
-		return object.parentNode.host;
-	} else if(object.nodeName=="#document-fragment") {
-		return object.host;
-	} else {
-		return object.parentElement;
+	@Given("User is on Applications Page")
+	public void user_is_on_Applications_Page() {
+		app = home.openApplications();
 	}
-};
 
-var getChildElements = function getChildElements(object) {
-	if(object.nodeName=="#document-fragment") {
-		return object.children;
-	} else {
-		return object.childNodes;
+	@When("user creates a Deposit product with specfications and Clicks create")
+	public void user_creates_a_Deposit_product_with_specfications_and_Clicks_create(DataTable dataTable) {
+		List<Map<String, String>> data = dataTable.asMaps(String.class, String.class);
+		app.createDepositProduct(data.get(0).get("ProductLine"), data.get(0).get("ProductType"),
+				data.get(0).get("CustomerType"), data.get(0).get("ProductName"));
 	}
-};
 
-var getSiblingElements = function getSiblingElements(object) {
-	if(object.nodeName=="#document-fragment") {
-		return object.host.children;
-	} else {
-		return object.siblings();
+	@When("user creates a Loan product with specifications and Clicks create")
+	public void user_creates_a_Loan_product_with_specifications_and_Clicks_create(
+			io.cucumber.datatable.DataTable dataTable) {
+		List<Map<String, String>> data = dataTable.asMaps(String.class, String.class);
+		app.createLoanProduct(data.get(0).get("ProductLine"), data.get(0).get("ProductType"),
+				data.get(0).get("CustomerType"), data.get(0).get("ProductName"));
 	}
-};
 
-var getSiblingElement = function getSiblingElement(object, selector) {
-	if(object.nodeName=="#document-fragment") {
-		return object.host.querySelector(selector);
-	} else {
-		return object.parentElement.querySelector(selector);
+	@When("Fills the Details for the Individual Information")
+	public void fills_the_Details_for_the_Individual_Information() {
+		app.fillIndividualBasicandDrivingInfo();
+		app.fillPhysicalAddressDetails();
+		app.selectMailingAddessSameAsPhysical();
+		app.fillPhonesInfo();
+		appEditor = app.startDepositProcess();
 	}
-};
 
-var getNextSiblingElement = function getNextSiblingElement(object) {
-	if(object.nodeName=="#document-fragment") {
-		return object.host.firstElementChild.nextElementSibling;
-	} else {
-		return object.nextElementSibling;
+	@When("Fills the Details for the Legal Entity")
+	public void fills_the_Details_for_the_Legal_Entity(DataTable dataTable) {
+		List<Map<String, String>> data = dataTable.asMaps(String.class, String.class);
+		app.fillLegalEntityInfo(data.get(0).get("LegalEntity"));
+		app.fillPhysicalAddressDetails();
+		app.selectMailingAddessSameAsPhysical();
+		app.fillPhonesInfo();
+		appEditor = app.startDepositProcess();
 	}
-};
 
-var getPreviousSiblingElement = function getPreviousSiblingElement(object) {
-	if(object.nodeName=="#document-fragment") {
-		return null;
-	} else {
-		return object.previousElementSibling;
+	@When("Fills the Details for the Loans Legal Entity")
+	public void fills_the_Details_for_the_Loans_Legal_Entity(io.cucumber.datatable.DataTable dataTable)
+			throws Exception {
+		List<Map<String, String>> data = dataTable.asMaps(String.class, String.class);
+		app.fillLegalEntityInfo(data.get(0).get("LegalEntity"));
+		app.fillPhysicalAddressDetails();
+		app.selectMailingAddessSameAsPhysical();
+		app.fillPhonesInfo();
 	}
-};
 
-var isChecked = function isChecked(object) {
-	return object.checked;
-};
-
-var isDisabled = function isDisabled(object) {
-	return object.disabled;
-};
-
-var findCheckboxWithLabel = function findCheckboxWithLabel(label, root=document) {
-	if(root.nodeName=="PAPER-CHECKBOX") {
-		if(root.childNodes[0].data.trimStart().trimEnd()==label) {
-			return root;
-		}
-	} else {
-		let all_checkbox = getAllObject("paper-checkbox", root);
-		for (let checkbox of all_checkbox) {
-			if(checkbox.childNodes[0].data.trimStart().trimEnd()==label) {
-				return checkbox;
-			}
-		}
+	@Then("Product should be added in OnBoarding results Table")
+	public void product_should_be_added_in_OnBoarding_results_Table() {
+		appEditor.selectcreatedDepositApplication();
+		depositTask = appEditor.openDepositProduct();
 	}
-};
 
-var findRadioWithLabel = function findRadioWithLabel(label, root=document) {
-	if(root.nodeName=="PAPER-RADIO-BUTTON") {
-		if(root.childNodes[0].data.trimStart().trimEnd()==label) {
-			return root;
-		}
-	} else {
-		let all_radio = getAllObject("paper-radio-button", root);
-		for (let radio of all_radio) {
-			if(radio.childNodes[0].data.trimStart().trimEnd()==label) {
-				return radio;
-			}
-		}
+	@Then("Entity details should be saved")
+	public void entity_details_should_be_saved() {
+		app.assertEntityInfoSaved();
 	}
-};
 
-var selectCheckbox = function selectCheckbox(label, root=document) {
-	let checkbox = findCheckboxWithLabel(label, root);
-	if(!checkbox.checked) {
-		checbox.click();
+	@When("User fills opportunity ,collateral and Equipment Info and starts Process")
+	public void user_fills_opportunity_collateral_and_Equipment_Info_and_starts_Process(
+			io.cucumber.datatable.DataTable dataTable) {
+		List<Map<String, String>> data = dataTable.asMaps(String.class, String.class);
+		app.fillOpportunityInfo(data.get(0).get("BusinessType"), data.get(0).get("Amount"));
+		app.fillEquipmentInfo();
+		app.addLoanIndividualInfo();
+		app.updateLoanIndividualGuarantor();
+		appEditor = app.startLoanProcess();
 	}
-};
 
-var selectRadio = function selectRadio(label, root=document) {
-	let radio = findCheckboxWithLabel(label, root);
-	if(!radio.checked) {
-		radio.click();
+	@When("User fills opportunity ,collateral  and starts Process")
+	public void user_fills_opportunity_collateral_and_starts_Process(io.cucumber.datatable.DataTable dataTable) {
+		List<Map<String, String>> data = dataTable.asMaps(String.class, String.class);
+		app.fillOpportunityInfo(data.get(0).get("BusinessType"), data.get(0).get("Amount"));
+		app.addLoanIndividualInfo();
+		app.updateLoanIndividualGuarantor();
+		appEditor = app.startLoanProcess();
 	}
-};
 
-var selectDropdown = function selectDropdown(label, root=document) {
-	if(root.nodeName=="PAPER-LISTBOX") {
-		root.select(label);
-	} else {
-		let listbox = getAllObject("paper-listbox", root);
-		listbox.select(label);
+	@Then("user should be able to Start the Process")
+	public void user_should_be_able_to_Start_the_Process() {
+		appEditor.selectcreatedLoanApplication();
+		loanTask = appEditor.openLoanProduct();
 	}
-};
 
-var querySelectorAllDeep = function querySelectorAllDeep(selector, root) {
-	if(root==undefined) {
-		return _querySelectorDeep(selector, true, document);
-	} else {
-		return _querySelectorDeep(selector, true, root);
+	@Then("User should be able to Complete Verifications and Create account")
+	public void user_should_be_able_to_Complete_Verifications_and_Create_account() {
+		depositTask.completeSingleConsumerDepositTasks();
+		depositTask.verifyAccountCreated(OnBoardApplicants.Applicant1);
 	}
-};
 
-var querySelectorDeep = function querySelectorDeep(selector, root) {
-	if(root==undefined) {
-		return _querySelectorDeep(selector, false, document);
-	} else {
-		return _querySelectorDeep(selector, false, root);
+	@Then("User should be able to Complete commercial Verifications and Create account")
+	public void user_should_be_able_to_Complete_commercial_Verifications_and_Create_account() {
+		depositTask.completeCommercialDepositTasks();
+		depositTask.verifyCIFAccountCreated();
 	}
-};
 
-var getObject = function getObject(selector, root = document) {
-    const multiLevelSelectors = splitByCharacterUnlessQuoted(selector, '>');
-	if (multiLevelSelectors.length == 1) {
-		return querySelectorDeep(multiLevelSelectors[0], root);
-	} else if (multiLevelSelectors.length == 2) {
-		return querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root);
-	} else if (multiLevelSelectors.length == 3) {
-		return querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root));
-	} else if (multiLevelSelectors.length == 4) {
-		return querySelectorDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root)));
-	} else if (multiLevelSelectors.length == 5) {
-		return querySelectorDeep(multiLevelSelectors[4], querySelectorDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root))));
+	@Then("User should be able to Complete consumer COD Verifications and Create account")
+	public void User_should_be_able_to_Complete_consumer_COD_Verifications_and_Create_account() {
+		depositTask.completeApplicationVerificationTask();
+		depositTask.completeCustomerVerificationQATask();
+		depositTask.completeDecisionTask();
+		depositTask.completeCIFAccountCreationTask();
+		depositTask.completeSendWelcomeEmailTask();
+		depositTask.completeFundingTask();
 	}
-};
-
-var getAllObject = function getAllObject(selector, root = document) {
-    const multiLevelSelectors = splitByCharacterUnlessQuoted(selector, '>');
-    if (multiLevelSelectors.length == 1) {
-        return querySelectorAllDeep(multiLevelSelectors[0], root);
-    } else if (multiLevelSelectors.length == 2) {
-        return querySelectorAllDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root);
-    } else if (multiLevelSelectors.length == 3) {
-        return querySelectorAllDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root));
-    } else if (multiLevelSelectors.length == 4) {
-		return querySelectorAllDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root)));
-	} else if (multiLevelSelectors.length == 5) {
-		return querySelectorAllDeep(multiLevelSelectors[4], querySelectorDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root))));
-	}
-    
-};
-
-function _querySelectorDeep(selector, findMany, root) {
-    let lightElement = root.querySelector(selector);
-
-    if (document.head.createShadowRoot || document.head.attachShadow) {
-        if (!findMany && lightElement) {
-            return lightElement;
-        }
-
-        const selectionsToMake = splitByCharacterUnlessQuoted(selector, ',');
-
-        return selectionsToMake.reduce((acc, minimalSelector) => {
-            if (!findMany && acc) {
-                return acc;
-            }
-            const splitSelector = splitByCharacterUnlessQuoted(minimalSelector
-                    .replace(/^\s+/g, '')
-                    .replace(/\s*([>+~]+)\s*/g, '$1'), ' ')
-                .filter((entry) => !!entry);
-            const possibleElementsIndex = splitSelector.length - 1;
-            const possibleElements = collectAllElementsDeep(splitSelector[possibleElementsIndex], root);
-            const findElements = findMatchingElement(splitSelector, possibleElementsIndex, root);
-            if (findMany) {
-                acc = acc.concat(possibleElements.filter(findElements));
-                return acc;
-            } else {
-                acc = possibleElements.find(findElements);
-                return acc;
-            }
-        }, findMany ? [] : null);
-
-
-    } else {
-        if (!findMany) {
-            return lightElement;
-        } else {
-            return root.querySelectorAll(selector);
-        }
-    }
-
-}
-
-function findMatchingElement(splitSelector, possibleElementsIndex, root) {
-    return (element) => {
-        let position = possibleElementsIndex;
-        let parent = element;
-        let foundElement = false;
-        while (parent) {
-            const foundMatch = parent.matches(splitSelector[position]);
-            if (foundMatch && position === 0) {
-                foundElement = true;
-                break;
-            }
-            if (foundMatch) {
-                position--;
-            }
-            parent = findParentOrHost(parent, root);
-        }
-        return foundElement;
-    };
-
-}
-
-function splitByCharacterUnlessQuoted(selector, character) {
-    return selector.match(/\\?.|^$/g).reduce((p, c) => {
-        if (c === '"' && !p.sQuote) {
-            p.quote ^= 1;
-            p.a[p.a.length - 1] += c;
-        } else if (c === '\'' && !p.quote) {
-            p.sQuote ^= 1;
-            p.a[p.a.length - 1] += c;
-
-        } else if (!p.quote && !p.sQuote && c === character) {
-            p.a.push('');
-        } else {
-            p.a[p.a.length - 1] += c;
-        }
-        return p;
-    }, { a: [''] }).a;
-}
-
-
-function findParentOrHost(element, root) {
-    const parentNode = element.parentNode;
-    return (parentNode && parentNode.host && parentNode.nodeType === 11) ? parentNode.host : parentNode === root ? null : parentNode;
-}
-
-
-function collectAllElementsDeep(selector = null, root) {
-    const allElements = [];
-
-    const findAllElements = function(nodes) {
-        for (let i = 0, el; el = nodes[i]; ++i) {
-            allElements.push(el);
-            if (el.shadowRoot) {
-                findAllElements(el.shadowRoot.querySelectorAll('*'));
-            }
-        }
-    };
-	
-	if(root.shadowRoot != null) {
-		findAllElements(root.shadowRoot.querySelectorAll('*'));
-	}
-	
-    findAllElements(root.querySelectorAll('*'));
-
-    return selector ? allElements.filter(el => el.matches(selector)) : allElements;
-}
