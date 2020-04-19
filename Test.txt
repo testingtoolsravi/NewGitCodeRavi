@@ -1,3533 +1,1298 @@
-package com.tab.af.rest;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-public class HttpClient {
-
-	private HttpURLConnection httpConn;
-
-	public HttpURLConnection sendGetRequest(String requestURL) throws IOException {
-		URL url = new URL(requestURL);
-		httpConn = (HttpURLConnection) url.openConnection();
-		httpConn.setUseCaches(false);
-
-		httpConn.setDoInput(true); // true if we want to read server's response
-		httpConn.setDoOutput(false); // false indicates this is a GET request
-
-		return httpConn;
-	}
-
-	public Map<String, String> createParamsMap(String[] paramKeys, String[] paramValues) {
-		Map<String, String> params = new HashMap<String, String>();
-		for (int i = 0; i < paramKeys.length; i++) {
-			if (paramValues.length < paramKeys.length && i == paramKeys.length - 1)
-				params.put(paramKeys[i], null);
-			else
-				params.put(paramKeys[i], paramValues[i]);
-		}
-		return params;
-	}
-
-	public HttpURLConnection sendPostRequest(String requestURL, Map<String, String> paramsMap) throws IOException {
-		URL url = new URL(requestURL);
-		httpConn = (HttpURLConnection) url.openConnection();
-		httpConn.setUseCaches(false);
-
-		httpConn.setDoInput(true); // true indicates the server returns response
-
-		StringBuffer requestParams = new StringBuffer();
-
-		if (paramsMap != null && paramsMap.size() > 0) {
-
-			httpConn.setDoOutput(true); // true indicates POST request
-
-			// creates the params string, encode them using URLEncoder
-			Iterator<String> paramIterator = paramsMap.keySet().iterator();
-			while (paramIterator.hasNext()) {
-				String key = paramIterator.next();
-				String value = paramsMap.get(key);
-				requestParams.append(URLEncoder.encode(key, "UTF-8"));
-				requestParams.append("=").append(URLEncoder.encode(value, "UTF-8"));
-				requestParams.append("&");
-			}
-
-			// sends POST data
-			OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-			writer.write(requestParams.toString());
-			writer.flush();
-		}
-
-		return httpConn;
-	}
-
-	public String readSingleLineRespone() throws IOException {
-		InputStream inputStream = null;
-		if (httpConn != null) {
-			inputStream = httpConn.getInputStream();
-		} else {
-			throw new IOException("Connection is not established.");
-		}
-		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-		String response = reader.readLine();
-		reader.close();
-
-		return response;
-	}
-
-	public String[] readMultipleLinesRespone() throws IOException {
-		InputStream inputStream = null;
-		if (httpConn != null) {
-			inputStream = httpConn.getInputStream();
-		} else {
-			throw new IOException("Connection is not established.");
-		}
-
-		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-		List<String> response = new ArrayList<String>();
-
-		String line = "";
-		while ((line = reader.readLine()) != null) {
-			response.add(line);
-		}
-		reader.close();
-
-		return response.toArray(new String[0]);
-	}
-
-	public void disconnect() {
-		if (httpConn != null) {
-			httpConn.disconnect();
-		}
-	}
-
+{
+    "bankId": {
+        "value": "6fb17583-1e49-4435-bb74-a14fe0996723"
+    },
+    "accountId": {
+        "value": "36C89433-694A-4651-ACC3-0001E5E4E961"
+    },
+    "productType": "saving",
+    "accountNickName": "string",
+    "initialBalance": 123.321,
+    "givenName": "TAB",
+    "surname": "BANK",
+    "customerId": "480BA94E-455B-42E1-8801-000101ECF90C",
+    "productCode": "240-OP",
+    "branchId": "3FADEC89-1220-43D3-90A5-00004C6165ED",
+    "accountRoutingScheme": "IBAN",
+    "accountRoutingAddress": "DE91 1000 0000"
+    }
+******************************************
+{
+    "national_identifier": "UK97ZZZ1234567890",
+    "full_name": "uk",
+    "swift_bic": "IIIGGB22",
+    "logo_url": "https://static.openbankproject.com/images/sandbox/bank_x.png",
+    "id": "510BA94E-455B-42E1-8801-000101ECF90E",
+    "short_name": "uk",
+    "bank_routing": {
+        "scheme": "Bank_ID",
+        "address": "gh.29.uk"
+    },
+    "website_url": "https://www.example.com"
 }
 **************************************************
-package com.tab.af.rest;
-
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-
-import org.apache.poi.ss.formula.functions.T;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import io.restassured.path.json.JsonPath;
-
-public class JSONUtilities {
-	public static String jsonToString(String filepath) {
-
-		try (FileReader reader = new FileReader(filepath)) {
-			JSONParser parser = new JSONParser();
-			Object obj = parser.parse(reader);
-			JSONObject jsonObject = (JSONObject) obj;
-			return jsonObject.toString();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ParseException e) {
-			e.printStackTrace();
+{
+	"TC_0001": {
+		"testdata1": {
+			"Status Code": "201",
+			"Status Line": "201 Created"
+		}
+	},
+	"TC_0002": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12345678@#$%^&*",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0003": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12345678@#$%^&*",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0004": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0005": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0006": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0007": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "201",
+			"Status Line": "201 Created"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0008": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789@#$%^&*(&*(#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0009": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789@#$%^&*(&*(#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0010": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789112345678912",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12345646$%$^$%%453",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0011": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabhay",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12351#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0012": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcde",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "#$#$#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0013": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcd",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "#$#$$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0014": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcd",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "#$#$$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0015": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefabcdefabcdefabcdefabcdefabcdef",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12351#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0016": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefabcdef",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12351#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0017": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefabcdefabcdefabcdefabcdefabcdef",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12351#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0018": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefabcdefabcdefabcdefabcdefabc",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12351#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0019": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcd123abcd123abcd123",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "12351#$#",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
 		}
-		return "";
-
 	}
-
-	public T getJSONPath(JsonPath jPath, String pathExpression) {
-
-		T value = null;
-
-		Object pathObject = jPath.get(pathExpression);
-		if (pathObject instanceof ArrayList<?>) {
-			value = (T) pathObject;
-			return value;
-		}
-		value = (T) pathObject;
-		return value;
-
-	}
-}
-*************************************************************
-package com.tab.af.rest;
-
-import java.io.FileWriter;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import io.restassured.http.Header;
-import io.restassured.response.Response;
-import io.restassured.specification.MultiPartSpecification;
-import io.restassured.specification.QueryableRequestSpecification;
-import io.restassured.specification.RequestSpecification;
-import io.restassured.specification.SpecificationQuerier;
-
-public class OutPutJSON {
-	private static OutPutJSON outPutJSON = null;
-	private static String testName = null;
-
-	private OutPutJSON() {
-
-	}
-
-	public void setTestName(String testName) {
-		OutPutJSON.testName = testName;
-
-	}
-
-	public static OutPutJSON getinstance() {
-		if (outPutJSON == null) {
-			outPutJSON = new OutPutJSON();
-		}
-		return outPutJSON;
-	}
-
-	public void flushOPData() {
-		String jsonString = generateJSONTestDataString();
-		try {
-			String opfilePath = System.getProperty("api.output.file");
-
-			try (FileWriter writer = new FileWriter(opfilePath, true)) {
-				writer.append(jsonString);
-				writer.append(",");
-				writer.flush();
-			}
-
-		} catch (Exception e) {
-			System.out.print("Exception Occured While Writing to API output Test Data File");
-			e.printStackTrace();
-		}
-	}
-
-	private String generateJSONTestDataString() {
-		try {
-			Gson gson = new GsonBuilder().setPrettyPrinting().create();
-			Response response = RestActions.getResponseReceived();
-			RequestSpecification request = RestActions.getCreatedRequest();
-			QueryableRequestSpecification queryable = SpecificationQuerier.query(request);
-			JSONArray dataArray = new JSONArray();
-
-			JSONObject parent = new JSONObject();
-
-			parent.put(testName, "");
-
-			if (queryable.getMethod() != null) {
-
-				String method = queryable.getMethod().toUpperCase();
-
-				JSONObject obj = new JSONObject();
-				obj.put("request_method", method);
-				dataArray.add(obj);
-
-			}
-			if (queryable.getAuthenticationScheme() != null) {
-				JSONObject object = new JSONObject();
-				object.put("authentication_scheme", queryable.getAuthenticationScheme());
-				dataArray.add(object);
-			}
-			if (queryable.getBaseUri() != null) {
-				String baseURI = queryable.getBaseUri();
-
-				JSONObject obj = new JSONObject();
-				obj.put("baseURI", baseURI);
-				dataArray.add(obj);
-			}
-
-			if (queryable.getBasePath() != null) {
-				String basePath = queryable.getBasePath();
-
-				JSONObject obj = new JSONObject();
-				obj.put("basepath", basePath);
-				dataArray.add(obj);
-			}
-
-			if (queryable.getURI() != null) {
-
-				JSONObject headerObj = new JSONObject();
-				headerObj.put("endpoint_URL", queryable.getURI());
-				dataArray.add(headerObj);
-			}
-
-			if (queryable.getHeaders() != null) {
-				List<Header> headers = queryable.getHeaders().asList();
-				JSONObject object = new JSONObject();
-				for (Header header : headers) {
-					object.put(header.getName(), header.getValue());
-				}
-				JSONObject headerObj = new JSONObject();
-				headerObj.put("request_Headers", object);
-				dataArray.add(headerObj);
-			}
-
-			if (queryable.getFormParams() != null) {
-				Map<String, String> formParamsMap = queryable.getFormParams();
-				JSONObject object = new JSONObject();
-				Set<String> keys = formParamsMap.keySet();
-				for (String key : keys) {
-					object.put(key, formParamsMap.get(key));
-				}
-				JSONObject fparmas = new JSONObject();
-				fparmas.put("form_params", object);
-				dataArray.add(fparmas);
-			}
-			if (queryable.getMultiPartParams() != null) {
-
-				List<MultiPartSpecification> multiPartParams = queryable.getMultiPartParams();
-				JSONArray arr = new JSONArray();
-				for (MultiPartSpecification mps : multiPartParams) {
-					arr.add(mps);
-
-				}
-				JSONObject multiPartParamsObj = new JSONObject();
-				multiPartParamsObj.put("multipartparams", arr);
-				dataArray.add(multiPartParamsObj);
-
-			}
-			if (queryable.getNamedPathParams() != null) {
-				Map<String, String> namedParamsMap = queryable.getNamedPathParams();
-				JSONObject object = new JSONObject();
-				Set<String> keys = namedParamsMap.keySet();
-				for (String key : keys) {
-					object.put(key, namedParamsMap.get(key));
-				}
-				JSONObject namedParams = new JSONObject();
-				namedParams.put("named_path_params", object);
-				dataArray.add(namedParams);
-			}
-			if (queryable.getPathParamPlaceholders() != null) {
-
-				List<String> pathParamHolders = queryable.getPathParamPlaceholders();
-				JSONArray arr = new JSONArray();
-				for (String pph : pathParamHolders) {
-					arr.add(pph);
-
-				}
-				JSONObject obj = new JSONObject();
-				obj.put("path_param_placeholders", arr);
-				dataArray.add(obj);
-
-			}
-			if (queryable.getPathParams() != null) {
-				Map<String, String> pathParams = queryable.getPathParams();
-				JSONObject object = new JSONObject();
-				Set<String> keys = pathParams.keySet();
-				for (String key : keys) {
-					object.put(key, pathParams.get(key));
-				}
-				JSONObject namedParams = new JSONObject();
-				namedParams.put("path_params", object);
-				dataArray.add(namedParams);
-			}
-			if (queryable.getQueryParams() != null) {
-				Map<String, String> queryParams = queryable.getQueryParams();
-				JSONObject object = new JSONObject();
-				Set<String> keys = queryParams.keySet();
-				for (String key : keys) {
-					object.put(key, queryParams.get(key));
-				}
-				JSONObject queryParamsObject = new JSONObject();
-				queryParamsObject.put("query_params", object);
-				dataArray.add(queryParamsObject);
-			}
-			if (queryable.getRequestParams() != null) {
-				Map<String, String> requestParams = queryable.getRequestParams();
-				JSONObject object = new JSONObject();
-				Set<String> keys = requestParams.keySet();
-				for (String key : keys) {
-					object.put(key, requestParams.get(key));
-				}
-				JSONObject requestParamsObject = new JSONObject();
-				requestParamsObject.put("request_params", object);
-				dataArray.add(requestParamsObject);
-
-			}
-
-			if (queryable.getBody() != null) {
-
-				String body = queryable.getBody().toString();
-
-				JSONObject obj = new JSONObject();
-				obj.put("request_body", body);
-				dataArray.add(obj);
-
-			}
-			if (response.getHeaders() != null) {
-				List<Header> headers = response.getHeaders().asList();
-				JSONObject object = new JSONObject();
-				for (Header header : headers) {
-					object.put(header.getName(), header.getValue());
-				}
-				JSONObject headerObj = new JSONObject();
-				headerObj.put("response_Headers", object);
-				dataArray.add(headerObj);
-			}
-			if (response.getBody() != null) {
-				JSONObject object = new JSONObject();
-
-				object.put("response_body", response.body().asString());
-				dataArray.add(object);
-			}
-
-			if (response.getTime() != -1) {
-				JSONObject object = new JSONObject();
-				long respsoneMS = response.getTimeIn(TimeUnit.MILLISECONDS);
-				int sec = (int) response.getTimeIn(TimeUnit.SECONDS);
-				long ms = (sec * 1000 - respsoneMS);
-				object.put("response_time", (sec + "s" + ":" + ms + "m").replace("-", ""));
-				dataArray.add(object);
-			}
-			if (response.getStatusCode() != -1 && response.getStatusLine() != null) {
-				JSONObject object = new JSONObject();
-				object.put("response_status_code_line", response.getStatusCode() + " " + response.getStatusLine());
-				dataArray.add(object);
-			}
-
-			parent.put(testName, dataArray);
-
-			String jsonString = gson.toJson(parent);
-
-			return jsonString;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return "";
-
-	}
-}
-
-**********************************************************************
-package com.tab.af.rest;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONTokener;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import org.testng.Assert;
-
-import com.google.gson.Gson;
-import com.jayway.jsonpath.DocumentContext;
-import com.tab.af.reporting.StepLogging;
-
-import io.restassured.RestAssured;
-import io.restassured.config.HttpClientConfig;
-import io.restassured.config.RestAssuredConfig;
-import io.restassured.http.ContentType;
-import io.restassured.http.Cookie;
-import io.restassured.http.Cookies;
-import io.restassured.http.Headers;
-import io.restassured.path.json.JsonPath;
-import io.restassured.response.Response;
-import io.restassured.specification.FilterableRequestSpecification;
-import io.restassured.specification.QueryableRequestSpecification;
-import io.restassured.specification.RequestSpecification;
-import io.restassured.specification.SpecificationQuerier;
-
-public class RestActions {
-	private StepLogging log = StepLogging.getLoggingObject();
-	private static FilterableRequestSpecification request;
-	private static Response response;
-	private String requestDataFile = null;
-	private static final String TESTDATADIRBODYVALID = ".\\src\\main\\resources\\OBPTestData\\Body\\POSITIVE";
-	private static final String TESTDATADIRBODYREQUESTDATA = ".\\src\\main\\resources\\OBPTestData\\Body\\RequestData";
-	private static final String TESTDATADIRSCHEMA = ".\\src\\main\\resources\\OBPTestData\\Schemas";
-	private static final String TESTDATADIRHEADERS = ".\\src\\main\\resources\\OBPTestData\\Headers";
-	private static final int CONNECTIONTIMEOUT = 30000;
-	private static final int SOCKETTIMEOUT = 30000;
-	private static final int CONNECTIONMANAGERTIMEOUT = 30000;
-
-	public static RequestSpecification getCreatedRequest() {
-		return request;
-	}
-
-	public static Response getResponseReceived() {
-		return response;
-	}
-
-	public void setRequestDataFile(String requestDataFile) {
-		this.requestDataFile = requestDataFile;
-	}
-
-	public String getRequestDataFile() {
-		return requestDataFile;
-	}
-
-	public void setRequestTimeout() {
-
-		try {
-
-			request.config(RestAssuredConfig.config().httpClient(
-					HttpClientConfig.httpClientConfig().setParam("http.connection.timeout", CONNECTIONTIMEOUT)
-							.setParam("http.socket.timeout", SOCKETTIMEOUT)
-							.setParam("http.connection-manager.timeout", CONNECTIONMANAGERTIMEOUT)));
-
-			log.info("Set Timeouts ");
-
-		} catch (Exception e) {
-
-			log.error("Set Timeouts Failed :", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Set Base URI for the Request
-	 *
-	 * @param baseURI
-	 */
-	public void setBaseURI(String baseURI) {
-
-		try {
-			request.baseUri(baseURI);
-			log.info("Set Baser URL as", baseURI);
-
-		} catch (Exception e) {
-
-			log.error("Set Base URL as: " + baseURI + " Failed :", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Set Base Path for the Request
-	 *
-	 * @param basePathTerm
-	 */
-	public void setBasePath(String basePathTerm) {
-		try {
-			request.basePath(basePathTerm);
-			log.info("Set Base Path as", basePathTerm);
-		} catch (Exception e) {
-
-			log.error("Set Base Path as: " + basePathTerm + " Failed :", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Set Path params as a Key Value Pair
-	 *
-	 * @param param
-	 * @param paramValue
-	 */
-	public void setPathParams(String param, String paramValue) {
-		try {
-			request.pathParam(param, paramValue);
-			log.info("Set Path Param as", param + ":" + paramValue);
-		} catch (Exception e) {
-
-			log.error("Set Path Param as", param + ":" + paramValue + " Failed :", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * use Relaxed HTTPS validation with the request
-	 *
-	 */
-	public void setRelaxedHTTPSValidationProtocolAsSSL() {
-
-		try {
-
-			request.relaxedHTTPSValidation();
-			log.info("Set Relaxed HTTPS Validation Protocol as SSL");
-		} catch (Exception e) {
-
-			log.error("Set Relaxed HTTPS Validation Protocol as: SSL Failed :", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Set the Type of Protocol for Relaxed Validation
-	 *
-	 * @param protocol
-	 */
-	public void setRelaxedHTTPSValidationProtocol(String protocol) {
-
-		try {
-
-			request.relaxedHTTPSValidation(protocol);
-			log.info("Set Relaxed HTTPS Validation Protocol as ", protocol);
-		} catch (Exception e) {
-
-			log.error("Set Relaxed HTTPS Validation Protocol as: " + protocol + " Failed :", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Request Setup
-	 */
-	public void setupRequest() {
-		try {
-
-			request = (FilterableRequestSpecification) RestAssured.given();
-			log.info("Set Request Specification");
-		} catch (Exception e) {
-
-			log.error("SetRequest Specification Failed :", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * get a random string uuid
-	 *
-	 * @return
-	 */
-	public String getUUID() {
-
-		String uuid = UUID.randomUUID().toString();
-		log.info("UUID ", uuid);
-		return uuid;
-
-	}
-
-	/**
-	 * Add A Map which contains the headers to be added to the Request
-	 *
-	 * @param map
-	 */
-	public void addHeadersToRequest(Map<String, String> map) {
-
-		try {
-			Set<String> keys = map.keySet();
-			for (String key : keys) {
-				if (map.get(key).contains(",")) {
-					List<String> multiValues = Arrays.asList(map.get(key).split(","));
-
-					addHeader(key, "", multiValues.toString());
-				} else {
-					addHeader(key, map.get(key));
-				}
-			}
-
-			log.info("Add Header Map to Specification");
-
-		} catch (Exception e) {
-
-			log.error("Add Header Map to Specification Failed :", e);
-			throw e;
-		}
-
-	}
-
-	public Map<String, String> getHeadersMapFromProperties(String headerFIleName) throws Exception {
-		File folder = null;
-		File rFile = null;
-		try {
-			folder = new File(TESTDATADIRHEADERS);
-			File[] listOfFiles = folder.listFiles();
-
-			for (File file : listOfFiles) {
-
-				if (file.getName().replace(".properties", "").equals(headerFIleName)) {
-					rFile = file;
-					break;
-				}
-
-			}
-			Properties properties = new Properties();
-			try (FileReader reader = new FileReader(rFile)) {
-				properties.load(reader);
-				log.info("Load properties file for: " + headerFIleName);
-
-			}
-			Map<String, String> propMap = new HashMap<String, String>();
-			Enumeration<?> propKeys = properties.propertyNames();
-			while (propKeys.hasMoreElements()) {
-				String key = (String) propKeys.nextElement();
-				if (properties.getProperty(key).contains("uuid")) {
-					propMap.put(key, getUUID());
-				} else {
-					propMap.put(key, properties.getProperty(key));
-				}
-			}
-			return propMap;
-		} catch (Exception e) {
-
-			log.error("Add Properties Header Fiel to Map for " + headerFIleName + "Failed :", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Add String body to the Request
-	 *
-	 * @param body
-	 * @return
-	 */
-	public RequestSpecification addRequestBody(String body) {
-
-		try {
-
-			request.body(body);
-			log.info("Add Body to Specification");
-		} catch (Exception e) {
-
-			log.error("Add Body to Specification Failed :", e);
-			throw e;
-		}
-		return request;
-	}
-
-	/**
-	 * Performa Get Request by the input path and set the response
-	 *
-	 * @param path
-	 * @param strings
-	 * @return
-	 */
-	public Response getResponsebyPath(String path, String... strings) {
-
-		try {
-
-			response = request.get(path, (Object[]) strings);
-			log.info("Set Request Specification");
-		} catch (Exception e) {
-
-			log.error("SetRequest Specification Failed :", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Performa Get Request by the input path and set the response
-	 *
-	 * @param path
-	 * @param strings
-	 * @return
-	 */
-	public Response postResponsebyPath(String path, String... strings) {
-
-		try {
-
-			response = request.post(path, (Object[]) strings);
-			log.info("Set Request Specification");
-		} catch (Exception e) {
-
-			log.error("SetRequest Specification Failed :", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Assert that the status code for the given Request is 200
-	 */
-	public void assertStatusCode200() {
-
-		int statCode = 0;
-		try {
-			statCode = getStatusCode();
-			Assert.assertEquals(statCode, 200);
-			log.info("Assert Status code Expected: 200 Actual: " + statCode);
-		} catch (AssertionError e) {
-
-			log.info("Assert Status code Expected: 200 Actual: " + statCode);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Assert that the status code for the given Request is 201
-	 */
-	public void assertStatusCode201() {
-
-		int statCode = 0;
-		try {
-			statCode = getStatusCode();
-			Assert.assertEquals(statCode, 201);
-			log.info("Assert Status code Expected: 201 Actual: " + statCode);
-		} catch (AssertionError e) {
-
-			log.info("Assert Status code Expected: 201 Actual: " + statCode);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Assert the status code for the given Request
-	 */
-	public void assertStatusCode(String expectedStatusCode) {
-
-		int statCode = 0;
-		try {
-			statCode = getStatusCode();
-			Assert.assertEquals(statCode + "", expectedStatusCode);
-			log.info("Assert Status code Expected: " + expectedStatusCode + " Actual: " + statCode);
-		} catch (AssertionError e) {
-
-			log.info("Assert Status code Expected: " + expectedStatusCode + " Actual: " + statCode);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Get the Status code for the Request
-	 *
-	 * @return
-	 */
-	public int getStatusCode() {
-		int statCode = 0;
-		try {
-			statCode = response.statusCode();
-
-			log.info("Get Status code : " + statCode);
-		} catch (Exception e) {
-
-			log.error("Get Status code Failed : ", e);
-			throw e;
-		}
-		return statCode;
-	}
-
-	/**
-	 * Assert Status Line of the Response
-	 *
-	 * @param statusLine
-	 */
-	public void assertStatusLine(String statusLine) {
-
-		String statLine = "";
-		try {
-			statLine = getStatusLine();
-			Assert.assertTrue(statLine.contains(statusLine));
-			log.info("Assert Status Line Expected: " + statusLine + " Actual: " + statLine);
-		} catch (AssertionError e) {
-
-			log.error("Assert Status Line Expected: " + statusLine + " Actual: " + statLine, e);
-			throw e;
-		}
-
-	}
-
-	public void assertStatusLine200() {
-
-		String statLine = "";
-		try {
-			statLine = getStatusLine();
-			Assert.assertTrue(statLine.contains("200 OK"));
-			log.info("Assert Status Line Expected: \"200 OK\" Actual: " + statLine);
-		} catch (AssertionError e) {
-
-			log.info("Assert Status Line Expected: \"200 OK\" Actual: " + statLine);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Get the Status Line for the Request
-	 *
-	 * @return
-	 */
-	public String getStatusLine() {
-		String statLine = "";
-		try {
-
-			statLine = response.statusLine();
-
-			log.info("Get Status Line : " + statLine);
-		} catch (Exception e) {
-
-			log.error("Get Status code Line : ", e);
-			throw e;
-		}
-		return statLine;
-	}
-
-	/**
-	 * Get Respsone as a string
-	 *
-	 * @return
-	 */
-	public String getResponseAsString() {
-		String responseString = null;
-		try {
-			responseString = response.asString();
-
-			log.info("Get Response as String");
-		} catch (Exception e) {
-
-			log.error("Get Response as String Failed ", e);
-			throw e;
-		}
-		return responseString;
-	}
-
-	/**
-	 * Get Response Body
-	 *
-	 * @return
-	 */
-	public String getResponsebody() {
-		String responseString = null;
-		try {
-			responseString = response.getBody().asString();
-
-			log.info("Get Response as String");
-		} catch (Exception e) {
-
-			log.error("Get Response as String Failed ", e);
-			throw e;
-		}
-		return responseString;
-	}
-
-	/**
-	 * Get JsonPath from the Resposne
-	 *
-	 * @return
-	 */
-	public JsonPath getJsonPathFromResponse() {
-		JsonPath jPath = null;
-		try {
-			if (response != null) {
-				jPath = response.jsonPath();
-			}
-
-			log.info("Get Response as   JSON path");
-		} catch (Exception e) {
-			log.error("Get Response as JSON Path Failed ", e);
-			throw e;
-		}
-		return jPath;
-	}
-
-	/**
-	 * Get a Object by JSONPATH
-	 *
-	 * @param path
-	 * @return
-	 */
-	public Object getObjectByJSONPath(String path) {
-		Object object = null;
-		try {
-			JsonPath jPath = getJsonPathFromResponse();
-			object = jPath.get(path);
-
-			log.info("Get Object by JSON path");
-		} catch (Exception e) {
-			log.error("Get Object by JSON path Failed ", e);
-			throw e;
-		}
-		return object;
-	}
-
-	/**
-	 * Get String value by JSONPath
-	 *
-	 * @param path
-	 * @return
-	 */
-	public String getValueByJSONPath(String path) {
-		String value = null;
-		try {
-			JsonPath jPath = getJsonPathFromResponse();
-			value = jPath.get(path);
-
-			log.info("Get Object by JSON path");
-		} catch (Exception e) {
-			log.error("Get Object by JSON path Failed ", e);
-			throw e;
-		}
-		return value;
-	}
-
-	/**
-	 * Reset base URL to null
-	 */
-	public void resetBaseURI() {
-		try {
-			request.baseUri(null);
-			log.info("Reset Base URL ");
-		} catch (Exception e) {
-
-			log.error("Reset Base URL  Failed :", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Reset BasePath to null
-	 */
-	public void resetBasePath() {
-		try {
-			request.basePath(null);
-			log.info("Reset Base Path ");
-		} catch (Exception e) {
-
-			log.error("Reset Base Path  Failed :", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Set the content type for the Request
-	 *
-	 * @param Type
-	 */
-	public void setContentType(ContentType Type) {
-		try {
-			request.contentType(Type);
-			log.info("Set content type:", Type.toString());
-		} catch (Exception e) {
-
-			log.error("Set content type Failed :" + Type.toString(), e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Perform a get Request
-	 *
-	 * @return
-	 */
-	public Response getRequestResponse() {
-
-		try {
-			response = request.get();
-			log.info("Get Request Response");
-		} catch (Exception e) {
-
-			log.error("Get Request Response Failed :", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Set headers for the Request when the header is a multivalue header
-	 *
-	 * @param key
-	 * @param value
-	 * @param additionalValues
-	 */
-	public void addHeader(String key, String value, String... additionalValues) {
-		try {
-			request.header(key, value, (Object[]) additionalValues);
-
-			log.info("Set Header :" + "Key" + key + "value" + value + "Additional Values: "
-					+ additionalValues.toString());
-		} catch (Exception e) {
-
-			log.error("Set Header :" + "Key" + key + "value" + value + "Additional Values: "
-					+ additionalValues.toString() + "Failed ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Set headers for the Request when the header is a multivalue header
-	 *
-	 * @param key
-	 * @param value
-	 * @param additionalValues
-	 */
-	public void addHeader(String key, String value) {
-		try {
-			request.header(key, value);
-			log.info("Set Header :" + "Key" + key + "value" + value);
-		} catch (Exception e) {
-
-			log.error("Set Header :" + "Key" + key + "value" + value + "Failed ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Set headers for the Request when the header is a multivalue header
-	 *
-	 * @param key
-	 * @param value
-	 * @param additionalValues
-	 */
-	public void replaceHeader(String key, String value) {
-		try {
-			request.replaceHeader(key, value);
-			log.info("Replace Header :" + "Key" + key + "value" + value);
-		} catch (Exception e) {
-
-			log.error("Replace Header :" + "Key" + key + "value" + value + "Failed ", e);
-			throw e;
-		}
-	}
-
-	/**
-	 * Get Headers for the Current Request
-	 *
-	 * @return
-	 */
-	public Headers getHeadersFromResponse() {
-		Headers headers = null;
-		try {
-			headers = response.getHeaders();
-			log.info("Get Response Headers");
-		} catch (Exception e) {
-
-			log.error("Get Response Headers Failed ", e);
-			throw e;
-		}
-		return headers;
-	}
-
-	/**
-	 * Get Hedaers form Respsone by Name
-	 *
-	 * @param name
-	 * @return
-	 */
-	public String getHeaderFromResponse(String name) {
-		String header = null;
-		try {
-			header = response.getHeader(name);
-			log.info("Get Response Header for: " + name);
-		} catch (Exception e) {
-
-			log.error("Get Response Header Failed for: " + name, e);
-			throw e;
-		}
-		return header;
-	}
-
-	/**
-	 * Get Cookie from Resposne By Name
-	 *
-	 * @param name
-	 * @return String
-	 */
-	public String getCookie(String name) {
-		String cookie = null;
-		try {
-			cookie = response.getCookie(name);
-			log.info("Get Response Cookie for: " + name);
-		} catch (Exception e) {
-
-			log.error("Get Response Cookie Failed for: " + name, e);
-			throw e;
-		}
-		return cookie;
-	}
-
-	/**
-	 * Get a Map of Cookies from the Response
-	 *
-	 * @return cookieList
-	 */
-	public Map<String, String> getCookies() {
-		Map<String, String> cookieList = null;
-		try {
-			cookieList = response.getCookies();
-			log.info("Get Response Cookies List");
-		} catch (Exception e) {
-
-			log.error("Get Response Cookies List Failed", e);
-			throw e;
-		}
-		return cookieList;
-	}
-
-	/**
-	 * Get Detailed cookies from Request
-	 *
-	 * @return Cookies
-	 */
-	public Cookies getDetailedCookies() {
-		Cookies cookieList = null;
-		try {
-			cookieList = response.getDetailedCookies();
-			log.info("Get Detailed Cookies List");
-		} catch (Exception e) {
-
-			log.error("Get Detailed Cookies List Failed", e);
-			throw e;
-		}
-		return cookieList;
-	}
-
-	/**
-	 * Get Detailed cookies from Request by Name
-	 *
-	 * @param cookieName
-	 * @return
-	 */
-	public Cookie getDetailedCookies(String cookieName) {
-		Cookie cookieList = null;
-		try {
-			cookieList = response.getDetailedCookie(cookieName);
-			log.info("Get Detailed Cookie by Name: " + cookieName);
-		} catch (Exception e) {
-
-			log.error("Get Detailed Cookie by Name Failed: " + cookieName, e);
-			throw e;
-		}
-		return cookieList;
-	}
-
-	/**
-	 * Get the Resposne time for request performed in ms
-	 *
-	 * @return responseTime in ms
-	 */
-	public long getResponseTime() {
-		long responseTime = 0;
-		try {
-			responseTime = response.getTime();
-			log.info("Get Response Time", responseTime + "");
-		} catch (Exception e) {
-
-			log.error("Get Response Time Failed", e);
-			throw e;
-		}
-		return responseTime;
-	}
-
-	/**
-	 * Get Reponse time fot the performed request in the input Unit
-	 *
-	 * @param unit
-	 * @return
-	 */
-	public long getResponseTimeinMS(TimeUnit unit) {
-		long responseTime = 0;
-		try {
-			responseTime = response.getTimeIn(unit);
-
-			log.info("Get Response Time", responseTime + "");
-		} catch (Exception e) {
-
-			log.error("Get Response Time Failed", e);
-			throw e;
-		}
-		return responseTime;
-	}
-
-	/**
-	 * Perform the Type of request as the Request type GET,POST,PUT,PATCH,DELETE
-	 *
-	 * @param requestMethod
-	 * @throws Exception
-	 */
-	public void performRequest(String requestMethod) throws Exception {
-		if (requestMethod.toUpperCase().equals("GET")) {
-			getRequestResponse();
-		} else if (requestMethod.toUpperCase().equals("POST")) {
-			postRequest();
-		} else if (requestMethod.toUpperCase().equals("PATCH")) {
-			patchRequest();
-		} else if (requestMethod.toUpperCase().equals("PUT")) {
-			putRequest();
-		} else if (requestMethod.toUpperCase().equals("DELETE")) {
-			deleteRequest();
-		} else {
-			throw new Exception("Request Method not found: " + requestMethod);
-		}
-	}
-
-	/**
-	 * Peform a Post Request for the request Spefification
-	 *
-	 * @return
-	 */
-	public Response postRequest() {
-
-		try {
-			response = request.post();
-
-			log.info("Post Request");
-		} catch (Exception e) {
-
-			log.error("Post Request Failed", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Peform a Put Request for the request Spefification
-	 *
-	 * @return
-	 */
-	public Response putRequest() {
-
-		try {
-			response = request.put();
-
-			log.info("Put Request");
-		} catch (Exception e) {
-
-			log.error("Put Request Failed", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Peform a patch Request for the request Spefification
-	 *
-	 * @return
-	 */
-	public Response patchRequest() {
-
-		try {
-			response = request.patch();
-
-			log.info("Put Request");
-		} catch (Exception e) {
-
-			log.error("Put Request Failed", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Peform a Delete Request for the request Spefification
-	 *
-	 * @return
-	 */
-	public Response deleteRequest() {
-
-		try {
-			response = request.delete();
-
-			log.info("Delete Request");
-		} catch (Exception e) {
-
-			log.error("Delete Request Failed", e);
-			throw e;
-		}
-		return response;
-	}
-
-	/**
-	 * Add Query param for the request
-	 *
-	 * @param queryParamMap
-	 * @return
-	 */
-	public RequestSpecification addQueryParam(Map<String, ?> queryParamMap) {
-
-		try {
-			request.queryParams(queryParamMap);
-
-			log.info("Add Query Map to Request");
-		} catch (Exception e) {
-
-			log.error("Add Query Map to Request Failed", e);
-			throw e;
-		}
-		return request;
-	}
-
-	/**
-	 * Add Path param to Request as a key-value
-	 *
-	 * @param parameterName
-	 * @param parameterValue
-	 */
-	public void addPathParam(String parameterName, String parameterValue) {
-
-		try {
-			request.pathParam(parameterName, parameterValue);
-
-			log.info("Add Path Param to Request ");
-		} catch (Exception e) {
-
-			log.error("Add Path Param to Request  Failed", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Add Access token to the Request
-	 *
-	 * @param accessToken
-	 */
-	public void addAccessToken(String accessToken) {
-
-		try {
-
-			request.auth().oauth2(accessToken);
-
-			log.info("Add Access Token to Request " + accessToken);
-		} catch (Exception e) {
-
-			log.error("Add Access Token to Request Failed", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * parse the file at input location to JSONObject
-	 *
-	 * @param filepath
-	 * @return JSONObject
-	 * @throws Exception
-	 */
-	public JSONObject jsonToString(String filepath) throws Exception {
-		JSONObject jsonObject = null;
-		try (FileReader reader = new FileReader(filepath)) {
-			JSONParser parser = new JSONParser();
-			Object obj = parser.parse(reader);
-			jsonObject = (JSONObject) obj;
-
-		} catch (IOException | ParseException e) {
-			throw e;
-		}
-		return jsonObject;
-
-	}
-
-	/**
-	 * Set the value for a Existing Key in the JSON with the New Value
-	 *
-	 * @param jsonString
-	 * @param path
-	 * @param newValue
-	 * @return
-	 */
-	public String setProperty(String jsonString, String path, String newValue) {
-		String nJSON = null;
-		try {
-			DocumentContext context = com.jayway.jsonpath.JsonPath.parse(jsonString);
-
-			context.set(path, newValue);
-			nJSON = context.jsonString();
-			log.info("Set Property in JSON at: " + path + " value: " + newValue);
-		} catch (Exception e) {
-			log.error("Failed to Set Property in JSON at: " + path + " value: " + newValue, e);
-			throw e;
-		}
-		return nJSON;
-	}
-
-	/**
-	 * Get the content in JSON file as a String from the Test Data Directory
-	 *
-	 * @param fileName
-	 * @return String
-	 * @throws Exception
-	 */
-	public String getRequestBodyJSONString(String fileName) throws Exception {
-		File folder = new File(TESTDATADIRBODYVALID);
-		File[] listOfFiles = folder.listFiles();
-
-		File rFile = null;
-		String text = null;
-		for (File file : listOfFiles) {
-
-			if (file.getName().replace(".json", "").equals(fileName)) {
-				rFile = file;
-				break;
-			}
-
-		}
-		if (rFile == null) {
-			throw new Exception("File with Name: " + fileName + " Not found in Directory: " + TESTDATADIRBODYVALID);
-		}
-		try (FileReader reader = new FileReader(rFile)) {
-			Object object = new JSONParser().parse(reader);
-			text = ((JSONObject) object).toJSONString();
-			log.info("Parse json to String", fileName);
-		} catch (IOException | ParseException e) {
-			log.error("Parse json to String Failed: ", e);
-			throw e;
-		}
-		return text;
-	}
-
-	public void schemaValidator(String schemaFileName) throws Throwable {
-		try (InputStream stream = new FileInputStream(TESTDATADIRSCHEMA + "\\" + schemaFileName + ".json")) {
-			InputStream responseJSONStream;
-			String resposneJSON = getResponsebody();
-			JSONParser pareser = new JSONParser();
-			Object responseJSONObj = pareser.parse(resposneJSON);
-			if (responseJSONObj instanceof JSONArray) {
-				JSONObject object = new JSONObject();
-				object = (JSONObject) ((JSONArray) responseJSONObj).get(0);
-				responseJSONStream = new ByteArrayInputStream(object.toJSONString().getBytes());
-			} else {
-				responseJSONStream = new ByteArrayInputStream(resposneJSON.getBytes());
-			}
-			org.json.JSONObject responseObject = new org.json.JSONObject(new JSONTokener(responseJSONStream));
-
-			org.json.JSONObject expectedJSONSchemaStream = new org.json.JSONObject(new JSONTokener(stream));
-			Schema schema = SchemaLoader.load(expectedJSONSchemaStream);
-
-			schema.validate(responseObject);
-
-			log.info("Schema Validation Passed ");
-		} catch (Throwable e) {
-
-			log.error("Schema Validation Failed: ", e);
-			throw e;
-		}
-	}
-
-	public void schemaValidator(File schemaFile) throws Throwable {
-		try (InputStream stream = new FileInputStream(schemaFile)) {
-			String resposneJSON = getResponsebody();
-			org.json.JSONObject rawSchema = new org.json.JSONObject(new JSONTokener(stream));
-			Schema schema = SchemaLoader.load(rawSchema);
-			schema.validate(new org.json.JSONObject(resposneJSON));
-			log.info("Schema Validation Passed");
-		} catch (Throwable e) {
-
-			log.error("Schema Validation Failed: ", e);
-			throw e;
-		}
-	}
-
-	public String getDataByType(String datatype, String length) {
-
-		String value = null;
-		int numericalLength = 0;
-		try {
-			numericalLength = Integer.parseInt(length);
-			if (datatype.toUpperCase().equals("STRING")) {
-				value = randomString(numericalLength);
-
-			}
-			if (datatype.toUpperCase().equals("ALPHANUMERIC")) {
-				value = randomAlphaNumeric(numericalLength);
-
-			}
-			if (datatype.toUpperCase().equals("SPECIALCHAR")) {
-				value = randomSpecialChar(numericalLength);
-
-			}
-			if (datatype.toUpperCase().equals("SPECIALSTRING")) {
-				value = randomSpecialCharString(numericalLength);
-
-			}
-			if (datatype.toUpperCase().equals("UUID")) {
-				value = getUUID();
-			}
-			log.info("get Data of type: " + datatype + " value: " + value);
-			return value;
-		} catch (Exception e) {
-			log.error("get Data of type:" + datatype + " Failed: ", e);
-			throw e;
-		}
-
-	}
-
-	public Map<String, String> getTestDataMap(String tcID, String dataRow) throws Exception {
-
-		Map<String, String> map = null;
-		try (FileReader file = new FileReader(TESTDATADIRBODYREQUESTDATA + "\\" + requestDataFile + ".json")) {
-
-			JSONParser parser = new JSONParser();
-
-			JSONObject object = (JSONObject) parser.parse(file);
-			JSONObject tcData = (JSONObject) object.get(tcID);
-			JSONObject iterationData = (JSONObject) tcData.get(dataRow);
-			map = new Gson().fromJson(iterationData.toJSONString(), HashMap.class);
-			log.info("Get Data Map for Row: " + dataRow + " For TC: " + tcID);
-		} catch (Exception e) {
-			log.error("Failed to Get Data Map for Row: " + dataRow + " For TC: " + tcID, e);
-			throw e;
-		}
-		return map;
-	}
-
-	/**
-	 * A string of input length containing chars from [a-z][A-Z]
-	 *
-	 * @param length
-	 * @return
-	 */
-	public String randomString(int length) {
-		int leftLimit = 97; // letter 'a'
-		int rightLimit = 122; // letter 'z'
-		String generatedString = null;
-		Random random = new Random();
-		try {
-			generatedString = random.ints(leftLimit, rightLimit + 1).limit(length)
-					.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
-			log.info("Get Random String value: " + generatedString);
-		} catch (Exception e) {
-			log.error("Get Random String Failed: ", e);
-			throw e;
-		}
-		return generatedString;
-	}
-
-	/**
-	 * A string of input length containing chars from [a-z][A-Z][1-9]
-	 *
-	 * @param length
-	 * @return
-	 */
-	public String randomAlphaNumeric(int length) {
-		int leftLimit = 48; // letter 'a'
-		int rightLimit = 122; // letter 'z'
-		String generatedString = null;
-		Random random = new Random();
-		try {
-			generatedString = random.ints(leftLimit, rightLimit + 1).limit(length)
-					.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
-			log.info("Get Random Alphanumeric value: " + generatedString);
-		} catch (Exception e) {
-			log.error("Get Random Alphanumeric Failed: ", e);
-			throw e;
-		}
-		return generatedString;
-	}
-
-	/**
-	 * A string of input length containing special chars from [~!@#$%^&*()_+{}|:?><]
-	 *
-	 * @param length
-	 * @return
-	 */
-	public String randomSpecialChar(int length) {
-		StringBuilder sb = new StringBuilder(length);
-		try {
-			final String alphabet = "~!@#$%^&*()_+{}|:?><";
-			final int N = alphabet.length();
-			Random rd = new Random();
-
-			for (int i = 0; i < length; i++) {
-				sb.append(alphabet.charAt(rd.nextInt(N)));
-			}
-			log.info("Get Random Special Characters: " + sb.toString());
-		} catch (Exception e) {
-			log.error("Get Random Special Characters Failed: ", e);
-			throw e;
-		}
-		return sb.toString();
-	}
-
-	/**
-	 * A string of input length containing special chars from [~!@#$%^&*()_+{}|:?><]
-	 * and Alpahbets from [a-z][A-Z]
-	 *
-	 * @param length
-	 * @return
-	 */
-	public String randomSpecialCharString(int length) {
-		String finalString = null;
-		try {
-			int chars = length / 2;
-			int sprcialChars = length - chars;
-
-			String charString = randomString(chars);
-			String specialCharSting = randomSpecialChar(sprcialChars);
-			finalString = charString + specialCharSting;
-			log.info("Get Random Special Characters: " + finalString);
-		} catch (Exception e) {
-			log.error("Get Random Special Characters Failed: ", e);
-			throw e;
-		}
-		return finalString;
-
-	}
-
-	/**
-	 * Get the Value of a Property by JSONPath as a String
-	 *
-	 * @param path
-	 * @return
-	 */
-	public String getStringValueFromResponse(String jsonPath) {
-		String value = null;
-		try {
-			String jsonString = getResponsebody();
-			DocumentContext context = com.jayway.jsonpath.JsonPath.parse(jsonString);
-
-			value = context.read(jsonPath).toString();
-
-			log.info("Get Property in JSON as String at: " + jsonPath + " value: " + value);
-		} catch (Exception e) {
-			log.error("Failed to Get Property in JSON as String at: " + jsonPath + " value: ", e);
-			throw e;
-		}
-		return value;
-	}
-
-	/**
-	 * Get the Value of a Property by JSONPath as a String from a JSON String
-	 *
-	 * @param path
-	 * @return
-	 */
-	public String getStringValueFromJSONString(String jsonPath, String jsonString) {
-		String value = null;
-		try {
-
-			DocumentContext context = com.jayway.jsonpath.JsonPath.parse(jsonString);
-
-			value = context.read(jsonPath).toString();
-
-			log.info("Get Property From JSON as String at: " + jsonPath + " value: " + value);
-		} catch (Exception e) {
-			log.error("Failed to Get Property From JSON as String at: " + jsonPath + " value: ", e);
-			throw e;
-		}
-		return value;
-	}
-
-	/**
-	 * Get the Body of the Current Request
-	 * 
-	 * @return
-	 */
-	public String getRequestBody() {
-		String body = null;
-		try {
-			QueryableRequestSpecification queryable = SpecificationQuerier.query(request);
-			if (queryable.getBody() != null) {
-
-				body = queryable.getBody().toString();
-
-			}
-			log.info("Get Request Body");
-		} catch (Exception e) {
-			log.error("Get Request Body Failed", e);
-			throw e;
-		}
-		return body;
-	}
-
-	/**
-	 * Get Value of the Path param Added in Request
-	 * 
-	 * @param paramName
-	 * @return
-	 */
-	public String getPathParamValue(String paramName) {
-		String value = null;
-		try {
-
-			value = request.getPathParams().get(paramName);
-			log.info("Get Path Param:" + paramName + " value: " + value);
-		} catch (Exception e) {
-			log.error("Get Path Param Failed:" + paramName, e);
-			throw e;
-		}
-		return value;
-
-	}
-
-	/**
-	 * Remove cookie by Name
-	 *
-	 * @param cookieName
-	 */
-	public void removeCookie(String cookieName) {
-		try {
-			request.removeCookie(cookieName);
-			log.info("Remove Cookie: " + cookieName);
-		} catch (Exception e) {
-			log.error("Remove Cookie Failed:" + cookieName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove cookie
-	 *
-	 * @param cookieName
-	 */
-	public void removeCookie(Cookie cookie) {
-		try {
-			request.removeCookie(cookie);
-			log.info("Remove Cookie ");
-		} catch (Exception e) {
-			log.error("Remove Cookie Failed", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove all Cookies
-	 */
-	public void removeAllCookies() {
-		try {
-			request.removeCookies();
-			log.info("Remove All Cookie: ");
-		} catch (Exception e) {
-			log.error("Remove All Cookie Failed", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove All cookies
-	 *
-	 * @param parameterName
-	 */
-	public void removeAllCookies(String parameterName) {
-		try {
-			request.removeFormParam(parameterName);
-			log.info("Remove Form parameter: " + parameterName);
-		} catch (Exception e) {
-			log.error("Remove Form parameter Failed:" + parameterName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove Header By name
-	 *
-	 * @param headerName
-	 */
-	public void removeHeader(String headerName) {
-		try {
-			request.removeHeader(headerName);
-			log.info("Remove Header: " + headerName);
-		} catch (Exception e) {
-			log.error("Remove Header Failed" + headerName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove All Headers
-	 */
-	public void removeHeader() {
-		try {
-			request.removeHeaders();
-			log.info("Remove All Header: ");
-		} catch (Exception e) {
-			log.error("Remove All Header Failed", e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove All Headers
-	 */
-	public void removeNamedPathParam(String parameterName) {
-		try {
-			request.removeNamedPathParam(parameterName);
-			log.info("Remove NamedPathParam: " + parameterName);
-		} catch (Exception e) {
-			log.error("Remove NamedPathParam Failed" + parameterName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove param
-	 *
-	 * @param parameterName
-	 */
-	public void removeParam(String parameterName) {
-		try {
-			request.removeParam(parameterName);
-			log.info("Remove Param: " + parameterName);
-		} catch (Exception e) {
-			log.error("Remove Param Failed" + parameterName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove Path param
-	 *
-	 * @param pathParameterName
-	 */
-	public void removePathParam(String pathParameterName) {
-		try {
-			request.removePathParam(pathParameterName);
-			log.info("Remove Path Param: " + pathParameterName);
-		} catch (Exception e) {
-			log.error("Remove Path Param Failed:" + pathParameterName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Remove query param
-	 *
-	 * @param queryParamName
-	 */
-	public void removeQueryParam(String queryParamName) {
-		try {
-			request.removeQueryParam(queryParamName);
-			log.info("Remove Query Param: " + queryParamName);
-		} catch (Exception e) {
-			log.error("Remove Query Param Failed:" + queryParamName, e);
-			throw e;
-		}
-
-	}
-
-	/**
-	 * Removed Unnamed Path Param by Name
-	 *
-	 * @param paramName
-	 */
-	public void removeUnnamedPathParam(String paramName) {
-		try {
-			request.removeUnnamedPathParam(paramName);
-			log.info("Remove Unnamed Path Param: " + paramName);
-		} catch (Exception e) {
-			log.error("Remove Unnamed Path Param Failed:" + paramName, e);
-			throw e;
-		}
-
-	}
-
-	public void removeUnnamedPathParamByValue(String parameterValue) {
-		try {
-			request.removeUnnamedPathParamByValue(parameterValue);
-			log.info("Remove Unnamed Path Param by value: " + parameterValue);
-		} catch (Exception e) {
-			log.error("Remove Unnamed Path Param by value Failed:" + parameterValue, e);
-			throw e;
-		}
-
-	}
-}
-***************************************************************
-package com.tab.af.utilities;
-
-import org.aeonbits.owner.Config;
-import org.aeonbits.owner.Config.Sources;
-
-@Sources({ "file:src/main/resources/Config.properties" })
-public interface ConfigProperties extends Config {
-	@DefaultValue("true")
-	@Key("extent.report")
-	public String extentReport();
-
-	@Key("report.directory.windows")
-	public String extentWindowsDirectory();
-
-	@Key("reports.dir")
-	public String extentReportDirectory();
-
-	@DefaultValue("local")
-	@Key("run.type")
-	public String runType();
-
-	@DefaultValue("2426")
-	@Key("grid.port.number")
-	public String gridPortNumber();
-
-	@Key("grid.url")
-	public String gridURL();
-
-	@DefaultValue("60")
-	@Key("explicit.wait.timeout")
-	public String explicitWaitPeriod();
-
-	@Key("firefox.binary.path")
-	public String firefoxBinaryPath();
-
-	@DefaultValue("false")
-	@Key("Selenium.Event.log")
-	public String seleniumEventLog();
-
-	@Key("chrome.binary.version")
-	public String firefoxBinaryVersion();
-
-	@Key("ie.binary.version")
-	public String internetExplorerBinaryVersion();
-
-	@Key("chrome.binary.version")
-	public String chromeBinaryVersion();
-
-	@Key("ebank.int.url")
-	public String eBankIntURL();
-
-	@Key("ebank.admin.user")
-	public String eBankAdminUser();
-
-	@Key("ebank.admin.password")
-	public String eBankAdminPassword();
-
-	@Key("edge.int.url")
-	public String edgeIntURL();
-
-	@Key("edge.user.login")
-	public String edgeUsername();
-
-	@Key("edge.user.loginpassword")
-	public String edgePassword();
-
-	@Key("eprecision.int.url")
-	public String ePrecisionIntUrl();
-
-	@Key("onboarding.env")
-	public String onboardingEnvironment();
-
-	@Key("onboarding.acpt.url")
-	public String onboardingAcptUrl();
-
-	@Key("onboarding.int.url")
-	public String onboardingIntUrl();
-
-	@Key("equipment.financing.int.url")
-	public String eFinancingIntUrl();
-
-	@Key("onboarding.int.db")
-	public String onboardingIntDB();
-
-	@Key("onboarding.user.name")
-	public String onboardingUsername();
-
-	@Key("onboarding.user.password")
-	public String onboardingPassword();
-
-	@DefaultValue("admin")
-	@Key("onboarding.admin.user.name")
-	public String onboardingAdminUsername();
-
-	@DefaultValue("abc123")
-	@Key("onboarding.admin.user.password")
-	public String onboardingAdminPassword();
-
-	@Key("daint.int.url")
-	public String daIntUrl();
-
-	@DefaultValue("60")
-	@Key("page.load.wait")
-	public String pageLoadTimeout();
-
-	@DefaultValue("true")
-	@Key("screenshot.passed.step")
-	public String screenshotPassedStep();
-
-	@DefaultValue("true")
-	@Key("screenshot.failed.step")
-	public String screenshotFailedStep();
-
-}
-************************************************************
-package com.tab.af.utilities;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.util.Date;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.TimeUnit;
-
-import org.openqa.selenium.By;
-import org.openqa.selenium.Cookie;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-
-import io.github.bonigarcia.wdm.WebDriverManager;
-
-public class CookieStore {
-
-	static Set<Cookie> cookies;
-
-	public void getCookie() {
-		WebDriverManager.chromedriver().setup();
-		WebDriver driver = new ChromeDriver();
-		driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
-		driver.navigate().to("https://onboardingint.tabbank.com/app/#!");
-		((JavascriptExecutor) driver).executeScript("arguments[0].value='';",
-				driver.findElement(By.xpath("//*[@cuba-id='passwordField']")));
-		driver.findElement(By.xpath("//*[@cuba-id='passwordField']")).sendKeys("abc123");
-		driver.findElement(By.xpath("//*[text()='Submit']//..//parent::div")).click();
-		driver.findElement(By.xpath("//*[@cuba-id='accounting']")).click();
-		File file = new File("Cookies.data");
-		try {
-			// Delete old file if exists
-			file.delete();
-			file.createNewFile();
-			FileWriter fileWrite = new FileWriter(file);
-			BufferedWriter Bwrite = new BufferedWriter(fileWrite);
-			// loop for getting the cookie information
-			// loop for getting the cookie information
-			for (Cookie ck : driver.manage().getCookies()) {
-				Bwrite.write((ck.getName() + ";" + ck.getValue() + ";" + ck.getDomain() + ";" + ck.getPath() + ";"
-						+ ck.getExpiry() + ";" + ck.isSecure()));
-				Bwrite.newLine();
-			}
-			Bwrite.close();
-			fileWrite.close();
-			putCookie();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		driver.quit();
-	}
-
-	public void putCookie() {
-		try {
-			File file = new File("Cookies.data");
-			FileReader fileReader = new FileReader(file);
-			BufferedReader Buffreader = new BufferedReader(fileReader);
-			String strline;
-			WebDriver driver = new ChromeDriver();
-			Cookie ck = null;
-			while ((strline = Buffreader.readLine()) != null) {
-				StringTokenizer token = new StringTokenizer(strline, ";");
-				while (token.hasMoreTokens()) {
-					String name = token.nextToken();
-					String value = token.nextToken();
-					String domain = token.nextToken();
-					String path = token.nextToken();
-					Date expiry = null;
-					String val = null;
-					if (!(token.nextToken() == null)) {
-						expiry = new Date(val);
-					}
-					Boolean isSecure = new Boolean(token.nextToken()).booleanValue();
-					ck = new Cookie(name, value, domain, path, expiry, isSecure);
-					System.out.println(ck);
-				}
-				Buffreader.close();
-				fileReader.close();
-				// This will add the stored cookie to your current session
-				// driver.get("https://onboardingint.tabbank.com/app/#!");
-				driver.get("http://www.example.com/this404page");
-				driver.manage().addCookie(ck);
-				driver.get("https://onboardingint.tabbank.com/app/#!");
-				((JavascriptExecutor) driver).executeScript("location.reload(true);", "");
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-	}
-
-}
-*******************************************************
-package com.tab.af.utilities;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-
-public class EmailReporter {
-
-  public static void mailTestNGReport(){
-    String user = "";
-    String pass = "";
-    // Map<String,String> mailTo = new HashMap<String,String>();
-    List<String> mailTo = new ArrayList();
-    mailTo.add("");
-    mailTo.add("");
-    Properties props = new Properties();
-    props.put("mail.smtp.host", "smtp.gmail.com");
-    props.put("mail.smtp.port", "587");
-    props.put("mail.smtp.auth", "true");
-    props.put("mail.smtp.starttls.enable", "true");
-    // props.put("mail.smtp.host", "127.0.0.1");
-    // props.put("mail.smtp.port", "25");
-    Session session = Session.getInstance(props);
-    try {
-      session = Session.getInstance(props, new javax.mail.Authenticator() {
-
-        @Override
-        protected PasswordAuthentication getPasswordAuthentication(){
-          return new PasswordAuthentication(user, pass);
-        }
-
-      });
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    try {
-      Message message = new MimeMessage(session);
-      message.setFrom(new InternetAddress(user));
-      for (String mail : mailTo) {
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mail));
-      }
-      String filename =
-          System.getProperty("user.dir") + "\\target\\SummaryReports\\Summary Report.html";
-      BodyPart messageBodyPart1 = new MimeBodyPart();
-      messageBodyPart1.setText("Summary test run Report");
-      MimeBodyPart messageBodyPart2 = new MimeBodyPart();
-      DataSource source = new FileDataSource(filename);
-      messageBodyPart2.setDataHandler(new DataHandler(source));
-      messageBodyPart2.setFileName(filename);
-      Multipart multipart = new MimeMultipart();
-      multipart.addBodyPart(messageBodyPart1);
-      multipart.addBodyPart(messageBodyPart2);
-      message.setContent(multipart);
-      Transport.send(message);
-    } catch (MessagingException e) {
-      e.printStackTrace();
-    }
-  }
-
-}
-*******************************************************
-package com.tab.af.utilities;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.util.NumberToTextConverter;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-public class ExcelReader {
-
-	public static List<HashMap<String, String>> ReturnMap(String sheetName) {
-		List<HashMap<String, String>> mydata = null;
-		FileInputStream fis = null;
-		String FilePath = System.getProperty("user.dir") + "\\src\\test\\resources\\TestData\\TestDataSheet.xlsx";
-		try {
-			fis = new FileInputStream(FilePath);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-		sheetName = "OnBoarding";
-		try (XSSFWorkbook workbook = new XSSFWorkbook(fis)) {
-			XSSFSheet sheet = workbook.getSheet(sheetName);
-			mydata = new ArrayList<HashMap<String, String>>();
-			Row HeaderRow = sheet.getRow(0);
-			for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
-				Row currentRow = sheet.getRow(i);
-				HashMap<String, String> currentHash = new HashMap<String, String>();
-				for (int j = 0; j < currentRow.getPhysicalNumberOfCells(); j++) {
-					Cell currentCell = currentRow.getCell(j);
-					switch (currentCell.getCellType()) {
-					case STRING:
-						currentHash.put(HeaderRow.getCell(j).getStringCellValue(), currentCell.getStringCellValue());
-						break;
-					case NUMERIC:
-						currentHash.put(HeaderRow.getCell(j).getStringCellValue(),
-								String.valueOf(currentCell.getNumericCellValue()));
-						break;
-					default:
-						try {
-							throw new Exception("Cell Type Not Identified");
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					}
-				}
-				mydata.add(currentHash);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return mydata;
-	}
-
-	public static ConcurrentHashMap<String, List<String>> fillData(String sheetName) throws IOException {
-		FileInputStream fis = null;
-		XSSFWorkbook workbook = null;
-		String FilePath = System.getProperty("user.dir") + "\\src\\test\\resources\\TestData\\TestDataSheet.xlsx";
-		try {
-			fis = new FileInputStream(FilePath);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-		sheetName = "OnBoarding";
-		try {
-			workbook = new XSSFWorkbook(fis);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		XSSFSheet sheet = workbook.getSheet(sheetName);
-		// ColumnName row
-		ConcurrentHashMap<String, List<String>> hm = new ConcurrentHashMap<String, List<String>>();
-		List<String> val;
-		XSSFRow headerRow = sheet.getRow(0);
-		for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
-			String columnName = headerRow.getCell(i).getStringCellValue();
-			val = new ArrayList<String>();
-			for (int j = 1; j < sheet.getPhysicalNumberOfRows(); j++) {
-				Cell cell = sheet.getRow(j).getCell(i);
-				if (cell.getCellType() == CellType.STRING) {
-					val.add(cell.getStringCellValue());
-				} else if (cell.getCellType() == CellType.NUMERIC) {
-					val.add(NumberToTextConverter.toText(cell.getNumericCellValue()));
-				}
-			}
-			hm.put(columnName, val);
-		}
-		try {
-			if (fis != null) {
-				fis.close();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return hm;
-	}
-
-	public static void get() throws IOException {
-		ConcurrentHashMap<String, List<String>> m = fillData(null);
-		m.get("user").get(0);
-	}
-
-}
-*********************************************************
-package com.tab.af.utilities;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import com.codoid.products.exception.FilloException;
-import com.codoid.products.fillo.Connection;
-import com.codoid.products.fillo.Fillo;
-import com.codoid.products.fillo.Recordset;
-
-public class Fillio {
-
-  public static void UpdateTestResultsToExcel(String testDataFilePath, String sheetName,
-      String tcStatus, String testCaseId){
-    Connection conn = null;
-    Fillo fillo = new Fillo();
-    try {
-      conn = fillo.getConnection(
-          "C:\\Users\\abhay\\git\\Tabparallel\\src\\test\\resources\\TestData\\TestDataSheet.xlsx");
-      String query = String.format("UPDATE %s SET TestCaseStatus='%s' where TestCaseID='%s'",
-          sheetName, tcStatus, testCaseId);
-      conn.executeUpdate(query);
-    } catch (FilloException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private static Map<String, Set<String>> kiqKeySet = new HashMap();
-
-  public static void getTestDataInMap() throws Exception{
-    String question =
-        "According to our records, within the last two years you purchased veterinary insurance for which one of the following pets?";
-    String testDataFile =
-        System.getProperty("user.dir") + "\\src\\main\\resources\\data\\KIQKeys.xlsx";
-    String sheetName = "ANSWERKEYS";
-    if (question
-        .contains("From the list below, what is the area code for phone number ending in")) {
-      question = "From the list below, what is the area code for phone number ending in";
-    }
-    String query = String.format("SELECT * FROM " + sheetName);
-    Fillo fillo = new Fillo();
-    Connection conn = null;
-    System.setProperty("ROW", "1");
-    System.setProperty("COLUMN", "1");
-    Recordset recordset = null;
-    try {
-      conn = fillo.getConnection(testDataFile);
-      recordset = conn.executeQuery(query);
-      Set<String> set = new HashSet<String>();
-      while (recordset.next()) {
-        ArrayList<String> mm = new ArrayList<String>();
-        // for (int i=1;i<recordset.getFieldNames().size();i++) {
-        //
-        // set.add(recordset.getField(i).name());
-        //
-        // }
-        for (String string : recordset.getFieldNames()) {
-          mm.add(string);
-        }
-        kiqKeySet.put(recordset.getField(0).name(), set);
-        System.out.print("sd");
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new Exception("Exception Occured While Readin KIQ KeyMap Excel");
-    }
-    conn.close();
-  }
-
 }
 **********************************************************
-package com.tab.af.utilities;
+{
+	"TC_0001": {
+		"testdata1": { 
+			"Status Code": "201",
+			"Status Line": "201 Created"
+		}
+	},
+	"TC_0003": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0004": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0005": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0006": {
+		"testdata1": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0007": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0008": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0009": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh11",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0010": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh11",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0011": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefghijklmonpqestuvaxyzabhcdefghy",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0012": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "abcdefghijklmonpqestuvaxyzabhcd",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0013": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh11",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0014": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789123456789123",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0015": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhdh1123456789123456789123456789123scmkjcnhdmkokmjifhd",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	}
+}
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+******************************************************
+client_secret=d6F69Ac802E1465Fb6Efc21c255f8d64
+client_id=f2a7d0f86ee740ad8b9b688cf135f1c4
+X-Correlation-ID=uuid
+sessionId=uuid
+**********************************************
+client_secret=d6F69Ac802E1465Fb6Efc21c255f8d64
+client_id=f2a7d0f86ee740ad8b9b688cf135f1c4
+X-Correlation-ID=uuid
+sessionId=uuid
+***********************************************
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The Root Schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "required": [
+        "bankId",
+        "accountId",
+        "productType",
+        "accountNickName",
+        "initialBalance",
+        "givenName",
+        "surname",
+        "customerId",
+        "productCode",
+        "branchId",
+        "accountRoutingScheme",
+        "accountRoutingAddress"
+    ],
+    "properties": {
+        "bankId": {
+            "$id": "#/properties/bankId",
+            "type": "object",
+            "title": "The Bankid Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "examples": [
+                {
+                    "value": "3FADEC89-1220-43D3-90A5-00004C6165ED"
+                }
+            ],
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "$id": "#/properties/bankId/properties/value",
+                    "type": "string",
+                    "title": "The Value Schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "3FADEC89-1220-43D3-90A5-00004C6165ED"
+                    ]
+                }
+            }
+        },
+        "accountId": {
+            "$id": "#/properties/accountId",
+            "type": "object",
+            "title": "The Accountid Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "examples": [
+                {
+                    "value": "3FADEC89-1220-43D3-90A5-00004C6165ED"
+                }
+            ],
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "$id": "#/properties/accountId/properties/value",
+                    "type": "string",
+                    "title": "The Value Schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "3FADEC89-1220-43D3-90A5-00004C6165ED"
+                    ]
+                }
+            }
+        },
+        "productType": {
+            "$id": "#/properties/productType",
+            "type": "string",
+            "title": "The Producttype Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "saving"
+            ]
+        },
+        "accountNickName": {
+            "$id": "#/properties/accountNickName",
+            "type": "string",
+            "title": "The Accountnickname Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "string"
+            ]
+        },
+        "initialBalance": {
+            "$id": "#/properties/initialBalance",
+            "type": "number",
+            "title": "The Initialbalance Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": 0,
+            "examples": [
+                123.321
+            ]
+        },
+        "givenName": {
+            "$id": "#/properties/givenName",
+            "type": "string",
+            "title": "The Givenname Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "TAB"
+            ]
+        },
+        "surname": {
+            "$id": "#/properties/surname",
+            "type": "string",
+            "title": "The Surname Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "BANK"
+            ]
+        },
+        "customerId": {
+            "$id": "#/properties/customerId",
+            "type": "string",
+            "title": "The Customerid Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "3FADEC89-1220-43D3-90A5-00004C6165ED"
+            ]
+        },
+        "productCode": {
+            "$id": "#/properties/productCode",
+            "type": "string",
+            "title": "The Productcode Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "240-OP"
+            ]
+        },
+        "branchId": {
+            "$id": "#/properties/branchId",
+            "type": "string",
+            "title": "The Branchid Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "3FADEC89-1220-43D3-90A5-00004C6165ED"
+            ]
+        },
+        "accountRoutingScheme": {
+            "$id": "#/properties/accountRoutingScheme",
+            "type": "string",
+            "title": "The Accountroutingscheme Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "IBAN"
+            ]
+        },
+        "accountRoutingAddress": {
+            "$id": "#/properties/accountRoutingAddress",
+            "type": "string",
+            "title": "The Accountroutingaddress Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "DE91 1000 0000"
+            ]
+        }
+    }
+}
+*********************************************
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The Root Schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "required": [
+        "national_identifier",
+        "full_name",
+        "swift_bic",
+        "logo_url",
+        "id",
+        "short_name",
+        "bank_routing",
+        "website_url"
+    ],
+    "properties": {
+        "national_identifier": {
+            "$id": "#/properties/national_identifier",
+            "type": "string",
+            "title": "The National_identifier Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "UK97ZZZ1234567890"
+            ]
+        },
+        "full_name": {
+            "$id": "#/properties/full_name",
+            "type": "string",
+            "title": "The Full_name Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "uk"
+            ]
+        },
+        "swift_bic": {
+            "$id": "#/properties/swift_bic",
+            "type": "string",
+            "title": "The Swift_bic Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "IIIGGB22"
+            ]
+        },
+        "logo_url": {
+            "$id": "#/properties/logo_url",
+            "type": "string",
+            "title": "The Logo_url Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "https://static.openbankproject.com/images/sandbox/bank_x.png"
+            ]
+        },
+        "id": {
+            "$id": "#/properties/id",
+            "type": "string",
+            "title": "The Id Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "510BA94E-455B-42E1-8801-000101ECF90E"
+            ]
+        },
+        "short_name": {
+            "$id": "#/properties/short_name",
+            "type": "string",
+            "title": "The Short_name Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "uk"
+            ]
+        },
+        "bank_routing": {
+            "$id": "#/properties/bank_routing",
+            "type": "object",
+            "title": "The Bank_routing Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "examples": [
+                {
+                    "scheme": "Bank_ID",
+                    "address": "gh.29.uk"
+                }
+            ],
+            "required": [
+                "scheme",
+                "address"
+            ],
+            "properties": {
+                "scheme": {
+                    "$id": "#/properties/bank_routing/properties/scheme",
+                    "type": "string",
+                    "title": "The Scheme Schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "Bank_ID"
+                    ]
+                },
+                "address": {
+                    "$id": "#/properties/bank_routing/properties/address",
+                    "type": "string",
+                    "title": "The Address Schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "gh.29.uk"
+                    ]
+                }
+            }
+        },
+        "website_url": {
+            "$id": "#/properties/website_url",
+            "type": "string",
+            "title": "The Website_url Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "https://www.example.com"
+            ]
+        }
+    }
+}
+************************************************
+baseURI=https://mulefabricint.tab.com/openbanking-experience-api/v1/
 
-public class Helpers {
-	public void getScenarioIndex(String filePath) {
-		File file = new File(filePath);
 
-		try (Scanner scanner = new Scanner(file)) {
+BANK_ID=6fb17583-1e49-4435-bb74-a14fe0996723
+Card_ID=873359F6-96BC-4DDF-A4E6-00148577BA4F
+USER_ID=D9E5041C-0EEF-453F-9AFE-0001481FC686
+ACCOUNT_ID=8E5A7E5D-F51F-46DE-8241-90A046E0D292
+VIEW_ID=3FADEC89-1220-43D3-90A5-00004C616678
+ACCOUNT_ID_2=3FADEC89-1220-43D3-90A5-00004C6165ED 
+CUSTOMER_ID=C9D5C2D8-FDF5-42A3-AF5B-0003338D1077
+KYC_DOCUMENT_ID=BE5F49D6-ECA3-46FD-B4FB-9FA55CFB473C
 
-			int index = 1;
-			while (scanner.hasNext()) {
-				String text = scanner.nextLine();
-				if (text.contains("Scenario:")) {
-					System.out.print(index + ":");
-				}
-				index++;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
+#create Customer
+create.customer=banks/{BANK_ID}/customers
+create.customer.BANK_ID=6fb17583-1e49-4435-bb74-a14fe0996723
+
+#create Bank
+create.bank=banks
+
+#getUserByID
+getuserby.user_id=banks/{BANK_ID}/users/user_id/{USER_ID}
+getuserby.user_id.USER_ID=D9E5041C-0EEF-453F-9AFE-0001481FC686
+getuserby.user_id.BANK_ID=6fb17583-1e49-4435-bb74-a14fe0996723
+
+******************************************
+{
+	"chrome": {
+		"arguments": {
+			"arg1": "--disable-infobars",
+			"arg2": "--start-maximized",
+			"arg3": "--ignore-certificate-errors" ,
+			"arg4":"--window-size=1920,1080"
+
+			 
+		},
+		"capabilities": {
+			"browserName": "chrome",
+			"os":"Windows"
+			
+		}
+		
+	},
+	"firefox": {
+		"arguments": {
+			 
+		},
+		"capabilities": {
+			"browserName": "firefox",
+			"os":"Windows",
+			"binary":"C:\\Users\\achaudhary\\AppData\\Local\\Mozilla Firefox\\firefox.exe"
+			
+		}
+	},
+	"ie": {
+		"arguments": {
+			 
+		},
+		"capabilities": {
+			"browserName": "internet explorer",
+			"os":"Windows"
+			
 		}
 	}
 
-	public void addTagsToScenario(String filePath) {
-
-		File file = new File(filePath);
-		List<String> arr = new ArrayList<String>();
-
-		try (Scanner scanner = new Scanner(file)) {
-
-			int i = 0;
-			while (scanner.hasNext()) {
-
-				String text = scanner.nextLine();
-				if (text.contains("Scenario:")) {
-					String name = text.trim().split(" ")[1];
-					String tags = arr.get(i - 1);
-					arr.add(i - 1, tags + " " + "@" + name);
-				}
-				arr.add(i, text);
-
-				i++;
-			}
-			for (String string : arr) {
-				System.out.println(string);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public String getshortenedStackTraceMessage(Exception e, int maxLines) {
-		StringWriter writer = new StringWriter();
-		e.printStackTrace(new PrintWriter(writer));
-		String[] lines = writer.toString().split("\n");
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < Math.min(lines.length, maxLines); i++) {
-			sb.append(lines[i]).append("\n");
-		}
-		return sb.toString();
-	}
-
-	public void getFeatureScenarioIndexDuplicateScenarios() {
-		String prevname = "";
-		File file = new File("C:\\Users\\achaudhary\\Desktop\\d.txt");
-
-		try (Scanner scanner = new Scanner(file)) {
-
-			int index = 1;
-			while (scanner.hasNext()) {
-				String text = scanner.nextLine();
-				if (text.contains("Scenario:")) {
-					if (prevname == "") {
-						prevname = text.trim();
-						continue;
-					}
-
-					String currname = text.trim();
-					if (prevname.equals(currname)) {
-						System.out.print(currname);
-					}
-				}
-				index = index + 1;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void cleanDownloadDirectory() {
-		String home = System.getProperty("user.home");
-		File dir = new File(home + "/Downloads/");
-		File[] dirContents = dir.listFiles();
-		for (File file : dirContents) {
-			file.delete();
-		}
-	}
 
 }
-*********************************************************************
-package com.tab.af.utilities;
+***************************************************
+#run.type=local
+#run.type=grid
+run.type=api
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+#System
+application.name=Tab automation
 
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+#Reporting
+extent.report=true
+report.directory.windows=\\reports\\
+report.file.name=extent-report.html
+date.format=MM-dd-yyyy_HH-mm-ss
+report.directory.environment.separator=-
+screenshot.passed.step=true
+screenshot.failed.step=true
 
-public class JSONConverter {
+#INT DB 
+onboarding.int.db=jdbc:sqlserver://ogvsqlcoreint01\\int.onboarding:1433;user=jdbcuser; password=99*-Jdbc
+cego.int.db=jdbc:sqlserver://ogvsqlcoreint01\\Customer360_schema:1433;user=apiuser; password=99*-api
 
-	private static final String STATEKEY1 = "STATE";
+#Browser Binary versions
+grid.port.number=2426
+chrome.binary.version=79.0.3945
+firefox.binary.version=v0.24.0
+ie.binary.version=3.14.0
+firefox.binary.path=C:\\Users\\achaudhary\\AppData\\Local\\Mozilla Firefox\\firefox.exe
 
-	private static final String STATEKEY2 = "DL STATE";
+#Timeouts
+page.load.wait=60
+explicit.wait.timeout=60
+fluent.wait.timeout=60 
+polling.interval=500
+file.Download.Timeout=15000
 
-	private static final String STATEKEY3 = "beststate";
+# Selenium Events 
+Selenium.Event.log=false
+isEmailReport=false
+ 
+#Application URLS
+# acpt,int
+#Onboarding
+onboarding.env=int
+onboarding.int.url=https://onboardingint.tabbank.com/app/#!
+onboarding.acpt.url=https://achaudhary:Okok@123@onboardingacpt.tabbank.com/app/#!
+onboarding.user.name=admin
+onboarding.user.password=abc123
+onboarding.admin.user.name=rvennam
+onboarding.admin.user.password=abc123
 
-	private static final String STATEKEY4 = "verstate";
+#equipment financing
+equipment.financing.int.url=https://equipment-financing.int.tabbank.com/
 
-	private static final String STATEKEY5 = "rep1_st";
+#EBank
+ebank.int.url=https://ebankint.tabbank.com/app/#!
+ebank.admin.user=auto01
+ebank.admin.password=abc123
 
-	private static final String STATEKEY6 = "bus_st";
+#EPrecision
+eprecision.int.url=https://eprecision.int.tabbank.com/
 
-	private static final String DOBKEY = "bus_st";
+#Daint
+daint.int.url=https://daint.tabbank.com/
 
-	@SuppressWarnings("deprecation")
-	public static void convertExcelToJSONByColumnNameAsKey(String inputFilePath, String OutputFilePath) {
+#task Group to Assign
+onboarding.int.bankgroup=OLD_TAB Bank
+onboarding.acpt.bankgroup=TAB Bank
 
-		File file = new File(inputFilePath);
-		JsonObject sheetsJsonObject = new JsonObject();
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+#EDGe
+edge.int.url= http://rmaddula:*YPh9u8i@edgeint.tabbank.com:8080/app/#!
+edge.user.login=admin
+edge.user.loginpassword=abc123
+*********************************************
+# Root logger option
+log4j.rootLogger=INFO, file, stdout
+# configuration to print into file
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.File=./src/test/resources/logs/Steplogs.log
+log4j.appender.LOGFILE.RollingPolicy=org.apache.log4j.rolling.TimeBasedRollingPolicy
+log4j.appender.LOGFILE.RollingPolicy.FileNamePattern=/logs/Steplog_%d{yyyy-MM-dd}.log
+log4j.appender.file.MaxFileSize=12MB
+log4j.appender.file.MaxBackupIndex=10
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+# configuration to print on console
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+***********************************
+var getShadowElement = function getShadowElement(object,selector) {
+	return object.shadowRoot.querySelector(selector);
+};
 
-		String prettyJson = "";
-		try (Workbook workbook = new XSSFWorkbook(file)) {
-			// For single sheet data either remove others or set loop to 0
-			for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-				JsonArray sheetArray = new JsonArray();
-				ArrayList<String> columnNames = new ArrayList<String>();
-				Sheet sheet = workbook.getSheetAt(i);
-				Iterator<Row> sheetIterator = sheet.iterator();
-				while (sheetIterator.hasNext()) {
-					Row currentRow = sheetIterator.next();
-					JsonObject jsonObject = new JsonObject();
-					if (currentRow.getRowNum() != 0) {
-						for (int j = 0; j < columnNames.size(); j++) {
-							if (currentRow.getCell(j) != null) {
-								if (currentRow.getCell(j).getCellType() == CellType.BLANK) {
-									jsonObject.addProperty(columnNames.get(j), "");
-								} else {
-									currentRow.getCell(j).setCellType(CellType.STRING);
-									if (columnNames.get(j).equalsIgnoreCase(STATEKEY1)
-											|| columnNames.get(j).equalsIgnoreCase(STATEKEY2)
-											|| columnNames.get(j).equalsIgnoreCase(STATEKEY3)
-											|| columnNames.get(j).equalsIgnoreCase(STATEKEY4)
-											|| columnNames.get(j).equalsIgnoreCase(STATEKEY5)
-											|| columnNames.get(j).equalsIgnoreCase(STATEKEY6)) {
-										String val = stateName.get(currentRow.getCell(j).getStringCellValue());
-										if (val == null) {
-											System.out.print("Break");
-										}
-										jsonObject.addProperty(columnNames.get(j), val);
-									} else if (columnNames.get(j).equalsIgnoreCase(DOBKEY)) {
-										String val = currentRow.getCell(j).getStringCellValue();
-										if (val.length() < 8) {
-											val = "0101" + val;
-											jsonObject.addProperty(columnNames.get(j), val);
-										}
-									} else {
-										jsonObject.addProperty(columnNames.get(j),
-												currentRow.getCell(j).getStringCellValue().trim());
-									}
-								}
-							} else {
-								jsonObject.addProperty(columnNames.get(j), "");
-							}
-						}
-						sheetArray.add(jsonObject);
-					} else {
-						// store column names
-						for (int k = 0; k < currentRow.getPhysicalNumberOfCells(); k++) {
-							columnNames.add(currentRow.getCell(k).getStringCellValue());
-						}
-					}
-				}
-				sheetsJsonObject.add(workbook.getSheetName(i), sheetArray);
-				prettyJson = gson.toJson(sheetsJsonObject);
+var getAllShadowElement = function getAllShadowElement(object,selector) {
+	return object.shadowRoot.querySelectorAll(selector);
+};
 
-				// Write to Converted test Data JSON
-				try (FileWriter files = new FileWriter(OutputFilePath)) {
-					files.append(prettyJson);
-					files.flush();
-				}
+var getAttribute = function getAttribute(object,attribute) {
+	return object.getAttribute(attribute);
+};
+
+var isVisible = function isVisible(object) {
+	var visible = object.offsetWidth;
+	if(visible>0) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+var scrollTo = function scrollTo(object) {
+	object.scrollIntoView({block: "center", inline: "nearest"});
+};
+
+var getParentElement = function getParentElement(object) {
+	if(object.parentNode.nodeName=="#document-fragment") {
+		return object.parentNode.host;
+	} else if(object.nodeName=="#document-fragment") {
+		return object.host;
+	} else {
+		return object.parentElement;
+	}
+};
+
+var getChildElements = function getChildElements(object) {
+	if(object.nodeName=="#document-fragment") {
+		return object.children;
+	} else {
+		return object.childNodes;
+	}
+};
+
+var getSiblingElements = function getSiblingElements(object) {
+	if(object.nodeName=="#document-fragment") {
+		return object.host.children;
+	} else {
+		return object.siblings();
+	}
+};
+
+var getSiblingElement = function getSiblingElement(object, selector) {
+	if(object.nodeName=="#document-fragment") {
+		return object.host.querySelector(selector);
+	} else {
+		return object.parentElement.querySelector(selector);
+	}
+};
+
+var getNextSiblingElement = function getNextSiblingElement(object) {
+	if(object.nodeName=="#document-fragment") {
+		return object.host.firstElementChild.nextElementSibling;
+	} else {
+		return object.nextElementSibling;
+	}
+};
+
+var getPreviousSiblingElement = function getPreviousSiblingElement(object) {
+	if(object.nodeName=="#document-fragment") {
+		return null;
+	} else {
+		return object.previousElementSibling;
+	}
+};
+
+var isChecked = function isChecked(object) {
+	return object.checked;
+};
+
+var isDisabled = function isDisabled(object) {
+	return object.disabled;
+};
+
+var findCheckboxWithLabel = function findCheckboxWithLabel(label, root=document) {
+	if(root.nodeName=="PAPER-CHECKBOX") {
+		if(root.childNodes[0].data.trimStart().trimEnd()==label) {
+			return root;
+		}
+	} else {
+		let all_checkbox = getAllObject("paper-checkbox", root);
+		for (let checkbox of all_checkbox) {
+			if(checkbox.childNodes[0].data.trimStart().trimEnd()==label) {
+				return checkbox;
 			}
-		} catch (IOException | InvalidFormatException e) {
-			e.printStackTrace();
 		}
 	}
+};
 
-	/**
-	 * A Map of USA States , Abbreviation:StateName Key is Abbreviation and Value is
-	 * full State Name
-	 */
-	public static final Map<String, String> stateName;
-	static {
-		stateName = new HashMap<String, String>();
-		stateName.put("AL", "Alabama");
-		stateName.put("AK", "Alaska");
-		stateName.put("AB", "Alberta");
-		stateName.put("AZ", "Arizona");
-		stateName.put("AR", "Arkansas");
-		stateName.put("BC", "British Columbia");
-		stateName.put("CA", "California");
-		stateName.put("CO", "Colorado");
-		stateName.put("CT", "Connecticut");
-		stateName.put("DE", "Delaware");
-		stateName.put("DC", "District Of Columbia");
-		stateName.put("FL", "Florida");
-		stateName.put("GA", "Georgia");
-		stateName.put("GU", "Guam");
-		stateName.put("HI", "Hawaii");
-		stateName.put("ID", "Idaho");
-		stateName.put("IL", "Illinois");
-		stateName.put("IN", "Indiana");
-		stateName.put("IA", "Iowa");
-		stateName.put("KS", "Kansas");
-		stateName.put("KY", "Kentucky");
-		stateName.put("LA", "Louisiana");
-		stateName.put("ME", "Maine");
-		stateName.put("MB", "Manitoba");
-		stateName.put("MD", "Maryland");
-		stateName.put("MA", "Massachusetts");
-		stateName.put("MI", "Michigan");
-		stateName.put("MN", "Minnesota");
-		stateName.put("MS", "Mississippi");
-		stateName.put("MO", "Missouri");
-		stateName.put("MT", "Montana");
-		stateName.put("NE", "Nebraska");
-		stateName.put("NV", "Nevada");
-		stateName.put("NB", "New Brunswick");
-		stateName.put("NH", "New Hampshire");
-		stateName.put("NJ", "New Jersey");
-		stateName.put("NM", "New Mexico");
-		stateName.put("NY", "New York");
-		stateName.put("NF", "Newfoundland");
-		stateName.put("NC", "North Carolina");
-		stateName.put("ND", "North Dakota");
-		stateName.put("NT", "Northwest Territories");
-		stateName.put("NS", "Nova Scotia");
-		stateName.put("NU", "Nunavut");
-		stateName.put("OH", "Ohio");
-		stateName.put("OK", "Oklahoma");
-		stateName.put("ON", "Ontario");
-		stateName.put("OR", "Oregon");
-		stateName.put("PA", "Pennsylvania");
-		stateName.put("PE", "Prince Edward Island");
-		stateName.put("PR", "Puerto Rico");
-		stateName.put("QC", "Quebec");
-		stateName.put("RI", "Rhode Island");
-		stateName.put("SK", "Saskatchewan");
-		stateName.put("SC", "South Carolina");
-		stateName.put("SD", "South Dakota");
-		stateName.put("TN", "Tennessee");
-		stateName.put("TX", "Texas");
-		stateName.put("UT", "Utah");
-		stateName.put("VT", "Vermont");
-		stateName.put("VI", "Virgin Islands");
-		stateName.put("VA", "Virginia");
-		stateName.put("WA", "Washington");
-		stateName.put("WV", "West Virginia");
-		stateName.put("WI", "Wisconsin");
-		stateName.put("WY", "Wyoming");
-		stateName.put("YT", "Yukon Territory");
+var findRadioWithLabel = function findRadioWithLabel(label, root=document) {
+	if(root.nodeName=="PAPER-RADIO-BUTTON") {
+		if(root.childNodes[0].data.trimStart().trimEnd()==label) {
+			return root;
+		}
+	} else {
+		let all_radio = getAllObject("paper-radio-button", root);
+		for (let radio of all_radio) {
+			if(radio.childNodes[0].data.trimStart().trimEnd()==label) {
+				return radio;
+			}
+		}
 	}
+};
+
+var selectCheckbox = function selectCheckbox(label, root=document) {
+	let checkbox = findCheckboxWithLabel(label, root);
+	if(!checkbox.checked) {
+		checbox.click();
+	}
+};
+
+var selectRadio = function selectRadio(label, root=document) {
+	let radio = findCheckboxWithLabel(label, root);
+	if(!radio.checked) {
+		radio.click();
+	}
+};
+
+var selectDropdown = function selectDropdown(label, root=document) {
+	if(root.nodeName=="PAPER-LISTBOX") {
+		root.select(label);
+	} else {
+		let listbox = getAllObject("paper-listbox", root);
+		listbox.select(label);
+	}
+};
+
+var querySelectorAllDeep = function querySelectorAllDeep(selector, root) {
+	if(root==undefined) {
+		return _querySelectorDeep(selector, true, document);
+	} else {
+		return _querySelectorDeep(selector, true, root);
+	}
+};
+
+var querySelectorDeep = function querySelectorDeep(selector, root) {
+	if(root==undefined) {
+		return _querySelectorDeep(selector, false, document);
+	} else {
+		return _querySelectorDeep(selector, false, root);
+	}
+};
+
+var getObject = function getObject(selector, root = document) {
+    const multiLevelSelectors = splitByCharacterUnlessQuoted(selector, '>');
+	if (multiLevelSelectors.length == 1) {
+		return querySelectorDeep(multiLevelSelectors[0], root);
+	} else if (multiLevelSelectors.length == 2) {
+		return querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root);
+	} else if (multiLevelSelectors.length == 3) {
+		return querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root));
+	} else if (multiLevelSelectors.length == 4) {
+		return querySelectorDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root)));
+	} else if (multiLevelSelectors.length == 5) {
+		return querySelectorDeep(multiLevelSelectors[4], querySelectorDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root))));
+	}
+};
+
+var getAllObject = function getAllObject(selector, root = document) {
+    const multiLevelSelectors = splitByCharacterUnlessQuoted(selector, '>');
+    if (multiLevelSelectors.length == 1) {
+        return querySelectorAllDeep(multiLevelSelectors[0], root);
+    } else if (multiLevelSelectors.length == 2) {
+        return querySelectorAllDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root);
+    } else if (multiLevelSelectors.length == 3) {
+        return querySelectorAllDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root));
+    } else if (multiLevelSelectors.length == 4) {
+		return querySelectorAllDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root)));
+	} else if (multiLevelSelectors.length == 5) {
+		return querySelectorAllDeep(multiLevelSelectors[4], querySelectorDeep(multiLevelSelectors[3], querySelectorDeep(multiLevelSelectors[2], querySelectorDeep(multiLevelSelectors[1], querySelectorDeep(multiLevelSelectors[0]).root))));
+	}
+    
+};
+
+function _querySelectorDeep(selector, findMany, root) {
+    let lightElement = root.querySelector(selector);
+
+    if (document.head.createShadowRoot || document.head.attachShadow) {
+        if (!findMany && lightElement) {
+            return lightElement;
+        }
+
+        const selectionsToMake = splitByCharacterUnlessQuoted(selector, ',');
+
+        return selectionsToMake.reduce((acc, minimalSelector) => {
+            if (!findMany && acc) {
+                return acc;
+            }
+            const splitSelector = splitByCharacterUnlessQuoted(minimalSelector
+                    .replace(/^\s+/g, '')
+                    .replace(/\s*([>+~]+)\s*/g, '$1'), ' ')
+                .filter((entry) => !!entry);
+            const possibleElementsIndex = splitSelector.length - 1;
+            const possibleElements = collectAllElementsDeep(splitSelector[possibleElementsIndex], root);
+            const findElements = findMatchingElement(splitSelector, possibleElementsIndex, root);
+            if (findMany) {
+                acc = acc.concat(possibleElements.filter(findElements));
+                return acc;
+            } else {
+                acc = possibleElements.find(findElements);
+                return acc;
+            }
+        }, findMany ? [] : null);
+
+
+    } else {
+        if (!findMany) {
+            return lightElement;
+        } else {
+            return root.querySelectorAll(selector);
+        }
+    }
 
 }
-**************************************************************
-package com.tab.af.utilities;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-public class JSONReader {
-
-	private static JSONReader instance;
-
-	private static final String DIRECTORY = System.getProperty("user.dir");
-
-	private static final String DEPOSITPATH = DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json";
-
-	private static final String LOANPATH = DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Loan.json";
-
-	private static final String INDIVIUDALOANPATH = DIRECTORY
-			+ "\\src\\main\\resources\\OnBoardTestData\\Loan Individual.json";
-
-	private static ConcurrentHashMap<Integer, JSONObject> depositDataMap = new ConcurrentHashMap<>();
-
-	private static ConcurrentHashMap<Integer, JSONObject> loanDataMap = new ConcurrentHashMap<>();
-
-	private static ConcurrentHashMap<Integer, JSONObject> loanIndividualDataMap = new ConcurrentHashMap<>();
-
-	private static volatile AtomicInteger depositArrayIndex = new AtomicInteger();
-
-	private static volatile AtomicInteger loanArrayindex = new AtomicInteger();
-
-	private static volatile AtomicInteger loanIndividualArrayIndex = new AtomicInteger();
-
-	private static JSONArray postDataArrayDeposits = new JSONArray();
-
-	private static JSONArray preDataArrayDeposits = new JSONArray();
-
-	private static JSONArray postDataArrayLoan = new JSONArray();
-
-	private static JSONArray preDataArrayLoan = new JSONArray();
-
-	private JSONReader() {
-	}
-
-	public static JSONReader getInstance() {
-		if (instance == null) {
-			instance = new JSONReader();
-		}
-		return instance;
-	}
-
-	/**
-	 * Returns a New Deposit Data Test Data Map with Next Index
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public ConcurrentHashMap<String, String> getDepositMap() throws Exception {
-		ConcurrentHashMap<String, String> dataMap = null;
-		if (depositDataMap.isEmpty()) {
-			loadDepositMap();
-		}
-		JSONObject dataAtIndex = depositDataMap.get(depositArrayIndex.getAndIncrement());
-		dataMap = jsonToMap(dataAtIndex.toJSONString());
-		return dataMap;
-	}
-
-	public void loadDepositMap() throws Exception {
-		JSONParser jsonParser = new JSONParser();
-		JSONArray arr;
-		try (FileReader reader = new FileReader(DEPOSITPATH)) {
-			Object obj = jsonParser.parse(reader);
-			arr = (JSONArray) obj;
-		} catch (Exception e) {
-			throw e;
-		}
-		for (int i = 0; i < arr.size(); i++) {
-			depositDataMap.put(i, (JSONObject) arr.get(i));
-		}
-	}
-
-	public ConcurrentHashMap<String, String> getLoanMap() throws Exception {
-		ConcurrentHashMap<String, String> dataMap = null;
-		if (loanDataMap.isEmpty()) {
-			loadLoanDataMap();
-		}
-		JSONObject dataAtIndex = loanDataMap.get(loanArrayindex.getAndIncrement());
-		dataMap = jsonToMap(dataAtIndex.toJSONString());
-		// preDataArrayLoan.remove(dataAtIndex);
-		return dataMap;
-	}
-
-	public void loadLoanDataMap() throws Exception {
-		JSONParser jsonParser = new JSONParser();
-		JSONArray arr;
-		try (FileReader reader = new FileReader(LOANPATH)) {
-			Object obj = jsonParser.parse(reader);
-			arr = (JSONArray) obj;
-		} catch (Exception e) {
-			throw e;
-		}
-		for (int i = 0; i < arr.size(); i++) {
-			loanDataMap.put(i, (JSONObject) arr.get(i));
-		}
-	}
-
-	public ConcurrentHashMap<String, String> getIndividualMap() throws Exception {
-		ConcurrentHashMap<String, String> dataMap = null;
-		JSONObject dataAtIndex = null;
-		if (loanIndividualDataMap.isEmpty()) {
-			loadIndividualLoanDataMap();
-		}
-		dataAtIndex = loanIndividualDataMap.get(loanIndividualArrayIndex.getAndIncrement());
-		dataMap = jsonToMap(dataAtIndex.toString());
-		// preDataArrayLoanIndividual.remove(dataAtIndex);
-		return dataMap;
-	}
-
-	private ConcurrentHashMap<String, String> jsonToMap(String json)
-			throws JsonParseException, JsonMappingException, IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		ConcurrentHashMap<String, String> map = mapper.readValue(json, ConcurrentHashMap.class);
-		return map;
-	}
-
-	public void loadIndividualLoanDataMap() throws Exception {
-		JSONParser jsonParser = new JSONParser();
-		JSONArray arr;
-		try (FileReader reader = new FileReader(INDIVIUDALOANPATH)) {
-			Object obj = jsonParser.parse(reader);
-			arr = (JSONArray) obj;
-		} catch (Exception e) {
-			throw e;
-		}
-		for (int i = 0; i < arr.size(); i++) {
-			loanIndividualDataMap.put(i, (JSONObject) arr.get(i));
-		}
-	}
-
-	public static void flushTestDataToJSON() {
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-		if (!preDataArrayDeposits.isEmpty()) {
-			try (FileWriter file = new FileWriter(
-					DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json")) {
-				file.append(gson.toJson(preDataArrayDeposits));
-				file.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to PREDATA");
-				e.printStackTrace();
-			}
-		}
-		if (!postDataArrayDeposits.isEmpty()) {
-			try (FileWriter writer = new FileWriter(
-					DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\DepositsPostData.json", true)) {
-				String formattedString = gson.toJson(postDataArrayDeposits);
-				writer.append(formattedString);
-				writer.append(",");
-				writer.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to POSTDATA");
-				e.printStackTrace();
-			}
-		}
-		if (!preDataArrayLoan.isEmpty()) {
-			try (FileWriter file = new FileWriter(DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\Loan.json")) {
-				file.append(gson.toJson(preDataArrayLoan));
-				file.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to PREDATA");
-				e.printStackTrace();
-			}
-		}
-		if (!postDataArrayLoan.isEmpty()) {
-			try (FileWriter writer = new FileWriter(
-					DIRECTORY + "\\src\\main\\resources\\OnBoardTestData\\LoanPostData.json", true)) {
-				String formattedString = gson.toJson(postDataArrayLoan);
-				writer.append(formattedString);
-				writer.append(",");
-				writer.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to POSTDATA");
-				e.printStackTrace();
-			}
-		}
-	}
+function findMatchingElement(splitSelector, possibleElementsIndex, root) {
+    return (element) => {
+        let position = possibleElementsIndex;
+        let parent = element;
+        let foundElement = false;
+        while (parent) {
+            const foundMatch = parent.matches(splitSelector[position]);
+            if (foundMatch && position === 0) {
+                foundElement = true;
+                break;
+            }
+            if (foundMatch) {
+                position--;
+            }
+            parent = findParentOrHost(parent, root);
+        }
+        return foundElement;
+    };
 
 }
-**************************************************************
-package com.tab.af.utilities;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+function splitByCharacterUnlessQuoted(selector, character) {
+    return selector.match(/\\?.|^$/g).reduce((p, c) => {
+        if (c === '"' && !p.sQuote) {
+            p.quote ^= 1;
+            p.a[p.a.length - 1] += c;
+        } else if (c === '\'' && !p.quote) {
+            p.sQuote ^= 1;
+            p.a[p.a.length - 1] += c;
 
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.joda.time.DateTime;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-public class JSONReaderBackup {
-
-	public ConcurrentHashMap<String, String> getFirstObjectMap() {
-		String dir = System.getProperty("user.dir");
-		ConcurrentHashMap<String, String> cMap = new ConcurrentHashMap<String, String>();
-		Object lock = new Object();
-		String formattedString = null;
-		JSONParser jsonParser = new JSONParser();
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		synchronized (lock) {
-			try {
-				FileReader reader = new FileReader(dir + "\\src\\main\\resources\\data\\Deposits.json");
-				// Read JSON file
-				Object obj = jsonParser.parse(reader);
-				JSONObject parentObject = (JSONObject) obj;
-				JSONArray dataArray = (JSONArray) parentObject.get("UserDetails");
-				JSONObject dataAtZero = (JSONObject) dataArray.get(0);
-				cMap = new Gson().fromJson(dataAtZero.toString(), ConcurrentHashMap.class);
-				dataAtZero.put("Data Used", true);
-				dataAtZero.put("Used Date", DateTime.now().toString());
-				try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\data\\PostData.json", true)) {
-					formattedString = gson.toJson(dataAtZero);
-					file.append(formattedString);
-					file.flush();
-				} catch (Exception e) {
-					System.out.print("Exception Occured While Writing to POSTDATA");
-					e.printStackTrace();
-				}
-				dataArray.remove(dataAtZero);
-				try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\data\\Deposits.json")) {
-					formattedString = gson.toJson(parentObject);
-					file.append(formattedString);
-					file.flush();
-				} catch (Exception e) {
-					System.out.print("Exception Occured While Writing to PREDATA");
-					e.printStackTrace();
-				}
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Reading Input JSON");
-			}
-			// System.out.println(cMap);
-			return cMap;
-		}
-	}
-
-	@SuppressWarnings("deprecation")
-	public void convertExcelToJSONByColumnNameAsKey() {
-		String dir = System.getProperty("user.dir");
-		// Below Enter the Path of Input Excel
-		File file = new File("C:\\Users\\achaudhary\\Downloads\\edited loans data.xlsx");
-		JsonObject sheetsJsonObject = new JsonObject();
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		Workbook workbook = null;
-		String prettyJson = "";
-		try {
-			workbook = new XSSFWorkbook(file);
-		} catch (InvalidFormatException | IOException e) {
-			e.printStackTrace();
-		}
-		// For single sheet data either remove others or set loop to 0
-		for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-			JsonArray sheetArray = new JsonArray();
-			ArrayList<String> columnNames = new ArrayList<String>();
-			Sheet sheet = workbook.getSheetAt(i);
-			Iterator<Row> sheetIterator = sheet.iterator();
-			while (sheetIterator.hasNext()) {
-				Row currentRow = sheetIterator.next();
-				JsonObject jsonObject = new JsonObject();
-				if (currentRow.getRowNum() != 0) {
-					for (int j = 0; j < columnNames.size(); j++) {
-						if (currentRow.getCell(j) != null) {
-							if (currentRow.getCell(j).getCellType() == CellType.BLANK) {
-								jsonObject.addProperty(columnNames.get(j), "");
-							} else {
-								currentRow.getCell(j).setCellType(CellType.STRING);
-								String columnName = columnNames.get(j);
-								if (columnName.equals("DL STATE") || columnName.equals("STATE")) {
-									jsonObject.addProperty(columnName,
-											stateName.get(currentRow.getCell(j).getStringCellValue().trim()));
-								} else {
-									jsonObject.addProperty(columnNames.get(j),
-											currentRow.getCell(j).getStringCellValue());
-								}
-							}
-						} else {
-							jsonObject.addProperty(columnNames.get(j), "");
-						}
-					}
-					sheetArray.add(jsonObject);
-				} else {
-					// store column names
-					for (int k = 0; k < currentRow.getPhysicalNumberOfCells(); k++) {
-						columnNames.add(currentRow.getCell(k).getStringCellValue());
-					}
-				}
-			}
-			sheetsJsonObject.add(workbook.getSheetName(i), sheetArray);
-			prettyJson = gson.toJson(sheetsJsonObject);
-		}
-		// Write to Converted test Data JSON
-		try (FileWriter files = new FileWriter(dir + "\\src\\main\\resources\\data\\CompleteLoanData.json")) {
-			files.append(prettyJson);
-			files.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static final Map<String, String> stateName;
-	static {
-		stateName = new HashMap<String, String>();
-		stateName.put("AL", "Alabama");
-		stateName.put("AK", "Alaska");
-		stateName.put("AB", "Alberta");
-		stateName.put("AZ", "Arizona");
-		stateName.put("AR", "Arkansas");
-		stateName.put("BC", "British Columbia");
-		stateName.put("CA", "California");
-		stateName.put("CO", "Colorado");
-		stateName.put("CT", "Connecticut");
-		stateName.put("DE", "Delaware");
-		stateName.put("DC", "District Of Columbia");
-		stateName.put("FL", "Florida");
-		stateName.put("GA", "Georgia");
-		stateName.put("GU", "Guam");
-		stateName.put("HI", "Hawaii");
-		stateName.put("ID", "Idaho");
-		stateName.put("IL", "Illinois");
-		stateName.put("IN", "Indiana");
-		stateName.put("IA", "Iowa");
-		stateName.put("KS", "Kansas");
-		stateName.put("KY", "Kentucky");
-		stateName.put("LA", "Louisiana");
-		stateName.put("ME", "Maine");
-		stateName.put("MB", "Manitoba");
-		stateName.put("MD", "Maryland");
-		stateName.put("MA", "Massachusetts");
-		stateName.put("MI", "Michigan");
-		stateName.put("MN", "Minnesota");
-		stateName.put("MS", "Mississippi");
-		stateName.put("MO", "Missouri");
-		stateName.put("MT", "Montana");
-		stateName.put("NE", "Nebraska");
-		stateName.put("NV", "Nevada");
-		stateName.put("NB", "New Brunswick");
-		stateName.put("NH", "New Hampshire");
-		stateName.put("NJ", "New Jersey");
-		stateName.put("NM", "New Mexico");
-		stateName.put("NY", "New York");
-		stateName.put("NF", "Newfoundland");
-		stateName.put("NC", "North Carolina");
-		stateName.put("ND", "North Dakota");
-		stateName.put("NT", "Northwest Territories");
-		stateName.put("NS", "Nova Scotia");
-		stateName.put("NU", "Nunavut");
-		stateName.put("OH", "Ohio");
-		stateName.put("OK", "Oklahoma");
-		stateName.put("ON", "Ontario");
-		stateName.put("OR", "Oregon");
-		stateName.put("PA", "Pennsylvania");
-		stateName.put("PE", "Prince Edward Island");
-		stateName.put("PR", "Puerto Rico");
-		stateName.put("QC", "Quebec");
-		stateName.put("RI", "Rhode Island");
-		stateName.put("SK", "Saskatchewan");
-		stateName.put("SC", "South Carolina");
-		stateName.put("SD", "South Dakota");
-		stateName.put("TN", "Tennessee");
-		stateName.put("TX", "Texas");
-		stateName.put("UT", "Utah");
-		stateName.put("VT", "Vermont");
-		stateName.put("VI", "Virgin Islands");
-		stateName.put("VA", "Virginia");
-		stateName.put("WA", "Washington");
-		stateName.put("WV", "West Virginia");
-		stateName.put("WI", "Wisconsin");
-		stateName.put("WY", "Wyoming");
-		stateName.put("YT", "Yukon Territory");
-	}
-
-	private static volatile AtomicInteger arrindex = new AtomicInteger();
-
-	private static JSONArray postDataArrayDeposits = new JSONArray();
-
-	private static JSONArray preDataArrayDeposits = new JSONArray();
-
-	private static volatile AtomicInteger arrLoanindex = new AtomicInteger();
-
-	private static JSONArray postDataArrayLoan = new JSONArray();
-
-	private static JSONArray preDataArrayLoan = new JSONArray();
-
-	private static volatile AtomicInteger arrLoanIndividualindex = new AtomicInteger();
-
-	private static JSONArray postDataArrayLoanIndividual = new JSONArray();
-
-	private static JSONArray preDataArrayLoanIndividual = new JSONArray();
-
-	/**
-	 * Returns a New Deposit Data Test Data Map with Next Index
-	 * 
-	 * @return
-	 * @throws Exception
-	 */
-	public ConcurrentHashMap<String, String> getDepositMap() throws Exception {
-		JSONObject dataAtIndex = null;
-		String dir = System.getProperty("user.dir");
-		Object lock = new Object();
-		JSONParser jsonParser = new JSONParser();
-		try (FileReader reader = new FileReader(dir + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json")) {
-			// Read JSON file
-			Object obj = jsonParser.parse(reader);
-			JSONArray arr = (JSONArray) obj;
-			if (preDataArrayDeposits.isEmpty()) {
-				preDataArrayDeposits = (JSONArray) obj;
-			}
-			dataAtIndex = (JSONObject) arr.get(arrindex.getAndIncrement());
-			synchronized (lock) {
-				preDataArrayDeposits.remove(dataAtIndex);
-				dataAtIndex.put("Used Date", DateTime.now().toString());
-				postDataArrayDeposits.add(dataAtIndex);
-			}
-		} catch (Exception e) {
-			throw new Exception("Exception Occued While Reading Deposit's TestData" + e.getMessage());
-		}
-		return getMap(dataAtIndex.toString());
-	}
-
-	public ConcurrentHashMap<String, String> getLoanMap() throws Exception {
-		JSONObject dataAtIndex = null;
-		String dir = System.getProperty("user.dir");
-		Object lock = new Object();
-		JSONParser jsonParser = new JSONParser();
-		try (FileReader reader = new FileReader(dir + "\\src\\main\\resources\\OnBoardTestData\\Loan.json")) {
-			// Read JSON file
-			Object obj = jsonParser.parse(reader);
-			JSONArray arr = (JSONArray) obj;
-			if (preDataArrayLoan.isEmpty()) {
-				preDataArrayLoan = (JSONArray) obj;
-			}
-			dataAtIndex = (JSONObject) arr.get(arrLoanindex.getAndIncrement());
-			synchronized (lock) {
-				preDataArrayLoan.remove(dataAtIndex);
-				dataAtIndex.put("Used Date", DateTime.now().toString());
-				postDataArrayLoan.add(dataAtIndex);
-			}
-		} catch (Exception e) {
-			throw new Exception("Exception Occued While Reading LOAN's TestData" + e.getMessage());
-		}
-		return getMap(dataAtIndex.toString());
-	}
-
-	public ConcurrentHashMap<String, String> getIndividualMap() throws Exception {
-		JSONObject dataAtIndex = null;
-		String dir = System.getProperty("user.dir");
-		Object lock = new Object();
-		JSONParser jsonParser = new JSONParser();
-		try (FileReader reader = new FileReader(
-				dir + "\\src\\main\\resources\\OnBoardTestData\\Loan Individual.json")) {
-			// Read JSON file
-			Object obj = jsonParser.parse(reader);
-			JSONArray arr = (JSONArray) obj;
-			if (preDataArrayLoanIndividual.isEmpty()) {
-				preDataArrayLoanIndividual = (JSONArray) obj;
-			}
-			dataAtIndex = (JSONObject) arr.get(arrLoanIndividualindex.getAndIncrement());
-			synchronized (lock) {
-				preDataArrayLoanIndividual.remove(dataAtIndex);
-				dataAtIndex.put("Used Date", DateTime.now().toString());
-				postDataArrayLoanIndividual.add(dataAtIndex);
-			}
-		} catch (Exception e) {
-			throw new Exception("Exception Occued While Reading LOAN's Indiviudal TestData" + e.getMessage());
-		}
-		return getMap(dataAtIndex.toString());
-	}
-
-	public static void flushTestDataToJSON() {
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		String dir = System.getProperty("user.dir");
-		if (!preDataArrayDeposits.isEmpty()) {
-			try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\OnBoardTestData\\Deposits.json")) {
-				file.append(gson.toJson(preDataArrayDeposits));
-				file.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to PREDATA");
-				e.printStackTrace();
-			}
-		}
-		if (!postDataArrayDeposits.isEmpty()) {
-			try (FileWriter writer = new FileWriter(
-					dir + "\\src\\main\\resources\\OnBoardTestData\\DepositsPostData.json", true)) {
-				String formattedString = gson.toJson(postDataArrayDeposits);
-				writer.append(formattedString);
-				writer.append(",");
-				writer.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to POSTDATA");
-				e.printStackTrace();
-			}
-		}
-		if (!preDataArrayLoan.isEmpty()) {
-			try (FileWriter file = new FileWriter(dir + "\\src\\main\\resources\\OnBoardTestData\\Loan.json")) {
-				file.append(gson.toJson(preDataArrayLoan));
-				file.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to PREDATA");
-				e.printStackTrace();
-			}
-		}
-		if (!postDataArrayLoan.isEmpty()) {
-			try (FileWriter writer = new FileWriter(dir + "\\src\\main\\resources\\OnBoardTestData\\LoanPostData.json",
-					true)) {
-				String formattedString = gson.toJson(postDataArrayLoan);
-				writer.append(formattedString);
-				writer.append(",");
-				writer.flush();
-			} catch (Exception e) {
-				System.out.print("Exception Occured While Writing to POSTDATA");
-				e.printStackTrace();
-			}
-		}
-	}
-
-	@SuppressWarnings("deprecation")
-	public static void convertExcelToJSONByColumnNameAsKey(String path) {
-		// Below Enter the Path of Input Excel
-		File file = new File(path);
-		JsonObject sheetsJsonObject = new JsonObject();
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		Workbook workbook = null;
-		String prettyJson = "";
-		try {
-			workbook = new XSSFWorkbook(file);
-		} catch (InvalidFormatException | IOException e) {
-			e.printStackTrace();
-		}
-		// For single sheet data either remove others or set loop to 0
-		for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-			JsonArray sheetArray = new JsonArray();
-			ArrayList<String> columnNames = new ArrayList<String>();
-			Sheet sheet = workbook.getSheetAt(i);
-			Iterator<Row> sheetIterator = sheet.iterator();
-			while (sheetIterator.hasNext()) {
-				Row currentRow = sheetIterator.next();
-				JsonObject jsonObject = new JsonObject();
-				if (currentRow.getRowNum() != 0) {
-					for (int j = 0; j < columnNames.size(); j++) {
-						if (currentRow.getCell(j) != null) {
-							if (currentRow.getCell(j).getCellType() == CellType.BLANK) {
-								jsonObject.addProperty(columnNames.get(j), "");
-							} else {
-								currentRow.getCell(j).setCellType(CellType.STRING);
-								if (columnNames.get(j).equalsIgnoreCase("bus_st")
-										|| columnNames.get(j).equalsIgnoreCase("rep1_st")
-										|| columnNames.get(j).equalsIgnoreCase("verstate")
-										|| columnNames.get(j).equalsIgnoreCase("beststate")
-										|| columnNames.get(j).equalsIgnoreCase("DL STATE")
-										|| columnNames.get(j).equalsIgnoreCase("STATE")) {
-									String val = stateName.get(currentRow.getCell(j).getStringCellValue());
-									if (val == null) {
-										System.out.print("Break");
-									}
-									jsonObject.addProperty(columnNames.get(j), val);
-								} else if (columnNames.get(j).equalsIgnoreCase("DOB/YOB")) {
-									String val = currentRow.getCell(j).getStringCellValue();
-									if (val.length() < 7) {
-										val = "0101" + val;
-										jsonObject.addProperty(columnNames.get(j), val);
-									}
-								} else {
-									jsonObject.addProperty(columnNames.get(j),
-											currentRow.getCell(j).getStringCellValue().trim());
-								}
-							}
-						} else {
-							jsonObject.addProperty(columnNames.get(j), "");
-						}
-					}
-					sheetArray.add(jsonObject);
-				} else {
-					// store column names
-					for (int k = 0; k < currentRow.getPhysicalNumberOfCells(); k++) {
-						columnNames.add(currentRow.getCell(k).getStringCellValue());
-					}
-				}
-			}
-			sheetsJsonObject.add(workbook.getSheetName(i), sheetArray);
-			prettyJson = gson.toJson(sheetsJsonObject);
-		}
-		// Write to Converted test Data JSON
-		try (FileWriter files = new FileWriter("C:\\Users\\achaudhary\\Downloads\\CompleteLoanIndividual.json")) {
-			files.append(prettyJson);
-			files.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public ConcurrentHashMap<String, String> getMap(String json)
-			throws JsonParseException, JsonMappingException, IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		ConcurrentHashMap<String, String> map = mapper.readValue(json, ConcurrentHashMap.class);
-		return map;
-	}
-
-	public static void main(String[] Args) throws ClassNotFoundException, SQLException {
-	}
-
+        } else if (!p.quote && !p.sQuote && c === character) {
+            p.a.push('');
+        } else {
+            p.a[p.a.length - 1] += c;
+        }
+        return p;
+    }, { a: [''] }).a;
 }
-********************************************
-package com.tab.af.utilities;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
+function findParentOrHost(element, root) {
+    const parentNode = element.parentNode;
+    return (parentNode && parentNode.host && parentNode.nodeType === 11) ? parentNode.host : parentNode === root ? null : parentNode;
+}
 
-import com.tab.af.engine.ConcurrentEngine;
 
-public class WebTable {
-	private WebElement table;
+function collectAllElementsDeep(selector = null, root) {
+    const allElements = [];
 
-	public <T> WebTable(T table) {
-		try {
-
-			WebDriver driver = new ChromeDriver();
-			if (table instanceof String) {
-				String c = "//*[@cuba-id=\"" + table + "\"]";
-
-			} else if (table instanceof WebElement) {
-
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+    const findAllElements = function(nodes) {
+        for (let i = 0, el; el = nodes[i]; ++i) {
+            allElements.push(el);
+            if (el.shadowRoot) {
+                findAllElements(el.shadowRoot.querySelectorAll('*'));
+            }
+        }
+    };
+	
+	if(root.shadowRoot != null) {
+		findAllElements(root.shadowRoot.querySelectorAll('*'));
 	}
+	
+    findAllElements(root.querySelectorAll('*'));
 
-	public Map<String, Integer> getHeadersIndex(WebElement tableElement) {
-		Map<String, Integer> tableHeader = new HashMap<String, Integer>();
-		List<WebElement> headersList = tableElement
-				.findElements(By.xpath("//div[@class='v-table-header']//tr//td//div[3]"));
-		Iterator<WebElement> itr = headersList.iterator();
-		int column = 1;
-		while (itr.hasNext()) {
-			tableHeader.put(itr.next().getText(), column);
-			column++;
-		}
-		return tableHeader;
-	}
-
-	public List<WebElement> getColumnElementsByColumnName(WebElement tableElement, String ColumnName) {
-		Map<String, Integer> map = getHeadersIndex(tableElement);
-		int cIndex = 0;
-		if (map != null) {
-			cIndex = map.get(ColumnName);
-		}
-		WebDriver driver = ConcurrentEngine.getEngine().getWebDriver();
-		List<WebElement> columnElements = driver
-				.findElements(By.xpath("//tr//td[@class='v-table-cell-content'][" + cIndex + "]"));
-		return columnElements;
-	}
-
-	// get the number of rows present
-	public int getRowCount() {
-		WebElement dataTable = table.findElement(By.xpath("//table[@class=\"v-table-table\"]"));
-		int noOfRows = dataTable.findElements(By.tagName("tr")).size() - 1;
-		return noOfRows;
-	}
-
-	// get the number of columns present
-	public int getColumnCount() {
-		int noOfCols = table.findElements(By.xpath("//tr[2]/td")).size();
-		return noOfCols;
-	}
-
-	// get the nuber of rows and columns and return it as Map
-	public Map<String, Integer> getTableSize() {
-		Map<String, Integer> tableSize = new HashMap<>();
-		tableSize.put("rows", getRowCount());
-		tableSize.put("columns", getColumnCount());
-		return tableSize;
-	}
-
-	// get row data and return it as list
-	public List<String> rowData(int rowNumber) throws Exception {
-		if (rowNumber == 0) {
-			throw new Exception("Row number starts from 1");
-		}
-		rowNumber = rowNumber + 1;
-		List<WebElement> row = table.findElements(By.xpath("//tr[" + rowNumber + "]/td"));
-		List<String> rData = new ArrayList<>();
-		for (WebElement webElement : row) {
-			rData.add(webElement.getText());
-		}
-		return rData;
-	}
-
-	// get the column data and return as list
-	public List<String> columnData(int columnNumber) throws Exception {
-		if (columnNumber == 0) {
-			throw new Exception("Column number starts from 1");
-		}
-		List<WebElement> column = table.findElements(By.xpath("//tr/td[" + columnNumber + "]"));
-		List<String> cData = new ArrayList<>();
-		for (WebElement webElement : column) {
-			cData.add(webElement.getText());
-		}
-		return cData;
-	}
-
-	// get all the data from the table
-	public List<List<String>> getAllData() {
-		// get number of rows
-		int noOfRows = table.findElements(By.xpath("//tr")).size() - 1;
-		// get number of columns
-		int noOfColumns = table.findElements(By.xpath("//tr[2]/td")).size();
-		List<List<String>> allData = new ArrayList<List<String>>();
-		// iterate over the rows, to ignore the headers we have started the i with '1'
-		for (int i = 2; i < noOfRows; i++) {
-			// reset the row data every time
-			List<String> ro = new ArrayList<String>();
-			// iterate over columns
-			for (int j = 1; j < noOfColumns; j++) {
-				// get text from the i th row and j th column
-				ro.add(table.findElement(By.xpath("//tr[" + i + "]/td[" + j + "]")).getText());
-			}
-			// add the row data to allData of the table
-			allData.add(ro);
-		}
-		return allData;
-	}
-
-	// verify presence of the text/data
-	public boolean presenceOfData(String data) {
-		// verify the data by getting the size of the element matches based on the
-		// text/data passed
-		int dataSize = table.findElements(By.xpath("//td[normalize-space(text())='" + data + "']")).size();
-		boolean presence = false;
-		if (dataSize > 0) {
-			presence = true;
-		}
-		return presence;
-	}
-
-	// get the data from a specific cell
-	public String getCellData(int rowNumber, int columnNumber) throws Exception {
-		if (rowNumber == 0) {
-			throw new Exception("Row number starts from 1");
-		}
-		rowNumber = rowNumber + 1;
-		String cellData = table.findElement(By.xpath("//tr[" + rowNumber + "]/td[" + columnNumber + "]")).getText();
-		return cellData;
-	}
-
-	public static void main(String[] Args) throws Exception {
-
-		try (Connection connenction = DriverManager.getConnection(
-				"jdbc:sqlserver://ogvsqlcoreint01\\Customer360_schema:1433;user=apiuser; password=99*-api")) {
-			try (Statement statement = connenction.createStatement()) {
-				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-
-				String query = "select * from cego.EntityPerson where entity_id='E1A105B5-7F17-4B6D-8F70-7EBFB49478D5';";
-
-				statement.execute(query);
-				ResultSet set = statement.getResultSet();
-
-			}
-		} catch (SQLException | ClassNotFoundException e) {
-			throw e;
-		}
-
-	}
-
+    return selector ? allElements.filter(el => el.matches(selector)) : allElements;
 }
