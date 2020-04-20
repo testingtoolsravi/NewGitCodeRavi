@@ -1,77 +1,1089 @@
-public class Login extends BasePage {
+createbank
+@CreateBank @OBP
+Feature: OpenBanking
 
-	@FindBy(xpath = "//input[@name='loginField']")
-	private WebElement txt_UserName;
+  Background: 
+    Given Setup Base URI for the "POST" Request 
+    And Setup Request Endpoint for "CreateBank"
+      | basepath | create.bank |  |
+    And Users adds the Headers Parameters for "CreateBankHeader"
+    And user adds the Request body from "CreateBank"
+    And Load Test Data File "CreateBank"
 
-	@FindBy(xpath = "//input[@name='passwordField']")
-	private WebElement txt_Password;
+  @TC_0001
+  Scenario Outline: TC_0001_Create Bank with Valid Data
+    Given User Loads data for Test Case "TC_0001" and test data "<data>"
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+    And The Schema of Response JSON should match the Expected Schema from "CreateBankSchema"
 
-	@FindBy(xpath = "//span[text()='Submit']")
-	private WebElement btn_Login;
+    Examples: 
+      | data      |
+      | testdata1 |
 
-	@FindBy(xpath = "//div[contains(@class,'logout-button') and @role=\"button\"]")
-	private WebElement btn_LogOut;
+  @TC_0003
+  Scenario Outline: TC_0003_Create Bank with Invalid Client ID Header
+    Given User Loads data for Test Case "TC_0003" and test data "<data>"
+    When user changes the "client_id" header
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
 
-	public Login() {
-		PageFactory.initElements(driver, this);
-	}
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
 
-	public Login openEbank() {
-		try {
-			String URL = TestBase.prop.eBankIntURL();
-			webActions.loadURL(URL);
-		} catch (Exception e) {
-			report.reportHardFail(e, "Failed to Open EBank URL");
+  @TC_0004
+  Scenario Outline: TC_0004_Create Bank with Invalid Client Secret Header
+    Given User Loads data for Test Case "TC_0004" and test data "<data>"
+    When user changes the "client_secret" header
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0005
+  Scenario Outline: TC_0005_Create Bank with Invalid XCorrelation ID Header
+    Given User Loads data for Test Case "TC_0005" and test data "<data>"
+    When user changes the "X-Correlation-ID" header
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0006
+  Scenario Outline: TC_0006_Create Bank with Invalid Session ID Header
+    Given User Loads data for Test Case "TC_0005" and test data "<data>"
+    When user changes the "sessionId" header
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+
+  @TC_0007
+  Scenario Outline: TC_0007_Create Bank with Invalid national_identifier in Request Body
+    Given User Loads data for Test Case "TC_0007" and test data "<data>"
+    When User changes updates the "$.national_identifier" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0008
+  Scenario Outline: TC_0008_Create Bank with Invalid full_name in Request Body
+    Given User Loads data for Test Case "TC_0008" and test data "<data>"
+    When User changes updates the "$.full_name" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0009
+  Scenario Outline: TC_0009_Create Bank with Invalid swift_bic in Request Body
+    Given User Loads data for Test Case "TC_0009" and test data "<data>"
+    When User changes updates the "$.swift_bic" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0010
+  Scenario Outline: TC_0010_Create Bank with Invalid logo_url in Request Body
+    Given User Loads data for Test Case "TC_0010" and test data "<data>"
+    When User changes updates the "$.logo_url" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0011
+  Scenario Outline: TC_0011_Create Bank  with Invalid  id in body
+    Given User Loads data for Test Case "TC_0011" and test data "<data>"
+    When User changes updates the "$.id" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0012
+  Scenario Outline: TC_0012_Create Bank with Invalid  short_name in body
+    Given User Loads data for Test Case "TC_0012" and test data "<data>"
+    When User changes updates the "$.short_name" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0013
+  Scenario Outline: TC_0013_Create Bank with Invalid  bank_routing.scheme in body
+    Given User Loads data for Test Case "TC_0013" and test data "<data>"
+    When User changes updates the "$.bank_routing.scheme" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0014
+  Scenario Outline: TC_0014_Create Bank Invalid  bank_routing.address in body
+    Given User Loads data for Test Case "TC_0014" and test data "<data>"
+    When User changes updates the "$.bank_routing.address" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+
+  @TC_0015
+  Scenario Outline: TC_0015_Create Bank with Invalid  website_url in body
+    Given User Loads data for Test Case "TC_0015" and test data "<data>"
+    When User changes updates the "$.website_url" value in the Request Body
+    And User sends a "post" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+********************************************
+@MUL-707 @GetBank @OBP @Regression
+Feature: Get Bank - OpenBanking
+
+  Background: 
+    Given Setup Base URI for the "GET" Request
+    And Setup Request Endpoint for "GetBank"
+      | basepath  | GetBank         |                 |
+      | pathparam | GetBank.BANK_ID | GetBank.BANK_ID |
+    And Users adds the Headers Parameters for "GetBankHeader"
+    And Load Test Data File "GetBank"
+
+  @MUL-707TC1 @TC_0001 @PositiveScenario
+  Scenario: TC_0001_Get Bank with Valid Data
+    Given User Loads data for Test Case "TC_0001" and test data "testdata1"
+    And User sends a "get" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+    And The Schema of Response JSON should match the Expected Schema from "GetBankSchema"
+    And I validate that Response body of Get Bank contains path Params "GetBank.BANK_ID"
+
+  @MUL-707TC2 @TC_0002 @PathParamsBlank @Bank_ID_Blank
+  Scenario Outline: TC_0002_Get Bank with Invalid BANK_ID
+    Given User Loads data for Test Case "TC_0002" and test data "<data>"
+    When User changes the path param "GetBank.BANK_ID"
+    And User sends a "get" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @MUL-707TC3 @TC_0003 @HeadersBlank @Client_ID_Blank
+  Scenario Outline: TC_0003_Get Bank with Invalid Client ID
+    Given User Loads data for Test Case "TC_0003" and test data "<data>"
+    When user changes the "client_id" header
+    And User sends a "get" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @MUL-707TC4 @TC_0004 @HeadersBlank @Client_Secret_Blank
+  Scenario Outline: TC_0004_Get Bank with Invalid Client Secret
+    Given User Loads data for Test Case "TC_0004" and test data "<data>"
+    When user changes the "client_secret" header
+    And User sends a "get" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @MUL-707TC5 @TC_0005 @HeadersBlank @X-Correlation-ID_Blank
+  Scenario Outline: TC_0005_Get Bank with Invalid X-Correlation-ID
+    Given User Loads data for Test Case "TC_0005" and test data "<data>"
+    When user changes the "X-Correlation-ID" header
+    And User sends a "get" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @MUL-707TC6 @TC_0006 @HeadersBlank @Session-ID_Blank
+  Scenario Outline: TC_0006_Get Bank with combinations of Session ID Header
+    Given User Loads data for Test Case "TC_0006" and test data "<data>"
+    When user changes the "sessionId" header
+    And User sends a "get" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+***********************************
+@AddKYCDocument @OBP
+Feature: OpenBanking
+
+  Background: 
+    Given Setup Base URI for the "PUT" Request
+    And Setup Request Endpoint for "AddKYCDocument"
+      | basepath  | add.kyc.document |                                  |
+      | pathparam | BANK_ID          | add.kyc.document.BANK_ID         |
+      | pathparam | CUSTOMER_ID      | add.kyc.document.CUSTOMER_ID     |
+      | pathparam | KYC_DOCUMENT_ID  | add.kyc.document.KYC_DOCUMENT_ID |
+    And Users adds the Headers Parameters for "AddKYCDocumentHeader"
+    And user adds the Request body from "AddKYCDocument"
+    And Load Test Data File "AddKYCDocument"
+
+  @TC_0001
+  Scenario Outline: TC_0001_Add KYC Document Valid Data
+    Given User Loads data for Test Case "TC_0001" and test data "<data>"
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+    And The Schema of Response JSON should match the Expected Schema from "AddKYCDocumentSchema"
+    And The Response body should contain same "$.documents[0].bank_id" as the path Param "BANK_ID"
+    And The Response body should contain same "$.documents[0].customer_id" as the path Param "CUSTOMER_ID"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+
+  @TC_0002
+  Scenario Outline: TC_0002_Add KYC Document Invalid CUSTOMER_ID param
+    Given User Loads data for Test Case "TC_0002" and test data "<data>"
+    When User changes the path param "CUSTOMER_ID"
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0003
+  Scenario Outline: TC_0003_Add KYC Document Invalid BANK_ID param
+    Given User Loads data for Test Case "TC_0003" and test data "<data>"
+    When User changes the path param "BANK_ID"
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0004
+  Scenario Outline: TC_0004_Add KYC Document Invalid BANK_ID param
+    Given User Loads data for Test Case "TC_0004" and test data "<data>"
+    When User changes the path param "KYC_DOCUMENT_ID"
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0005
+  Scenario Outline: TC_0005_Add KYC Document Invalid client_id Header
+    Given User Loads data for Test Case "TC_0005" and test data "<data>"
+    When user changes the "client_id" header
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0006
+  Scenario Outline: TC_0006_Add KYC Document Invalid client_secret  Header
+    Given User Loads data for Test Case "TC_0006" and test data "<data>"
+    When user changes the "client_secret" header
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0007
+  Scenario Outline: TC_0007_Add KYC Document Invalid XCorrelation ID Header
+    Given User Loads data for Test Case "TC_0007" and test data "<data>"
+    When user changes the "X-Correlation-ID" header
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0008
+  Scenario Outline: TC_0008_Add KYC Document Invalid Session ID Header
+    Given User Loads data for Test Case "TC_0008" and test data "<data>"
+    When user changes the "sessionId" header
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0009
+  Scenario Outline: TC_0009_Add KYC Document Invalid customerId in Request Body
+    Given User Loads data for Test Case "TC_0009" and test data "<data>"
+    When User changes updates the "$.customerId" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0010
+  Scenario Outline: TC_0010_Add KYC Document Invalid type in Request Body
+    Given User Loads data for Test Case "TC_0010" and test data "<data>"
+    When User changes updates the "$.type" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0011
+  Scenario Outline: TC_0011_Add KYC Document Invalid number in Request Body
+    Given User Loads data for Test Case "TC_0011" and test data "<data>"
+    When User changes updates the "$.number" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0012
+  Scenario Outline: TC_0012_Add KYC Document Invalid issue_place in Request Body
+    Given User Loads data for Test Case "TC_0012" and test data "<data>"
+    When User changes updates the "$.issue_place" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0013
+  Scenario Outline: TC_0013_Add KYC Document Invalid is_primary in Request Body
+    Given User Loads data for Test Case "TC_0013" and test data "<data>"
+    When User changes updates the "$.is_primary" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0014
+  Scenario Outline: TC_0014_Add KYC Document Invalid expiry_date in Request Body
+    Given User Loads data for Test Case "TC_0014" and test data "<data>"
+    When User changes updates the "$.expiry_date" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+
+  @TC_0015
+  Scenario Outline: TC_0015_Add KYC Document Invalid issue_date in Request Body
+    Given User Loads data for Test Case "TC_0015" and test data "<data>"
+    When User changes updates the "$.issue_date" value in the Request Body
+    And User sends a "put" Request
+    Then Status code and Line of Response should match "Status Code" and "Status Line"
+
+    Examples: 
+      | data      |
+      | testdata1 |
+      | testdata2 |
+      | testdata3 |
+*****************************************
+{
+    "customerId": "BDD165DC-96A2-4DCA-A429-FD18AD7CE35A",
+    "type": "passport",
+    "number": "159483456",
+    "issue_place": "UT",
+    "issue_date": "2018-10-01",
+    "expiry_date": "2021-09-30",
+    "is_primary":"true"
+
+ 
+
+}
+*************************************
+{
+	"TC_0001": {
+		"testdata1": {
+			"Status Code": "201",
+			"Status Line": "201 Created"
 		}
-		return (Login) base(Login.class);
-	}
-
-	public HomePage login(String userName, String password) {
-		try {
-
-			webActions.waitUntilPresentAndDisplayed(txt_UserName, "UserName");
-
-			webActions.sendKeys(txt_UserName, userName, "UserName");
-			webActions.sendKeys(txt_Password, password, "Password");
-			webActions.clickBYJS(btn_Login, "Login button");
-			report.reportPass("Login Success");
-		} catch (Exception e) {
-			report.reportHardFail(e, "Login With Valid Credentials");
+	},
+	"TC_0002": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1234as@#!!",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
 		}
-		return (HomePage) base(HomePage.class);
-	}
-
-	public HomePage loginAsAdmin() {
-		try {
-			String URL = TestBase.prop.eBankIntURL();
-			webActions.loadURL(URL);
-			String adminUser = TestBase.prop.eBankAdminUser();
-			String adminPassword = TestBase.prop.eBankAdminPassword();
-			base(Login.class);
-			webActions.waitUntilPresentAndDisplayed(txt_UserName, "UserName");
-			webActions.sendKeys(txt_UserName, adminUser, "UserName");
-			webActions.sendKeys(txt_Password, adminPassword, "Password");
-			webActions.clickBYJS(btn_Login, "Login button");
-			report.reportPass("Login Success as Admin");
-		} catch (Exception e) {
-			report.reportHardFail(e, "Login Failure as Admin");
+	},
+	"TC_0003": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1234as@#!!",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
 		}
-		return (HomePage) base(HomePage.class);
-	}
-
-	public void logOut() {
-		try {
-			webActions.clickBYJS(btn_LogOut, "Logout");
-			webActions.waitUntilPresentAndDisplayed(btn_Login, "Login Button");
-			report.reportPass("Logout Success");
-		} catch (Exception e) {
-			report.reportHardFail(e, "Logout Success");
+	},
+	"TC_0004": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1234as@#!!",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0005": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "12345",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0006": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "12345",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0007": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "12345",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0008": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "201",
+			"Status Line": "201 Created"
+		},
+		"testdata2": {
+			"value": "12345",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0009": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789@#$%^&*(&*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0010": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789@#$%^&*(&*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0011": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789112345678911234567891123",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789@#$%^&*(&*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0012": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123456789112345678911234567891123123456789112345678911234567891123123456789112345678911234567891123123456789112345678911234567891",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "123456789@#$%^&*(&*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0013": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "123",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0014": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "30-09-2021",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0015": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "30-09-2021",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1*(",
+			"Status Code": "400",
+			"Status Line": "400 Bad Request"
 		}
 	}
-
-	@Override
-	protected ExpectedCondition getPageLoadCondition() {
-		return ExpectedConditions.visibilityOf(txt_UserName);
+}
+*************************************
+{
+	"TC_0001": {
+		"testdata1": {
+			"Status Code": "200",
+			"Status Line": "200 OK"
+		}
+	},
+	"TC_0002": {
+		"testdata1": {
+			"value": "",
+				"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata2": {
+			"value": "1234567891",
+				"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		},
+		"testdata3": {
+			"value": "1234as@#!!",
+				"Status Code": "400",
+			"Status Line": "400 Bad Request"
+		}
+	},
+	"TC_0003": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0004": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0005": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
+	},
+	"TC_0006": {
+		"testdata1": {
+			"value": "",
+			"Status Code": "200",
+			"Status Line": "200 OK"
+		},
+		"testdata2": {
+			"value": "123456789",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		},
+		"testdata3": {
+			"value": "a4ca9e72-7271-11ea-bc55-0242ac130003s",
+			"Status Code": "401",
+			"Status Line": "401 Unauthorized"
+		}
 	}
-
+}
+*************************************************
+client_secret=d6F69Ac802E1465Fb6Efc21c255f8d64
+client_id=f2a7d0f86ee740ad8b9b688cf135f1c4
+X-Correlation-ID=uuid
+sessionId=uuid
+*******************************
+client_secret=d6F69Ac802E1465Fb6Efc21c255f8d64
+client_id=f2a7d0f86ee740ad8b9b688cf135f1c4
+X-Correlation-ID=uuid
+sessionId=uuid
+**************************************
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The Root Schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "required": [
+        "documents"
+    ],
+    "properties": {
+        "documents": {
+            "$id": "#/properties/documents",
+            "type": "array",
+            "title": "The Documents Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": [],
+            "items": {
+                "$id": "#/properties/documents/items",
+                "type": "object",
+                "title": "The Items Schema",
+                "description": "An explanation about the purpose of this instance.",
+                "default": {},
+                "examples": [
+                    {
+                        "customer_number": 9876512.0,
+                        "customer_id": "c9d5c2d8-fdf5-42a3-af5b-0003338d1077",
+                        "type": "passport",
+                        "bank_id": "6fb17583-1e49-4435-bb74-a14fe0996723",
+                        "expiry_date": "2021-09-30T00:00:00.000+0000",
+                        "id": "6a262756-85c7-4b9b-9fc9-6174ee9cb516",
+                        "number": "159483456",
+                        "issue_date": "2018-10-01T00:00:00.000+0000",
+                        "issue_place": "UT"
+                    }
+                ],
+                "required": [
+                    "number",
+                    "customer_id",
+                    "customer_number",
+                    "issue_date",
+                    "bank_id",
+                    "id",
+                    "type",
+                    "issue_place",
+                    "expiry_date"
+                ],
+                "properties": {
+                    "number": {
+                        "$id": "#/properties/documents/items/properties/number",
+                        "type": "string",
+                        "title": "The Number Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "159483456"
+                        ]
+                    },
+                    "customer_id": {
+                        "$id": "#/properties/documents/items/properties/customer_id",
+                        "type": "string",
+                        "title": "The Customer_id Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "c9d5c2d8-fdf5-42a3-af5b-0003338d1077"
+                        ]
+                    },
+                    "customer_number": {
+                        "$id": "#/properties/documents/items/properties/customer_number",
+                        "type": "integer",
+                        "title": "The Customer_number Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": 0,
+                        "examples": [
+                            9876512
+                        ]
+                    },
+                    "issue_date": {
+                        "$id": "#/properties/documents/items/properties/issue_date",
+                        "type": "string",
+                        "title": "The Issue_date Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "2018-10-01T00:00:00.000+0000"
+                        ]
+                    },
+                    "bank_id": {
+                        "$id": "#/properties/documents/items/properties/bank_id",
+                        "type": "string",
+                        "title": "The Bank_id Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "6fb17583-1e49-4435-bb74-a14fe0996723"
+                        ]
+                    },
+                    "id": {
+                        "$id": "#/properties/documents/items/properties/id",
+                        "type": "string",
+                        "title": "The Id Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "6a262756-85c7-4b9b-9fc9-6174ee9cb516"
+                        ]
+                    },
+                    "type": {
+                        "$id": "#/properties/documents/items/properties/type",
+                        "type": "string",
+                        "title": "The Type Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "passport"
+                        ]
+                    },
+                    "issue_place": {
+                        "$id": "#/properties/documents/items/properties/issue_place",
+                        "type": "string",
+                        "title": "The Issue_place Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "UT"
+                        ]
+                    },
+                    "expiry_date": {
+                        "$id": "#/properties/documents/items/properties/expiry_date",
+                        "type": "string",
+                        "title": "The Expiry_date Schema",
+                        "description": "An explanation about the purpose of this instance.",
+                        "default": "",
+                        "examples": [
+                            "2021-09-30T00:00:00.000+0000"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
+*********************************************
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The Root Schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "required": [
+        "website",
+        "full_name",
+        "logo",
+        "id",
+        "short_name",
+        "bank_routing"
+    ],
+    "properties": {
+        "website": {
+            "$id": "#/properties/website",
+            "type": "string",
+            "title": "The Website Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "www.openbankproject.com"
+            ]
+        },
+        "full_name": {
+            "$id": "#/properties/full_name",
+            "type": "string",
+            "title": "The Full_name Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "full_name"
+            ]
+        },
+        "logo": {
+            "$id": "#/properties/logo",
+            "type": "string",
+            "title": "The Logo Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "logo"
+            ]
+        },
+        "id": {
+            "$id": "#/properties/id",
+            "type": "string",
+            "title": "The Id Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "gh.29.uk"
+            ]
+        },
+        "short_name": {
+            "$id": "#/properties/short_name",
+            "type": "string",
+            "title": "The Short_name Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": "",
+            "examples": [
+                "short_name "
+            ]
+        },
+        "bank_routing": {
+            "$id": "#/properties/bank_routing",
+            "type": "object",
+            "title": "The Bank_routing Schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "examples": [
+                {
+                    "address": "gh.29.uk",
+                    "scheme": "Bank_ID"
+                }
+            ],
+            "required": [
+                "scheme",
+                "address"
+            ],
+            "properties": {
+                "scheme": {
+                    "$id": "#/properties/bank_routing/properties/scheme",
+                    "type": "string",
+                    "title": "The Scheme Schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "Bank_ID"
+                    ]
+                },
+                "address": {
+                    "$id": "#/properties/bank_routing/properties/address",
+                    "type": "string",
+                    "title": "The Address Schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "gh.29.uk"
+                    ]
+                }
+            }
+        }
+    }
 }
