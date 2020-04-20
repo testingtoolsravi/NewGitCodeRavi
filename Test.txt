@@ -1,1 +1,54 @@
-hello
+node1json
+{
+	"capabilities": [
+		{
+			"browserName": "firefox",
+			"maxInstances": 2
+		},
+		{
+			"browserName": "chrome",
+			"maxInstances": 2
+		}
+	],
+	"proxy": "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
+	"maxSession": 5,
+	"port": 5555,
+	"register": true,
+	"registerCycle": 5000,
+	"hub": "http://localhost:2323",
+	"nodeStatusCheckTimeout": 5000,
+	"nodePolling": 5000,
+	"role": "node",
+	"unregisterIfStillDownAfter": 60000,
+	"downPollingLimit": 2,
+	"debug": false,
+	"servlets": [],
+	"withoutServlets": []
+}
+***************************************************
+node1bat
+java -Dwebdriver.ie.driver=%~dp0IEDriverServer.exe  -Dwebdriver.chrome.driver=%~dp0chromedriver.exe  -Dwebdriver.gecko.driver=%~dp0geckodriver.exe -jar %~dp0selenium-server-standalone-3.141.59.jar -role node -hub http://10.1.41.139:7936/grid/register -browser "browserName=internet explorer,version=ANY,platform=WINDOWS,maxInstances=10" -browser "browserName=firefox,version=ANY,platform=ANY,maxInstances=10" -browser "browserName=chrome,version=ANY,platform=WINDOWS,maxInstances=10" -maxSession 2 -port 2424
+
+*****************************************************************************
+hub1bat
+java -jar %~dp0selenium-server-standalone-3.141.59.jar -role hub -maxSession 1 -port 2426
+**********************************************
+hub1json
+{
+
+  "port": 2323,
+  "newSessionWaitTimeout": -1,
+  "servlets" : [],
+  "withoutServlets": [],
+  "custom": {},
+  "capabilityMatcher": "org.openqa.grid.internal.utils.DefaultCapabilityMatcher",
+  "throwOnCapabilityNotPresent": true,
+  "cleanUpCycle": 5000,
+  "role": "hub",
+  "debug": false,
+  "browserTimeout": 0,
+  "timeout": 1800
+
+
+}
+**********************************************
