@@ -1,1 +1,3211 @@
-Hello how ru?
+@EBank @Web @Regression
+Feature: EBank
+
+  Background: User Has Logged into EBank With Valid Credentials
+    Given user logged into EBank as 'admin' and 'admin'
+
+  @TC_eBank_0001
+  Scenario: TC_eBank_0001
+    When User is Logged in and All options are Displayed
+    Then Below Tabs should be available to the user
+      | BPM | Reports | Accounting | Administration | Administration | Help |
+
+  @TC_eBank_0002
+  Scenario: TC_eBank_0002
+    When User is Logged in and All options are Displayed
+    Then Below Accounting Tab should be Journal Entry Tab
+    And Below Journal Entry Tab Should be below Options
+      | Access Groups | Journal Batch | Template Management | Batch Transaction History |
+
+  @TC_eBank_0003
+  Scenario: TC_eBank_0003
+    When User navigates to Access Groups
+    Then Access Groups Page should have below Options
+      | Search | Add Search Condition | Create | Edit | Remove | Excel | Export Access Group Data |
+
+  @Smoke @TC_eBank_0004
+  Scenario: TC_eBank_0004
+    Given User is Logged in and All options are Displayed
+    When User navigates to Acess Group and create a new Access Group
+      | userAccessGroup       | accountAccessType | accountNumber | branch | type  |
+      | Administrator [admin] | GLA               |       1011138 |   1220 | debit |
+    Then Access group should be created Successfully
+    And user should be able to edit search download and remove actions Successfully
+    
+
+  @Smoke @TC_eBank_0005
+  Scenario: TC_eBank_0005
+    Given User is Logged in and All options are Displayed
+    When User navigates to Journal Batch
+    Then On Journal Batch screen search create edit remove addsearchcondtion and excel options should be displayed
+
+  @Regression @TC_eBank_0006
+  Scenario: TC_eBank_0006
+    Given User is Logged in and All options are Displayed
+    When User navigates to Journal Batch
+    Then Click on create button and Verify options from create new batch page
+    Then Click on Add button to add template details
+    Then Enter Account number as "870342726" in to debit Account field
+    Then Enter Selector as "101 - Cashed Check" in to debit selector field
+    Then Enter Amount as "5" in to debit amount field
+    Then Enter Description as "Template desc" in to debit description field
+    Then Click on Add button to add template details
+    Then Enter Account number as "501115833" in to credit Account field
+    Then Enter Selector as "151 - Deposit" in to credit selector field
+    Then Enter Amount as "5" in to credit amount field
+    Then Enter Description as "Template desc credit" in to credit description field
+    Then Click on Create template button
+    Then Enter "Template" in to template name field
+    Then Enter "Description" in to description field
+    Then Click on OK button to create template
+    Then Click on submit button
+    Then Select and edit record Enter new amount "20" values and click on submit button
+    Then Select template and click on remove and remove template
+    Then Perform search and validate results with "Created By" user "auto01"
+
+  @Smoke @TC_eBank_0007
+  Scenario: TC_eBank_0007
+    Given User is Logged in and All options are Displayed
+    When User navigates to Template Management
+    Then On Template Management screen create edit remove Excel search and addsearchcondtion options should be displayed
+
+  @Regression @TC_eBank_0008
+  Scenario: TC_eBank_0008
+    Given User is Logged in and All options are Displayed
+    When User navigates to Template Management
+    Then Click on create button to verify options from Journal template page
+    Then Click on Add button to add template details
+    Then Enter Account number as "870342726" in to debit Account field
+    Then Enter Selector as "101 - Cashed Check" in to debit selector field
+    Then Click on Add button to add template details
+    Then Enter Account number as "501115833" in to credit Account field
+    Then Enter Selector as "151 - Deposit" in to credit selector field
+    Then Enter "Template" in to template name field
+    Then Enter "Description" in to description field in tamplate management page
+    Then Click on submit button
+    Then Select and edit record Enter new description "New description" values and click on submit button
+    Then Select template and click on remove and remove template
+    Then Perform search and validate results with "Created By" user "admin"
+
+  @TC_eBank_0009
+  Scenario: TC_eBank_0009
+    When User navigates to Batch Transaction History
+    Then On Batch Transaction page bel should be displayed
+      | Search | Add Search Condition | Refresh | Excel |
+
+  @Smoke @TC_eBank_0010
+  Scenario: TC_eBank_0010
+    Given User is Logged in and All options are Displayed
+    When User navigates to Batch Transaction History
+    Then User should be able to Download Excel Data and perform search
+
+  @TC_eBank_0011
+  Scenario: TC_eBank_0011
+    Given User is Logged in and All options are Displayed
+    When User Expands Maintenance Option
+    Then In Maintenance tab below options should be displayed
+      | Entities | Interest Rates |
+
+  @TC_eBank_0013
+  Scenario: TC_eBank_0013
+    Given User is Logged in and All options are Displayed
+    When User Navigates to Interest Rates Page
+    Then Interest Rates Page should have below options
+      | Search | Create | Add Search Conditon | Edit |
+
+  @Smoke @TC_eBank_0014
+  Scenario: TC_eBank_0014
+    Given User is Logged in and All options are Displayed
+    When User create a Interest with Active Status
+    Then Active Status not allowed Warning should be Displayed
+    When user changes Status to Pending
+    Then Interest should be saved
+    When user changes status to Active After Saving
+    Then Same user cannot change Status warning Should be Displayed
+    When users update any Interest data
+    Then changes should be updated
+    And user should be able to seach for the Interest Rate
+    When user logsin with Other User and changes Status to Active
+    Then Product should be saved with Active Status
+
+  @TC_eBank_0015
+  Scenario: TC_eBank_0015
+    Given User is Logged in and All options are Displayed
+    When User Expands Administration Tab
+    Then Administration Tab should have below options
+      | Users | Access Groups | Roles | Dynamic Attributes | User Sessions | Locks | External Files |  | Email History | Scheduled Tasks | Restore Deleted Entities | Entity Inspector | Application Properties | JMX Console | Entity Log | Server Log | Screen Profiler | Performance Statistics |
+
+  @TC_eBank_0016
+  Scenario: TC_eBank_0016
+    Given User is Logged in and All options are Displayed
+    When User Navigates to Scheduled Tasks
+    Then Scheduled tasks Page should have below options
+      | Search | Create | Add Search Conditon | Edit | Activate | Remove | Execution History |
+
+  @Regression @TC_eBank_0017
+  Scenario: TC_eBank_0017
+    Given User is Logged in and All options are Displayed
+    When User Navigates to Scheduled Tasks
+    Then Click on Create button and verify all options from page
+    Then Fill all the data "com.tabbank.ebank.managed.ach.FundingNachaTask" and user "admin" and corn "0 15 12 * * MON-FRI" and des "description" create schedule task
+    Then Click on edit and update "Description updated" description field value
+    Then Perform search and validate results with "User Name" user "admin" in schedule task page
+    Then Verify execution hostory of created task
+
+  @Regression @TC_eBank_0018
+  Scenario: TC_eBank_0018
+    Given User is Logged in and All options are Displayed
+    When User Navigates to Users Page
+    Then Verify all the options from users page
+
+  @Regression @TC_eBank_0019_
+  Scenario: TC_eBank_0019_
+    Given User is Logged in and All options are Displayed
+    When User Navigates to Users Page
+    Then Verify all the options from users page
+    Then User Navigates to Server Log page
+    Then Verify all the options from Server Log Page
+    Then Toggle between the View and Options Fields
+    Then Go to Options and verify options from page
+    Then Go to View and verify options from page
+    Then Download log file by selecting fromat "Catalina.Out"
+
+  @Regression @TC_eBank_0021
+  Scenario: TC_eBank_0021
+    Given User is Logged in and All options are Displayed
+    When User Navigates to Reports page
+    When User Navigates to report groups page
+    When User Navigates to runreports page
+    When User Navigates to show charts page
+    When User Navigates to show tables page
+    When User Navigates to show pivot tables page
+
+  @Regression @TC_eBank_0022
+  Scenario: TC_eBank_0022
+    Given User is Logged in and All options are Displayed
+    Then BPM Option should have below Options and User should be able to navigate to All Suboptions page
+      | Process Models | Process Definitions | Process Instances | Process Tasks | Attachments Types | Model elements Editor |
+
+********************************************************************
+package com.tab.af.web.steps;
+
+import java.util.List;
+import java.util.Map;
+
+import org.joda.time.DateTime;
+
+import com.tab.af.web.pages.EBank.AccessGroups;
+import com.tab.af.web.pages.EBank.BatchTransactionHistory;
+import com.tab.af.web.pages.EBank.HomePage;
+import com.tab.af.web.pages.EBank.InterestRates;
+import com.tab.af.web.pages.EBank.JournalAccess;
+import com.tab.af.web.pages.EBank.Login;
+import com.tab.af.web.pages.EBank.Reports;
+import com.tab.af.web.pages.EBank.ScheduledTasks;
+import com.tab.af.web.pages.EBank.ServerLog;
+import com.tab.af.web.pages.EBank.TemplateManagement;
+import com.tab.af.web.pages.EBank.Users;
+
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+
+public class EBankSteps {
+
+	Login login = new Login();
+
+	AccessGroups access = new AccessGroups();
+
+	JournalAccess journal = new JournalAccess();
+
+	TemplateManagement template = new TemplateManagement();
+
+	BatchTransactionHistory batch = new BatchTransactionHistory();
+
+	HomePage home = new HomePage();
+
+	InterestRates interest = new InterestRates();
+
+	ScheduledTasks scheduledTask = new ScheduledTasks();
+
+	Users user = new Users();
+
+	Reports report = new Reports();
+
+	ServerLog serverLog = new ServerLog();
+
+	@Given("user logged into EBank as {string} and {string}")
+	public void user_logged_into_EBank_as_and(String userName, String password) {
+		login = login.openEbank();
+		home = login.login(userName, password);
+	}
+
+	@Given("User is Logged in and All options are Displayed")
+	public void user_is_Logged_in_and_All_options_are_Displayed() {
+		home.verifyAvailableTabs();
+	}
+
+	@When("User navigates to Acess Group and create a new Access Group")
+	public void user_navigates_to_Acess_Group_and_create_a_new_Access_Group(DataTable table) {
+		access = home.openAccessGroups();
+		List<Map<String, String>> data = table.asMaps(String.class, String.class);
+		access.createAccessGroup(data.get(0).get("userAccessGroup"), data.get(0).get("accountAccessType"),
+				data.get(0).get("accountNumber"), data.get(0).get("branch"), data.get(0).get("type"));
+	}
+
+	@Then("Access group should be created Successfully")
+	public void access_group_should_be_created_Successfully() {
+		access.validateAccessGroupCreatedSuccesfully();
+	}
+
+	@Then("user should be able to edit search download and remove actions Successfully")
+	public void user_should_be_able_to_edit_search_download_and_remove_actions_Successfully() {
+		access.editAccessGroup("Anonymous [anonymous]");
+		access.validateSearch();
+		access.removeAccessGroup();
+	}
+
+	@When("User navigates to Journal Batch")
+	public void user_navigates_to_Journal_Batch() {
+		journal = home.openJournalAccess();
+	}
+
+	@Then("On Journal Batch screen search create edit remove addsearchcondtion and excel options should be displayed")
+	public void on_Journal_Batch_screen_search_create_edit_remove_addsearchcondtion_and_excel_options_should_be_displayed() {
+		journal.verifyOptions();
+	}
+
+	@When("User navigates to Template Management")
+	public void user_navigates_to_Template_Management() {
+		template = home.openTemplateManagement();
+	}
+
+	@Then("On Template Management screen create edit remove Excel search and addsearchcondtion options should be displayed")
+	public void on_Template_Management_screen_create_edit_remove_Excel_search_and_addsearchcondtion_options_should_be_displayed() {
+		template.verifyOptions();
+	}
+
+	@When("User navigates to Batch Transaction History")
+	public void user_navigates_to_Batch_Transaction_History() {
+		batch = home.openBatchTransactionHistory();
+	}
+
+	@Then("User should be able to Download Excel Data and perform search")
+	public void user_should_be_able_to_Download_Excel_Data_and_perform_search() {
+		batch.verifyOptions();
+		batch.validateSearch("Account", "1011169");
+	}
+
+	@When("User create a Interest with Active Status")
+	public void user_create_a_Interest_with_Active_Status() {
+		interest = home.openInterestRates();
+		interest.createInterestRate("365 Checking CONSUMER", "1", "Active", "2", "10");
+	}
+
+	@Then("Active Status not allowed Warning should be Displayed")
+	public void active_Status_not_allowed_Warning_should_be_Displayed() {
+		interest.interestStatePendingWarning();
+	}
+
+	@When("user changes Status to Pending")
+	public void user_changes_Status_to_Pending() {
+		interest.changeRateStatusandSave("Pending");
+	}
+
+	@Then("Interest should be saved")
+	public void interest_should_be_saved() {
+	}
+
+	@When("users update any Interest data")
+	public void users_update_any_Interest_data() {
+		interest.updateEffectiveDateandSave(DateTime.now().plusDays(10).toString("MM/dd/yyyy"));
+	}
+
+	@Then("changes should be updated")
+	public void changes_should_be_updated() {
+		interest.validateDateUpdated(DateTime.now().plusDays(10).toString("MM/dd/yyyy"));
+	}
+
+	@Then("user should be able to seach for the Interest Rate")
+	public void user_should_be_able_to_seach_for_the_Interest_Rate() {
+		interest.validateSearch("Product desc", "365 Checking CONSUMER");
+	}
+
+	@When("user changes status to Active After Saving")
+	public void user_changes_status_to_Active_After_Saving() {
+		interest.changeRateStatusandSave("Active");
+	}
+
+	@Then("Same user cannot change Status warning Should be Displayed")
+	public void same_user_cannot_change_Status_warning_Should_be_Displayed() {
+		interest.interestMustbeChangedByOtherUserWarning();
+	}
+
+	@When("user logsin with Other User and changes Status to Active")
+	public void user_logsin_with_Other_User_and_changes_Status_to_Active() {
+		login.logOut();
+		login.login("admin", "admin");
+		home.openInterestRates();
+	}
+
+	@Then("Product should be saved with Active Status")
+	public void product_should_be_saved_with_Active_Status() {
+		interest.selectInterestRateByBalance();
+		interest.changeRateStatusandSave("Active");
+	}
+
+	@Then("Below Tabs should be available to the user")
+	public void below_Tabs_should_be_available_to_the_user(DataTable dataTable) {
+		home.validateAdminHomePageTabs();
+	}
+
+	@Then("Below Accounting Tab should be Journal Entry Tab")
+	public void below_Accounting_Tab_should_be_Journal_Entry_Tab() {
+		home.openAccounting();
+		home.openJournalEntry();
+	}
+
+	@Then("Below Journal Entry Tab Should be below Options")
+	public void below_Journal_Entry_Tab_Should_be_below_Options(io.cucumber.datatable.DataTable dataTable) {
+		home.validateJournalEntryOptions();
+	}
+
+	@When("User navigates to Access Groups")
+	public void user_navigates_to_Access_Groups() {
+		access = home.openAccessGroups();
+	}
+
+	@Then("Access Groups Page should have below Options")
+	public void access_Groups_Page_should_have_below_Options(io.cucumber.datatable.DataTable dataTable) {
+		access.validateAccessGroupOptions();
+	}
+
+	@Then("On Batch Transaction page bel should be displayed")
+	public void on_Batch_Transaction_page_bel_should_be_displayed(io.cucumber.datatable.DataTable dataTable) {
+		batch.validateBatchTransactionHistoryOptions();
+	}
+
+	@When("User Expands Maintenance Option")
+	public void user_Expands_Maintenance_Option() {
+		home.openMaintenance();
+	}
+
+	@Then("In Maintenance tab below options should be displayed")
+	public void in_Maintenance_tab_below_options_should_be_displayed(io.cucumber.datatable.DataTable dataTable) {
+		home.validateMaintenanceOptions();
+	}
+
+	@When("User Navigates to Entities Page")
+	public void user_Navigates_to_Entities_Page() {
+		home.openEntities();
+	}
+
+	@Then("Application should navigate to Entities Page")
+	public void application_should_navigate_to_Entities_Page() {
+		home.validateEntitiesPageLoaded();
+	}
+
+	@When("User Navigates to Interest Rates Page")
+	public void user_Navigates_to_Interest_Rates_Page() {
+		interest = home.openInterestRates();
+	}
+
+	@Then("Interest Rates Page should have below options")
+	public void interest_Rates_Page_should_have_below_options(io.cucumber.datatable.DataTable dataTable) {
+		interest.validatePageOptions();
+	}
+
+	@When("User Expands Administration Tab")
+	public void user_Expands_Administration_Tab() {
+		home.clickAdministrationTab();
+	}
+
+	@Then("Administration Tab should have below options")
+	public void administration_Tab_should_have_below_options(io.cucumber.datatable.DataTable dataTable) {
+		home.validateAdminHomePageTabs();
+	}
+
+	@When("User Navigates to Scheduled Tasks")
+	public void user_Navigates_to_Scheduled_Tasks() {
+		scheduledTask = home.openScheduledTasks();
+	}
+
+	@Then("Scheduled tasks Page should have below options")
+	public void scheduled_tasks_Page_should_have_below_options(io.cucumber.datatable.DataTable dataTable) {
+		scheduledTask.validateScheduledTaskPageOptions();
+	}
+
+	@Then("Click on create button and Verify options from create new batch page")
+	public void click_on_create_button_and_Verify_options_from_create_new_batch_page() {
+		journal.verifyTemplateOptions();
+	}
+
+	@Then("Click on Add button to add template details")
+	public void click_on_Add_button_to_add_template_details() {
+		journal.clickAddButton();
+	}
+
+	@Then("Enter Account number as {string} in to debit Account field")
+	public void enter_Account_number_as_in_to_debit_Account_field(String accountNumber) {
+		journal.enterDebitAcctNumber(accountNumber);
+	}
+
+	@Then("Enter Selector as {string} in to debit selector field")
+	public void enter_Selector_as_in_to_debit_selector_field(String selector) {
+		journal.enterDebitSelector(selector);
+	}
+
+	@Then("Enter Amount as {string} in to debit amount field")
+	public void enter_Amount_as_in_to_debit_amount_field(String amount) {
+		journal.enterDebitAmount(amount);
+	}
+
+	@Then("Enter Description as {string} in to debit description field")
+	public void enter_Description_as_in_to_debit_description_field(String string) {
+		journal.enterDebitDescription(string);
+	}
+
+	@Then("Enter Account number as {string} in to credit Account field")
+	public void enter_Account_number_as_in_to_credit_Account_field(String accountNumber) {
+		journal.enterCreditAcctNumber(accountNumber);
+	}
+
+	@Then("Enter Selector as {string} in to credit selector field")
+	public void enter_Selector_as_in_to_credit_selector_field(String string) {
+		journal.enterCreditSelector(string);
+	}
+
+	@Then("Enter Amount as {string} in to credit amount field")
+	public void enter_Amount_as_in_to_credit_amount_field(String string) {
+		journal.enterCreditAmount(string);
+	}
+
+	@Then("Enter Description as {string} in to credit description field")
+	public void enter_Description_as_in_to_credit_description_field(String string) {
+		journal.enterCreditDescription(string);
+	}
+
+	@Then("Click on Create template button")
+	public void click_on_Create_template_button() {
+		journal.clickCreateTemplate();
+	}
+
+	@Then("Enter {string} in to template name field")
+	public void enter_in_to_template_name_field(String string) {
+		journal.enterTamplateName(string);
+	}
+
+	@Then("Enter {string} in to description field")
+	public void enter_in_to_description_field(String string) {
+		journal.enterDescr(string);
+	}
+
+	@Then("Enter {string} in to description field in tamplate management page")
+	public void enter_in_to_description_field_in_tamplate_management_page(String string) {
+		journal.enterDescrInTemplate(string);
+	}
+
+	@Then("Click on OK button to create template")
+	public void click_on_OK_button_to_create_template() {
+		journal.clickOkButton();
+	}
+
+	@Then("Click on submit button")
+	public void click_on_submit_button() {
+		journal.clickSubmitButton();
+	}
+
+	@Then("Select and edit record Enter new amount {string} values and click on submit button")
+	public void select_and_edit_record_Enter_new_amount_values_and_click_on_submit_button(String string) {
+		journal.editRecord(string);
+	}
+
+	@Then("Select and edit record Enter new description {string} values and click on submit button")
+	public void select_and_edit_record_Enter_new_description_values_and_click_on_submit_button(String string) {
+		journal.editTemplateRecord(string);
+	}
+
+	@Then("Select template and click on remove and remove template")
+	public void select_template_and_click_on_remove_and_remove_template() {
+		journal.removeRecord();
+	}
+
+	@Then("Perform search and validate results with {string} user {string}")
+	public void perform_search_and_validate_results_with_user(String criteria, String value) {
+		journal.verifySearch(criteria, value);
+	}
+
+	@Then("Perform search and validate results with {string} user {string} in schedule task page")
+	public void perform_search_and_validate_results_with_user_in_schedule_task_page(String criteria, String value) {
+		scheduledTask.verifySearch(criteria, value);
+	}
+
+	@Then("Click on create button to verify options from Journal template page")
+	public void click_on_create_button_to_verify_options_from_Journal_template_page() {
+		template.verifyJournalTemplateOptions();
+	}
+
+	@Then("Click on Create button and verify all options from page")
+	public void click_on_Create_button_and_verify_all_options_from_page() {
+		scheduledTask.validateCreateScheduledTaskPageOptions();
+	}
+
+	@Then("Fill all the data {string} and user {string} and corn {string} and des {string} create schedule task")
+	public void fill_all_the_data_and_user_and_corn_and_des_create_schedule_task(String classValue, String user,
+			String corn, String description) {
+		scheduledTask.createTask(classValue, user, corn, description);
+	}
+
+	@Then("Click on edit and update {string} description field value")
+	public void click_on_edit_and_update_description_field_value(String string) {
+		scheduledTask.editScheduleTask(string);
+	}
+
+	@Then("Verify execution hostory of created task")
+	public void verify_execution_hostory_of_created_task() {
+		scheduledTask.verifyExecutionHistory();
+	}
+
+	@When("User Navigates to Users Page")
+	public void user_Navigates_to_Users_Page() {
+		user = home.openUsersPage();
+	}
+
+	@Then("User Navigates to Server Log page")
+	public void user_Navigates_to_Server_Log_page() {
+		serverLog = home.openServerLogPage();
+	}
+
+	@Then("Verify all the options from users page")
+	public void verify_all_the_options_from_users_page() {
+		user.verifyAllOptions();
+	}
+
+	@Then("Verify all the options from Server Log Page")
+	public void verify_all_the_options_from_Server_Log_Page() {
+		serverLog.verifyOptionsServerLogPage();
+	}
+
+	@Then("Toggle between the View and Options Fields")
+	public void toggle_between_the_View_and_Options_Fields() {
+		serverLog.toggle();
+	}
+
+	@Then("Go to Options and verify options from page")
+	public void go_to_Options_and_verify_options_from_page() {
+		serverLog.verifyOptionsTabOptions();
+	}
+
+	@Then("Go to View and verify options from page")
+	public void go_to_View_and_verify_options_from_page() {
+		serverLog.verifyViewOptions();
+	}
+
+	@Then("Download log file by selecting fromat {string}")
+	public void download_log_file_by_selecting_fromat(String string) {
+		serverLog.downLoadLog(string);
+	}
+
+	@When("User Navigates to Reports page")
+	public void user_Navigates_to_Reports_page() {
+		report = home.openReportsPage();
+		report.closePage(); // need to remove this line in future while coding page actions
+	}
+
+	@When("User Navigates to report groups page")
+	public void user_Navigates_to_report_groups_page() {
+		report = home.openReportGroupsPage();
+		report.closePage(); // need to remove this line in future while coding page actions
+	}
+
+	@When("User Navigates to runreports page")
+	public void user_Navigates_to_runreports_page() {
+		report = home.openRunReportsPage();
+		report.closePage(); // need to remove this line in future while coding page actions
+	}
+
+	@When("User Navigates to show charts page")
+	public void user_Navigates_to_show_charts_page() {
+		report = home.openShowChartsPage();
+		report.closePage(); // need to remove this line in future while coding page actions
+	}
+
+	@When("User Navigates to show tables page")
+	public void user_Navigates_to_show_tables_page() {
+		report = home.openShowtablesPage();
+		report.closePage(); // need to remove this line in future while coding page actions
+	}
+
+	@When("User Navigates to show pivot tables page")
+	public void user_Navigates_to_show_pivot_tables_page() {
+		report = home.openPivotTablesPage();
+		report.closePage(); // need to remove this line in future while coding page actions
+	}
+
+	@Then("BPM Option should have below Options and User should be able to navigate to All Suboptions page")
+	public void bpm_Option_should_have_below_Options_and_User_should_be_able_to_navigate_to_All_Suboptions_page(
+			io.cucumber.datatable.DataTable dataTable) {
+
+		report = home.openProcessModelsPage();
+		report.closePage();
+
+		report = home.openProcessDefinitionsPage();
+		report.closePage();
+
+		report = home.openProcessInstancesPage();
+		report.closePage();
+
+		report = home.openProcessTasksPage();
+		report.closePage();
+
+		report = home.openAttachmentTypesPage();
+		report.closePage();
+
+		report = home.openModelElementsPage();
+		report.closePage();
+	}
+
+}
+*****************************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import com.tab.af.web.pages.BasePage;
+
+public class AccessGroups extends BasePage {
+
+	@FindBy(xpath = "//span[text()='=']")
+	private WebElement lbl_EqualsSearchCondition;
+
+	@FindBy(xpath = "//span[text()='=']//following::input[1]")
+	private WebElement txt_SearchFilter;
+
+	@FindBy(xpath = "//span[text()='Add search condition']")
+	private WebElement btn_AddSearchConditon;
+
+	@FindBy(xpath = "//span[text()='Search']")
+	private WebElement btn_Search;
+
+	@FindBy(xpath = "//span[text()=\"contains\" and @class=\"v-button-caption\"]")
+	private WebElement btn_ContainsSearch;
+
+	@FindBy(xpath = "//span[text()='BPM']")
+	private WebElement lbl_BPM;
+
+	@FindBy(xpath = "//span[text()='Reports']")
+	private WebElement lbl_Reports;
+
+	@FindBy(xpath = "//span[text()='Accounting']")
+	private WebElement lbl_Accounting;
+
+	@FindBy(xpath = "//span[text()='Maintenance']")
+	private WebElement lbl_Maintenance;
+
+	@FindBy(xpath = "//span[text()='Administration']")
+	private WebElement lbl_Administration;
+
+	@FindBy(xpath = "//span[text()='Help']")
+	private WebElement lbl_Help;
+
+	@FindBy(xpath = "//span[text()='Journal Entry']")
+	private WebElement lbl_JournalEntry;
+
+	@FindBy(xpath = "//span[text()='Access Groups']")
+	private WebElement lbl_AccessGroups;
+
+	@FindBy(xpath = "//span[text()='Create']")
+	private WebElement btn_Create;
+
+	@FindBy(xpath = "//div[text()='Name']//following::input[1]")
+	private WebElement txt_Name;
+
+	@FindBy(xpath = "(//div[text()='Description']//following::input)[2]")
+	private WebElement txt_Description;
+
+	@FindBy(xpath = "//span[text()='User Access Group']//following::input[1]")
+	private WebElement txt_UserAccessGroup;
+
+	@FindBy(xpath = "(//span[text()='Add'])[1]")
+	private WebElement btn_AddUserAccessGroup;
+
+	@FindBy(xpath = "//span[text()='Account Access']//following::input[1]")
+	private WebElement txt_AccountAccessType;
+
+	@FindBy(xpath = "//span[text()='Account Access']//following::input[2]")
+	private WebElement txt_AccountAccessNumber;
+
+	@FindBy(xpath = "//span[text()='Account Access']//following::input[3]")
+	private WebElement txt_AccountAccessBranch;
+
+	@FindBy(xpath = "(//span[text()='Add'])[2]")
+	private WebElement btn_AddAccountAccess;
+
+	@FindBy(xpath = "//span[text()='OK']")
+	private WebElement btn_OK;
+
+	@FindBy(xpath = "//tr//td[2]")
+	private List<WebElement> lbl_AccessGroupNames;
+
+	@FindBy(xpath = "//tr//td[3]//div")
+	private List<WebElement> lbl_AccessGroupDescription;
+
+	@FindBy(xpath = "//span[text()='Edit']")
+	private WebElement btn_Edit;
+
+	@FindBy(xpath = "//span[text()='Excel']")
+	private WebElement btn_Excel;
+
+	@FindBy(xpath = "//span[text()='Export Access Group Data']")
+	private WebElement btn_ExportAccessGroupData;
+
+	@FindBy(xpath = "//span[text()='Remove']")
+	private WebElement btn_Remove;
+
+	@FindBy(xpath = "//div[text()='Access Group']")
+	private WebElement lbl_AccessGroup;
+
+	@FindBy(xpath = "//div[contains(@class,'paging-status')]//div[contains(text(),'row')]")
+	private WebElement lbl_RowCount;
+
+	@Override
+	protected ExpectedCondition getPageLoadCondition() {
+		return ExpectedConditions.visibilityOf(lbl_AccessGroup);
+	}
+
+	public void createAccessGroup(String userAccessGroup, String accountAccessType, String accountNumber, String branch,
+			String type) {
+		try {
+			String Name = faker.lorem().fixedString(5);
+			String Description = faker.lorem().fixedString(5);
+			Map<String, String> m = new HashMap<String, String>();
+			m.put("AccessGroupName", Name);
+			m.put("AccessGroupDescription", Description);
+			setTestDataMap(m);
+			webActions.waitAndCickBYJS(btn_Create, "Create");
+			webActions.waitAndSendKeysByChar(txt_Name, Name, "Name");
+			webActions.sendKeysByChar(txt_Description, Description, "Description");
+			webActions.SendKeysByCharAuto(txt_UserAccessGroup, userAccessGroup, "user Access Group");
+			webActions.clickBYJS(btn_AddUserAccessGroup, "Add User Access Group");
+			webActions.SendKeysByCharAuto(txt_AccountAccessType, accountAccessType, "Account Access Type");
+
+			webActions.waitAndSendKeysByCharAuto(txt_AccountAccessNumber, accountNumber, "Account Access Number");
+
+			webActions.waitAndSendKeysByCharAuto(txt_AccountAccessBranch, branch, "Account Access Branch");
+			webActions.clickBYJS(btn_AddAccountAccess, "Add Account Accesss");
+			if (type.equalsIgnoreCase("debit")) {
+				webActions.clickBYJS(webActions.findBy(By.xpath("//div[text()='" + branch + "']//following::input[1]")),
+						"Debit");
+			} else if (type.equalsIgnoreCase("credit")) {
+				webActions.clickBYJS(webActions.findBy(By.xpath("//div[text()='" + branch + "']//following::input[2]")),
+						"Credit");
+			}
+			webActions.clickBYJS(btn_OK, "OK Buton");
+			webActions.waitForElementToBeNotPresent(txt_Name, "Name");
+			report.reportPass("Create new Access Group");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Create new Access Group");
+		}
+	}
+
+	public void validateAccessGroupCreatedSuccesfully() {
+		try {
+			int rowIndex = 0;
+			boolean added = false;
+			for (WebElement names : lbl_AccessGroupNames) {
+				if (names.getText().equals(getTestDataMap().get("AccessGroupName"))) {
+					added = true;
+					break;
+				}
+				rowIndex++;
+			}
+			if (!added) {
+				global.assertEquals(false, true);
+			}
+			global.assertEquals(getTestDataMap().get("AccessGroupDescription").toString().trim(),
+					lbl_AccessGroupDescription.get(rowIndex + 1).getText());
+			report.reportPass(" Access Group added");
+		} catch (Exception e) {
+			report.reportHardFail(e, " Access Group added");
+		}
+	}
+
+	public void editAccessGroup(String newgroup) {
+		try {
+			String name = (String) getTestDataMap().get("AccessGroupName");
+			webActions.clickAction(webActions.findBy(By.xpath("//tr[1]//td[2]//div[text()='" + name + "']")),
+					"Access Group");
+			webActions.clickBYJS(btn_Edit, "Edit");
+			webActions.waitAndSendKeysByCharAuto(txt_UserAccessGroup, newgroup, "Access Group");
+			webActions.clickBYJS(btn_AddUserAccessGroup, "Add User Access Group");
+			webActions.clickBYJS(btn_OK, "OK Buton");
+			report.reportPass("Edit Access Group");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Edit Access Group");
+		}
+	}
+
+	public void validateSearch() {
+		try {
+			String name = getTestDataMap().get("AccessGroupName").toString();
+			addSearchCondtionByName("Name", name);
+			webActions.clickAction(webActions.findBy(By.xpath("//tr[1]//td[2]//div[text()='" + name + "']")),
+					"Access Group");
+			report.reportPass("Validate Search");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Validate Search");
+		}
+	}
+
+	public void removeAccessGroup() {
+		try {
+			String name = getTestDataMap().get("AccessGroupName").toString();
+			String oldCount = lbl_RowCount.getText().split(" ")[0];
+			webActions.clickAction(webActions.findBy(By.xpath("//tr[1]//td[2]//div[text()='" + name + "']")),
+					"Access Group");
+			webActions.clickBYJS(btn_Remove, "Remove");
+			webActions.waitAndCickBYJS(btn_OK, "OK");
+			webActions.waitForElementToBeNotPresent(btn_OK, "OK");
+			String newCount = lbl_RowCount.getText().split(" ")[0];
+			global.assertEquals(Integer.parseInt(oldCount) - 1, Integer.parseInt(newCount));
+			report.reportPass("Remove Access Group");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Remove Access Group");
+		}
+	}
+
+	public void addSearchCondtionByName(String conditionName, String value) {
+		try {
+			webActions.waitAndCickBYJS(btn_AddSearchConditon, "Add Search condition");
+			WebElement element = webActions.findByText(conditionName, "//span");
+			webActions.doubleClick(element, conditionName);
+			webActions.waitAndCickBYJS(btn_ContainsSearch, "Contains Serach Button");
+			webActions.waitAndCickBYJS(lbl_EqualsSearchCondition, "= Search Condition");
+			webActions.waitAndSendKeysByChar(txt_SearchFilter, value, "Search filter Input");
+			webActions.clickBYJS(btn_Search, "Filter Search");
+			report.reportPass("Add Search Condtion:" + conditionName);
+		} catch (Exception e) {
+			report.reportHardFail(e, "Add Search Condtion:" + conditionName);
+		}
+	}
+
+	public void validateAccessGroupOptions() {
+		try {
+			webActions.assertDisplayed(btn_Search, "Search Button");
+			webActions.assertDisplayed(btn_AddSearchConditon, "Add Search Condition");
+			webActions.assertDisplayed(btn_Create, "Create Button");
+			webActions.assertDisplayed(btn_Edit, "Edit Button");
+			webActions.assertDisplayed(btn_Remove, "Remove Button");
+			webActions.assertDisplayed(btn_ExportAccessGroupData, "Export Access Group Data Button");
+			webActions.assertDisplayed(btn_Excel, "Excel Button");
+			report.reportPass("Access group Page Options");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Access group Page Options");
+		}
+	}
+
+}
+*******************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.List;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import com.tab.af.web.pages.BasePage;
+
+public class BatchTransactionHistory extends BasePage {
+
+  @FindBy(xpath = "//span[text()='=']")
+  private WebElement lbl_EqualsSearchCondition;
+
+  @FindBy(xpath = "//span[text()=\"contains\" and @class=\"v-button-caption\"]")
+  private WebElement btn_ContainsSearch;
+
+  @FindBy(xpath = "//span[text()='Accounting']")
+  private WebElement lbl_Accounting;
+
+  @FindBy(xpath = "//span[text()='Journal Entry']")
+  private WebElement lbl_JournalEntry;
+
+  @FindBy(xpath = "//span[text()='Batch Transaction History']")
+  private WebElement lbl_BatchTransactionHistory;
+
+  @FindBy(xpath = "//span[text()='Add search condition']")
+  private WebElement btn_AddSearchConditon;
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//span[text()='Refresh']")
+  private WebElement btn_Refresh;
+
+  @FindBy(xpath = "//span[text()='Excel']")
+  private WebElement btn_Excel;
+
+  @FindBy(xpath = "//span[text()='=']//following::input[1]")
+  private WebElement txt_SearchFilter;
+
+  @FindBy(xpath = "//tr//td[4]")
+  private List<WebElement> lbl_AccountList;
+
+  @FindBy(xpath = "//div[text()='Batch Transaction History']")
+  private WebElement lbl_BatchTransactionHistorytab;
+
+  public void verifyOptions(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(btn_Search, "Search button");
+      webActions.assertDisplayed(btn_Search, "Search");
+      webActions.assertDisplayed(btn_Refresh, "Refresh");
+      webActions.assertDisplayed(btn_AddSearchConditon, "Add Search Condition");
+      webActions.assertDisplayed(btn_Excel, "Excel");
+      report.reportPass("All Options Displayed");
+    } catch (Exception e) {
+      report.reportHardFail(e, "All Options Displayed");
+    }
+  }
+
+  public void validateSearch(String condition, String value){
+    try {
+      addSearchCondtion(condition, value);
+      webActions.waitForJSandJQueryToLoad();
+      Thread.sleep(5000);
+      for (WebElement ac : lbl_AccountList) {
+        if (ac.getText() != "" && ac.getText().matches("-?\\d+(\\.\\d+)?")) {
+          if (!ac.getText().equals(value)) {
+            throw new Exception("Assert Failed");
+          }
+        }
+      }
+      report.reportPass("Validate Search");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate Search");
+    }
+  }
+
+  public void addSearchCondtion(String conditionName, String value){
+    try {
+      webActions.clickBYJS(btn_AddSearchConditon, "Add Search condition");
+      WebElement element =
+          webActions.findByText(conditionName, "//span[text()='Properties']//following::span");
+      webActions.doubleClick(element, conditionName);
+      webActions.waitAndCickBYJS(btn_ContainsSearch, "Contains Serach Button");
+      webActions.waitAndCickBYJS(lbl_EqualsSearchCondition, "= Search Condition");
+      webActions.waitAndSendKeysByChar(txt_SearchFilter, value, "Search filter Input");
+      webActions.clickBYJS(btn_Search, "Filter Search");
+      report.reportPass("Add Search Condtion:" + conditionName);
+    } catch (Exception e) {
+      report.reportHardFail(e, "Add Search Condtion:" + conditionName);
+    }
+  }
+
+  public void validateBatchTransactionHistoryOptions(){
+    try {
+      webActions.assertDisplayed(btn_Search, "Search Button");
+      webActions.assertDisplayed(btn_AddSearchConditon, "Add Search Condtion Button");
+      webActions.assertDisplayed(btn_Refresh, "Refresh Button");
+      webActions.assertDisplayed(btn_Excel, "Excel Button");
+      report.reportPass("Validate Batch Transaction History Page Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate Batch Transaction History Page Options");
+    }
+  }
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_BatchTransactionHistorytab);
+  }
+
+}
+*****************************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.List;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import com.tab.af.web.pages.BasePage;
+import junit.framework.Assert;
+
+public class HomePage extends BasePage {
+
+  @FindBy(xpath = "//span[text()='Access Groups']")
+  private WebElement lbl_AccessGroups;
+
+  @FindBy(xpath = "//span[text()='Accounting']")
+  private WebElement lbl_Accounting;
+
+  @FindBy(xpath = "//span[text()='Journal Entry']")
+  private WebElement lbl_JournalEntry;
+
+  @FindBy(xpath = "//span[text()='Journal Batch']")
+  private WebElement lbl_JournalBatch;
+
+  @FindBy(xpath = "//span[text()='Batch Transaction History']")
+  private WebElement lbl_BatchTransactionHistory;
+
+  @FindBy(xpath = "//span[text()='Template Management']")
+  private WebElement lbl_TemplateManagement;
+
+  @FindBy(xpath = "//span[text()='Maintenance']")
+  private WebElement lbl_Maintenance;
+
+  @FindBy(xpath = "//span[text()='Interest Rates']")
+  private WebElement lbl_InterestRates;
+
+  @FindBy(xpath = "//span[text()='Entities']")
+  private WebElement lbl_Entities;
+
+  @FindBy(xpath = "//div[text()='Entities']")
+  private WebElement lbl_EntitiesTabHeader;
+
+  @FindBy(xpath = "//span[@class=\"v-menubar-menuitem-caption\"]")
+  private List<WebElement> lbl_OptionsList;
+
+  @FindBy(xpath = "//span[text()='BPM']")
+  private WebElement lbl_BPM;
+
+  @FindBy(xpath = "//span[text()='Reports']")
+  private WebElement lbl_Reports;
+
+  @FindBy(xpath = "//span[text()='Administration']")
+  private WebElement lbl_Administration;
+
+  @FindBy(xpath = "//span[text()='Help']")
+  private WebElement lbl_Help;
+
+  @FindBy(xpath = "//span[text()='Users']")
+  private WebElement lbl_Users;
+
+  @FindBy(xpath = "//span[text()='Roles']")
+  private WebElement lbl_Roles;
+
+  @FindBy(xpath = "//span[text()='Dynamic Attributes']")
+  private WebElement lbl_DynamicAttributes;
+
+  @FindBy(xpath = "//span[text()='User Sessions']")
+  private WebElement lbl_UserSessions;
+
+  @FindBy(xpath = "//span[text()='Locks']")
+  private WebElement lbl_Locks;
+
+  @FindBy(xpath = "//span[text()='External Files']")
+  private WebElement lbl_ExternalFiles;
+
+  @FindBy(xpath = "//span[text()='Email History']")
+  private WebElement lbl_EmailHistory;
+
+  @FindBy(xpath = "//span[text()='Scheduled Tasks']")
+  private WebElement lbl_ScheduledTasks;
+
+  @FindBy(xpath = "//span[text()='Restore Deleted Entities']")
+  private WebElement lbl_RestoreDeletedEntities;
+
+  @FindBy(xpath = "//span[text()='Entity Inspector']")
+  private WebElement lbl_EntityInspector;
+
+  @FindBy(xpath = "//span[text()='Application Properties']")
+  private WebElement lbl_ApplicationProperties;
+
+  @FindBy(xpath = "//span[text()='JMX Console']")
+  private WebElement lbl_JMXConsole;
+
+  @FindBy(xpath = "//span[text()='Entity Log']")
+  private WebElement lbl_EntityLog;
+
+  @FindBy(xpath = "//span[text()='Server Log']")
+  private WebElement lbl_ServerLog;
+
+  @FindBy(xpath = "//span[text()='Screen Profiler']")
+  private WebElement lbl_ScreenProfiler;
+
+  @FindBy(xpath = "//span[text()='Performance Statistics']")
+  private WebElement lbl_PerformanceStatistics;
+
+  @FindBy(xpath = "//div[@class='popupContent']/div/span[1]")
+  private WebElement sMenu_Reports;
+
+  @FindBy(xpath = "//span[text()='Report Groups']")
+  private WebElement sMenu_ReportGroups;
+
+  @FindBy(xpath = "//span[text()='Run Reports']")
+  private WebElement sMenu_RunReports;
+
+  @FindBy(xpath = "//span[text()='Show Charts']")
+  private WebElement sMenu_ShowCharts;
+
+  @FindBy(xpath = "//span[text()='Show Tables']")
+  private WebElement sMenu_ShowTables;
+
+  @FindBy(xpath = "//span[text()='Show Pivot Tables']")
+  private WebElement sMenu_PivotTables;
+
+  @FindBy(xpath = "//span[text()='Process Models']")
+  private WebElement sMenu_ProcessModels;
+
+  @FindBy(xpath = "//span[text()='Process Definitions']")
+  private WebElement sMenu_ProcessDefinitions;
+
+  @FindBy(xpath = "//span[text()='Process Instances']")
+  private WebElement sMenu_ProcessInstances;
+
+  @FindBy(xpath = "//span[text()='Process Tasks']")
+  private WebElement sMenu_ProcessTasks;
+
+  @FindBy(xpath = "//span[text()='Attachment Types']")
+  private WebElement sMenu_AttachmentTypes;
+
+  @FindBy(xpath = "//span[text()='Model Elements Editor']")
+  private WebElement sMenu_ModelElementsEditor;
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    return ExpectedConditions.visibilityOf(lbl_Accounting);
+  }
+
+  public AccessGroups openAccessGroups(){
+    try {
+      webActions.WaitAndClickAction(lbl_Accounting, "Accounting tab");
+      webActions.WaitAndClickAction(lbl_JournalEntry, "Journal Entry");
+      webActions.WaitAndClickAction(lbl_AccessGroups, "Access Groups");
+      report.reportPass("Open access Groups");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Open access Groups");
+    }
+    return (AccessGroups) base(AccessGroups.class);
+  }
+
+  public BatchTransactionHistory openBatchTransactionHistory(){
+    try {
+      webActions.WaitAndClickAction(lbl_Accounting, "Accounting tab");
+      webActions.WaitAndClickAction(lbl_JournalEntry, "Journal Entry");
+      webActions.WaitAndClickAction(lbl_BatchTransactionHistory, "Batch Transaction History");
+      report.reportPass("Batch Transaction History");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Batch Transaction History");
+    }
+    return (BatchTransactionHistory) base(BatchTransactionHistory.class);
+  }
+
+  public JournalAccess openJournalAccess(){
+    try {
+      webActions.WaitAndClickAction(lbl_Accounting, "Accounting tab");
+      webActions.WaitAndClickAction(lbl_JournalEntry, "Journal Entry");
+      webActions.WaitAndClickAction(lbl_JournalBatch, "Journal Batch");
+      report.reportPass("journal Access");
+    } catch (Exception e) {
+      report.reportHardFail(e, "journal Access");
+    }
+    return (JournalAccess) base(JournalAccess.class);
+  }
+
+  public void verifyAvailableTabs(){
+    try {
+      Assert.assertEquals(6, lbl_OptionsList.size());
+      report.reportPass("All Otions Displayed");
+    } catch (Exception e) {
+      report.reportHardFail(e, "All Otions Displayed");
+    }
+  }
+
+  public TemplateManagement openTemplateManagement(){
+    try {
+      webActions.WaitAndClickAction(lbl_Accounting, "Accounting tab");
+      webActions.WaitAndClickAction(lbl_JournalEntry, "Journal Entry");
+      webActions.WaitAndClickAction(lbl_TemplateManagement, "Template Management");
+      report.reportPass(" Template Management");
+    } catch (Exception e) {
+      report.reportHardFail(e, " Template Management");
+    }
+    return (TemplateManagement) base(TemplateManagement.class);
+  }
+
+  public InterestRates openInterestRates(){
+    try {
+      webActions.WaitAndClickAction(lbl_Maintenance, "Open Interest Rates");
+      webActions.WaitAndClickAction(lbl_InterestRates, "Interest Rates");
+      report.reportPass("Open Interest Rates");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Open Interest Rates");
+    }
+    return (InterestRates) base(InterestRates.class);
+  }
+
+  public void validateAdminHomePageTabs(){
+    try {
+      webActions.assertDisplayed(lbl_BPM, "BPM");
+      webActions.assertDisplayed(lbl_Reports, "Reports");
+      webActions.assertDisplayed(lbl_Accounting, "Accounting");
+      webActions.assertDisplayed(lbl_Maintenance, "Maintenance");
+      webActions.assertDisplayed(lbl_Administration, "Administration");
+      webActions.assertDisplayed(lbl_Help, "Help");
+      report.reportPass("Validate EBank HomePage Tabs");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate EBank HomePage Tabs");
+    }
+  }
+
+  public void openAccounting(){
+    try {
+      webActions.WaitAndClickAction(lbl_Accounting, "Accounting");
+      report.reportPass("Open Accounting");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Open Accounting");
+    }
+  }
+
+  public void openJournalEntry(){
+    try {
+      webActions.WaitAndClickAction(lbl_JournalEntry, "Journal Entry");
+      report.reportPass("Journal Entry");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Journal Entry");
+    }
+  }
+
+  public void validateJournalEntryOptions(){
+    try {
+      webActions.assertDisplayed(lbl_AccessGroups, "Access Groups");
+      webActions.assertDisplayed(lbl_JournalBatch, "Journal Batch");
+      webActions.assertDisplayed(lbl_TemplateManagement, "Template Management");
+      webActions.assertDisplayed(lbl_BatchTransactionHistory, "Batch Transaction History");
+      report.reportPass("Journal Entry Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Journal Entry Options");
+    }
+  }
+
+  public void openMaintenance(){
+    try {
+      webActions.clickAction(lbl_Maintenance, "Maintenance");
+      report.reportPass("Maintenance");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Maintenance");
+    }
+  }
+
+  public void validateMaintenanceOptions(){
+    try {
+      webActions.assertDisplayed(lbl_InterestRates, "Interest Rates");
+      webActions.assertDisplayed(lbl_Entities, "Entities");
+      report.reportPass("Maintenenace Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Maintenenace Options");
+    }
+  }
+
+  public void openEntities(){
+    try {
+      webActions.clickAction(lbl_Maintenance, "Maintenance");
+      webActions.clickAction(lbl_Entities, "Entities");
+      report.reportPass("Entities");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Entities");
+    }
+  }
+
+  public void validateEntitiesPageLoaded(){
+    try {
+      webActions.waitForJSandJQueryToLoad();
+      webActions.assertDisplayed(lbl_EntitiesTabHeader, "Entities Tab Header");
+      report.reportPass("Entities Tab Header");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Entities Tab Header");
+    }
+  }
+
+  public void clickAdministrationTab(){
+    try {
+      webActions.clickAction(lbl_Administration, "Administration");
+      report.reportPass("Administration Tab");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Administration Tab");
+    }
+  }
+
+  public void validateAdministrationTabOptions(){
+    try {
+      webActions.assertDisplayed(lbl_Users, "users");
+      webActions.assertDisplayed(lbl_AccessGroups, "Access Groups");
+      webActions.assertDisplayed(lbl_Roles, "Roles");
+      webActions.assertDisplayed(lbl_DynamicAttributes, "Dynamic Attribute");
+      webActions.assertDisplayed(lbl_UserSessions, "User Sessions");
+      webActions.assertDisplayed(lbl_Locks, "Locks");
+      webActions.assertDisplayed(lbl_ExternalFiles, "External Files");
+      webActions.assertDisplayed(lbl_EmailHistory, "Email History");
+      webActions.assertDisplayed(lbl_ScheduledTasks, "Scheduled Tasks");
+      webActions.assertDisplayed(lbl_RestoreDeletedEntities, "Restore Deleted Entities");
+      webActions.assertDisplayed(lbl_EntityInspector, "Entity Inspector");
+      webActions.assertDisplayed(lbl_ApplicationProperties, "Application Properties");
+      webActions.assertDisplayed(lbl_JMXConsole, "JMX Console");
+      webActions.assertDisplayed(lbl_EntityLog, "Entity Log");
+      webActions.assertDisplayed(lbl_ServerLog, "Server Log");
+      webActions.assertDisplayed(lbl_ScreenProfiler, "Screen Profiler");
+      webActions.assertDisplayed(lbl_PerformanceStatistics, "Performance Statistics");
+      report.reportPass("Maintenenace Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Maintenenace Options");
+    }
+  }
+
+  public ScheduledTasks openScheduledTasks(){
+    try {
+      webActions.WaitAndClickAction(lbl_Administration, "Administration Tab");
+      webActions.WaitAndClickAction(lbl_ScheduledTasks, "Scheduled Tasks");
+      report.reportPass("Open Scheduled Tasks");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Open Scheduled Tasks");
+    }
+    return (ScheduledTasks) base(ScheduledTasks.class);
+  }
+
+  public Users openUsersPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Administration, "Administration Tab");
+      webActions.WaitAndClickAction(lbl_Users, "Users option");
+      report.reportPass("Opened users page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open users");
+    }
+    return (Users) base(Users.class);
+  }
+
+  public ServerLog openServerLogPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Administration, "Administration Tab");
+      webActions.WaitAndClickAction(lbl_ServerLog, "Server Log option");
+      report.reportPass("Opened Server log page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open server log");
+    }
+    return (ServerLog) base(ServerLog.class);
+  }
+
+  public Reports openReportsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Reports, "Reports Tab");
+      webActions.WaitAndClickAction(sMenu_Reports, "Reports sub menu option");
+      report.reportPass("Opened Reports page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open Reports page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openReportGroupsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Reports, "Reports Tab");
+      webActions.WaitAndClickAction(sMenu_ReportGroups, "Reports groups sub menu option");
+      report.reportPass("Opened Report Groups page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open Report Groups page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openRunReportsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Reports, "Reports Tab");
+      webActions.WaitAndClickAction(sMenu_RunReports, "Run reports sub menu option");
+      report.reportPass("Opened Run reports page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open Run reports page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openShowChartsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Reports, "Reports Tab");
+      webActions.WaitAndClickAction(sMenu_ShowCharts, "Show charts sub menu option");
+      report.reportPass("Opened Show charts page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open Show charts page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openShowtablesPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Reports, "Reports Tab");
+      webActions.WaitAndClickAction(sMenu_ShowTables, "Show Tables sub menu option");
+      report.reportPass("Opened Show Tables page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open Show Tables page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openPivotTablesPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_Reports, "Reports Tab");
+      webActions.WaitAndClickAction(sMenu_PivotTables, "Show Pivot Tables sub menu option");
+      report.reportPass("Opened Show Pivot Tables page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open Show Pivot Tables page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openProcessModelsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      webActions.WaitAndClickAction(sMenu_ProcessModels, "Process models sub menu option");
+      report.reportPass("Opened Process models page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open process models page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openModelElementsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      webActions.WaitAndClickAction(sMenu_ModelElementsEditor,
+          "Model ElementsEditor sub menu option");
+      report.reportPass("Opened ModelElementsEditor page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open ModelElementsEditor page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openProcessDefinitionsPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      webActions.WaitAndClickAction(sMenu_ProcessDefinitions, "ProcessDefinitions sub menu option");
+      report.reportPass("Opened ProcessDefinitions page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open ProcessDefinitions page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openProcessInstancesPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      webActions.WaitAndClickAction(sMenu_ProcessInstances, "ProcessInstances sub menu option");
+      report.reportPass("Opened ProcessInstances page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open ProcessInstances page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openProcessTasksPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      webActions.WaitAndClickAction(sMenu_ProcessTasks, "ProcessTasks sub menu option");
+      report.reportPass("Opened ProcessTasks page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open ProcessTasks page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public Reports openAttachmentTypesPage(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      webActions.WaitAndClickAction(sMenu_AttachmentTypes, "AttachmentTypes sub menu option");
+      report.reportPass("Opened AttachmentTypes page successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to open AttachmentTypes page");
+    }
+    return (Reports) base(Reports.class);
+  }
+
+  public void expandBPMOptions(){
+    try {
+      webActions.WaitAndClickAction(lbl_BPM, "BPM Tab");
+      report.reportPass("Expand BPM Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to Expand BPM Options");
+    }
+
+  }
+
+  public void assertBPMTabOptions(){
+    try {
+      webActions.assertDisplayed(sMenu_ProcessModels, "Process Models");
+      webActions.assertDisplayed(sMenu_ProcessDefinitions, "Process Definitions");
+      webActions.assertDisplayed(sMenu_ProcessInstances, "Process Models");
+      webActions.assertDisplayed(sMenu_ProcessModels, "Process Models");
+      webActions.assertDisplayed(sMenu_ProcessModels, "Process Models");
+      webActions.assertDisplayed(sMenu_ProcessModels, "Process Models");
+      report.reportPass("Expand BPM Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to Expand BPM Options");
+    }
+
+  }
+
+}
+******************************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.joda.time.DateTime;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import com.tab.af.web.pages.BasePage;
+
+public class InterestRates extends BasePage {
+
+  @FindBy(xpath = "//span[text()='=']//following::input[1]")
+  private WebElement txt_SearchFilter;
+
+  @FindBy(xpath = "//span[text()='Add search condition']")
+  private WebElement btn_AddSearchConditon;
+
+  @FindBy(xpath = "//span[text()='=']")
+  private WebElement lbl_EqualsSearchCondition;
+
+  @FindBy(xpath = "//span[text()=\"contains\" and @class=\"v-button-caption\"]")
+  private WebElement btn_ContainsSearch;
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//div[text()='Interest Rates']")
+  private WebElement lbl_InterestRatesTab;
+
+  @FindBy(xpath = "//span[text()='Create']")
+  private WebElement btn_Create;
+
+  @FindBy(xpath = "//span[text()='Cancel']")
+  private WebElement btn_Cancel;
+
+  @FindBy(xpath = "//span[text()='OK']")
+  private WebElement btn_Ok;
+
+  @FindBy(xpath = "//span[text()='Edit']//parent::span//parent::div[@role=\"button\"]")
+  private WebElement btn_Edit;
+
+  @FindBy(xpath = "(//div[@class=\"v-splitpanel-first-container v-scrollable\"]//div)[1]")
+  private WebElement lbl_InterstRatesTable;
+
+  @FindBy(
+      xpath = "//div[@class=\"v-splitpanel-second-container v-scrollable\"]//div[contains(@class,'v-gridlayout v-layout')]")
+  private WebElement lbl_InterstRatesEditor;
+
+  @FindBy(xpath = "//div[text()='Product']//following::input[1]")
+  private WebElement txt_Product;
+
+  @FindBy(xpath = "//div[text()='Sort Order']//following::input[1]")
+  private WebElement txt_SortOrder;
+
+  @FindBy(xpath = "(//div[text()='Rate Status']//following::input[1])[2]")
+  private WebElement txt_RateStatus;
+
+  @FindBy(xpath = "(//div[text()='Effective Date']//following::input[1])[2]")
+  private WebElement txt_EffectiveDate;
+
+  @FindBy(xpath = "//div[text()='Rate Tier 1']//following::input[1]")
+  private WebElement txt_RateTier1Balance;
+
+  @FindBy(xpath = "//div[text()='Rate Tier 1']//following::input[2]")
+  private WebElement txt_RateTier2Interest;
+
+  @FindBy(xpath = "//div[text()='Rate Tier 1']//following::input[3]")
+  private WebElement txt_RateTier3Interest;
+
+  @FindBy(xpath = "//p[text()='Interest Rates must be created with Pending status']")
+  private WebElement lbl_InterestCannotBeActiveWarning;
+
+  @FindBy(
+      xpath = "//p[text()='Interest Rates must set active by a different user than the creator.']")
+  private WebElement lbl_InterestMustBeSetbyOtherUserWarning;
+
+  @FindBy(xpath = "//div[text()='Product desc'][1]//following::tr//td[3]")
+  private List<WebElement> lbl_ProductDescList;
+
+  @FindBy(xpath = "//tr[contains(@class,'v-table-row')]//td[1]//div")
+  private List<WebElement> lbl_TableRows;
+
+  @FindBy(xpath = "//td//div[text()='Rate Status']")
+  private WebElement tbl_RateStatus;
+
+  @FindBy(xpath = "//td//div[text()='Effective Date']")
+  private WebElement tbl_EffectiveDate;
+
+  @FindBy(xpath = "//div[text()='Descending']")
+  private WebElement lbl_Descending;
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_InterestRatesTab);
+  }
+
+  public void validatePageOptions(){
+    try {
+      webActions.assertDisplayed(btn_Search, "Search button");
+      webActions.assertDisplayed(btn_AddSearchConditon, "Add Search Condition button");
+      webActions.assertDisplayed(btn_Create, "Create button");
+      webActions.assertDisplayed(btn_Edit, "Edit button");
+      report.reportPass("Validate Interest Rates Page options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate Interest Rates Page options");
+    }
+  }
+
+  public void createInterestRate(String productType, String sortOrder, String rateStatus,
+      String interest, String apy){
+    try {
+      webActions.clickBYJS(btn_Create, "Create");
+      webActions.waitUntilEnabled(txt_Product, "Product");
+      webActions.waitAndSendKeysByCharAuto(txt_Product, productType, "Product");
+      webActions.sendKeysByChar(txt_SortOrder, sortOrder, "Sort Order");
+      webActions.SendKeysByCharAuto(txt_RateStatus, rateStatus, "Rate Status");
+      webActions.sendKeysByChar(txt_EffectiveDate,
+          Keys.HOME + DateTime.now().toString("MM/dd/yyyy"), "Effective Date");
+      String balance = faker.random().nextInt(500, 1500).toString();
+      Map m = new HashMap<String, String>();
+      m.put("balance", balance);
+      setTestDataMap(m);
+      webActions.sendKeysByChar(txt_RateTier1Balance, balance, "Balance");
+      webActions.sendKeysByChar(txt_RateTier2Interest, interest, "Interest");
+      webActions.sendKeysByChar(txt_RateTier3Interest, apy, "Apy");
+      webActions.clickBYJS(btn_Ok, "OK");
+      report.reportPass("Create Interest Rate");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Create Interest Rate");
+    }
+  }
+
+  public void interestStatePendingWarning(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(lbl_InterestCannotBeActiveWarning,
+          "Interest Rates must be created with Pending status");
+      report.reportPass("Interest Rates must be created with Pending status warning");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Interest Rates must be created with Pending status warning");
+    }
+  }
+
+  public void interestMustbeChangedByOtherUserWarning(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(lbl_InterestMustBeSetbyOtherUserWarning,
+          "Interest Rates must be changed by Other user");
+      webActions.clickBYJS(btn_Cancel, "Cancel");
+      report.reportPass("Interest Rates must be changed by Other user warning");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Interest Rates must be changed by Other user warning");
+    }
+  }
+
+  public void changeRateStatusandSave(String rateStatus){
+    try {
+      Thread.sleep(10000);
+      if (!txt_RateStatus.isEnabled()) {
+        webActions.waitUntilEnabledCubaButton(btn_Edit, "Edit Button");
+        webActions.waitUntilClassEnabled(btn_Edit, "Edit Button");
+        webActions.clickBYJS(btn_Edit, "Edit Button");
+      }
+      webActions.waitUntilEnabledCubaTBox(txt_RateStatus, "Rate Status");
+      webActions.clearByJS(txt_RateStatus, "Rate Status");
+      webActions.SendKeysByCharAuto(txt_RateStatus, rateStatus, "Rate Status");
+      webActions.clickBYJS(btn_Ok, "OK");
+      report.reportPass("Change Rate Status");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Change Rate Status");
+    }
+  }
+
+  public void updateEffectiveDateandSave(String newDate){
+    try {
+      webActions.waitUntilEnabledCubaButton(btn_Edit, "Edit Button");
+      webActions.clickBYJS(btn_Edit, "Edit Button");
+      webActions.waitUntilEnabledCubaTBox(txt_EffectiveDate, "Effective Date");
+      webActions.clearByJS(txt_EffectiveDate, "Effective Date");
+      webActions.sendKeysByChar(txt_EffectiveDate, newDate, "Effective date");
+      webActions.waitUntilPresentAndDisplayed(txt_EffectiveDate, "Effective Date");
+      webActions.clickBYJS(btn_Ok, "OK");
+      report.reportPass("update Effective Date");
+    } catch (Exception e) {
+      report.reportHardFail(e, "update Effective Date");
+    }
+  }
+
+  public void validateDateUpdated(String newDate){
+    try {
+      global.assertEquals(newDate, webActions.getValue(txt_EffectiveDate, "Effective Date"));
+      report.reportPass("Effective Date updated");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Effective Date updated");
+    }
+  }
+
+  public void validateSearch(String conditon, String name){
+    try {
+      addSearchCondtion(conditon, name);
+      Thread.sleep(5000);
+      for (WebElement desc : lbl_ProductDescList) {
+        if (!desc.getText().equalsIgnoreCase("Product desc") && !desc.getText().equals("")) {
+          if (!desc.getText().equals(name)) {
+            throw new Exception("Search failed");
+          }
+        }
+      }
+      report.reportPass("Validate Search");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate Search");
+    }
+  }
+
+  public void selectInterestRateByBalance(){
+    try {
+      webActions.rightClickAction(tbl_EffectiveDate, "Effective Date Header");
+      webActions.WaitAndClickAction(lbl_Descending, "Descending Sort");
+      webActions.waitForStalenessOf(lbl_TableRows.get(0), "Interest Rates Table");
+      webActions.waitForJSandJQueryToLoad();
+      String balance = (String) getTestDataMap().get("balance");
+      int rowNum = 1;
+      boolean found = true;
+      for (WebElement webElement : lbl_TableRows) {
+        int time = 10;
+        webActions.clickAction(webElement, "Table Row " + rowNum);
+        do {
+          WebElement row = webElement.findElement(By.xpath("../.."));
+          Thread.sleep(1000);
+          time--;
+          if (row.getAttribute("class").toString().contains("v-selected")) {
+            break;
+          }
+        } while (time > 0);
+        rowNum++;
+        if (txt_RateTier1Balance.getAttribute("value").replace(",", "").equalsIgnoreCase(balance)) {
+          found = false;
+          break;
+        }
+      }
+      if (found) {
+        throw new Exception("Select Create interest Failed");
+      }
+      webActions.waitForElementToBeDisabled(txt_RateStatus, "Rate Status");
+      report.reportPass("Select Create interest");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Select Create interest");
+    }
+  }
+
+  public void verifyStatusUpdated(String Expected){
+    try {
+      global.assertEquals(true,
+          webActions.getValue(txt_RateStatus, "Rate status").equalsIgnoreCase(Expected));
+      report.reportPass("Rate Status updated succesfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Rate Status updated succesfully");
+    }
+  }
+
+  public void addSearchCondtion(String conditionName, String value){
+    try {
+      webActions.waitAndCickBYJS(btn_AddSearchConditon, "Add Search condition");
+      WebElement element = webActions.findByText(conditionName, "//span");
+      webActions.doubleClick(element, conditionName);
+      webActions.waitAndCickBYJS(btn_ContainsSearch, "Contains Serach Button");
+      webActions.waitAndCickBYJS(lbl_EqualsSearchCondition, "= Search Condition");
+      webActions.waitAndSendKeysByChar(txt_SearchFilter, value, "Search filter Input");
+      webActions.clickBYJS(btn_Search, "Filter Search");
+      report.reportPass("Add Search Condtion:" + conditionName);
+    } catch (Exception e) {
+      report.reportHardFail(e, "Add Search Condtion:" + conditionName);
+    }
+  }
+
+}
+******************************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.List;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.testng.Assert;
+import com.tab.af.web.pages.BasePage;
+
+public class JournalAccess extends BasePage {
+
+	public JournalAccess() {
+		PageFactory.initElements(driver, this);
+	}
+
+	@FindBy(xpath = "//span[text()='Accounting']")
+	private WebElement lbl_Accounting;
+
+	@FindBy(xpath = "//span[text()='Journal Entry']")
+	private WebElement lbl_JournalEntry;
+
+	@FindBy(xpath = "//span[text()='=']")
+	private WebElement lbl_EqualsSearchCondition;
+
+	@FindBy(xpath = "//span[(text()='contains'or text()='=') and @class='v-button-caption']")
+	private WebElement btn_ContainsSearch;
+
+	@FindBy(xpath = "//span[text()='Add search condition']")
+	private WebElement btn_AddSearchConditon;
+
+	@FindBy(xpath = "//span[text()='Search']")
+	private WebElement btn_Search;
+
+	@FindBy(xpath = "//span[text()='Edit']")
+	private WebElement btn_Edit;
+
+	@FindBy(xpath = "//span[text()='Remove']")
+	private WebElement btn_Remove;
+
+	@FindBy(xpath = "//span[text()='Create']")
+	private WebElement btn_Create;
+
+	@FindBy(xpath = "//span[text()='Excel']")
+	private WebElement btn_Excel;
+
+	@FindBy(xpath = "//div[text()='Journal Batch']")
+	private WebElement btn_JournalBatch;
+
+	@FindBy(xpath = "//span[text()='Selected rows']")
+	private WebElement btn_Selectedrows;
+
+	//
+	@FindBy(xpath = "//span[text()='Add']")
+	private WebElement btn_Add;
+
+	@FindBy(xpath = "//span[text()='Cancel']")
+	private WebElement btn_Cancel;
+
+	@FindBy(xpath = "//span[text()='Submit']")
+	private WebElement btn_Submit;
+
+	@FindBy(xpath = "//span[text()='Create Template']")
+	private WebElement btn_CreateTemplate;
+
+	@FindBy(xpath = "//div[text()='Debit Total']")
+	private WebElement lbl_DebitTotal;
+
+	@FindBy(xpath = "//div[text()='Credit Total']")
+	private WebElement lbl_CreditTotal;
+
+	@FindBy(xpath = "//div[text()='Offset Amount']")
+	private WebElement lbl_OffsetAmount;
+
+	@FindBy(xpath = "//div[text()='Decision Description']")
+	private WebElement lbl_DecisionDescription;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[1]//input")
+	private WebElement txt_Account;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[2]//input")
+	private WebElement txt_AccountName;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[2]//input")
+	private WebElement txt_creditAccountName;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[4]//input")
+	private WebElement txt_Selector;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[6]//input")
+	private WebElement txt_Amount;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[6]//input")
+	private WebElement txt_Template_Desc;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[8]//input")
+	private WebElement txt_Description;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[1]//input")
+	private WebElement txt_Accoun_Credit;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[4]//input")
+	private WebElement txt_Selector_Credit;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[6]//input")
+	private WebElement txt_Amount_Credit;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[8]//input")
+	private WebElement txt_Description_Credit;
+
+	@FindBy(xpath = "//div[text()='Template Name']//following::input[1]")
+	private WebElement txt_TemplateName;
+
+	@FindBy(xpath = "//span[text()='OK']//preceding::input[1]")
+	private WebElement txt_Description_Screen;
+
+	@FindBy(xpath = "//span[text()=text()= 'Submit']//preceding::textarea")
+	private WebElement txt_Description_Template;
+
+	@FindBy(xpath = "//span[text()='OK']")
+	private WebElement btn_OK;
+
+	@FindBy(xpath = "//div[text()='Journal Batch']//following::span[1]")
+	private WebElement btn_CloseTab;
+
+	@FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[1]/div")
+	private WebElement tbl_FirstRecord;
+
+	@FindBy(xpath = "//span[text()='=' ]//following::input[1]")
+	private WebElement txt_SearchFilter;
+
+	@FindBy(xpath = "//tr//td[2]")
+	private List<WebElement> lbl_CreateBy;
+
+	@FindBy(xpath = "//div[text()='Template Name']")
+	private WebElement lbl_TemplateName;
+
+	@FindBy(xpath = "//span[text()='File is not selected']")
+	private WebElement lbl_FileUpload;
+
+	public void verifyOptions() {
+		try {
+			webActions.waitUntilPresentAndDisplayed(btn_Search, "Search button");
+			Assert.assertEquals(true, btn_Search.isDisplayed());
+			Assert.assertEquals(true, btn_Create.isDisplayed());
+			Assert.assertEquals(true, btn_Edit.isDisplayed());
+			Assert.assertEquals(true, btn_Remove.isDisplayed());
+			Assert.assertEquals(true, btn_AddSearchConditon.isDisplayed());
+			Assert.assertEquals(true, btn_Excel.isDisplayed());
+			report.reportPass("All Options Displayed");
+		} catch (Exception e) {
+			report.reportHardFail(e, "All Options Displayed");
+		}
+	}
+
+	public void verifyTemplateOptions() {
+		try {
+			webActions.clickBYJS(btn_Create, "create Button");
+			webActions.waitForVisibility(btn_Add, "Add button");
+			Assert.assertEquals(true, btn_Add.isDisplayed());
+			Assert.assertEquals(true, btn_Cancel.isDisplayed());
+			Assert.assertEquals(true, btn_Submit.isDisplayed());
+			Assert.assertEquals(true, btn_Remove.isDisplayed());
+			Assert.assertEquals(true, btn_CreateTemplate.isDisplayed());
+			Assert.assertEquals(true, lbl_DebitTotal.isDisplayed());
+			Assert.assertEquals(true, lbl_CreditTotal.isDisplayed());
+			Assert.assertEquals(true, lbl_DecisionDescription.isDisplayed());
+			Assert.assertEquals(true, lbl_OffsetAmount.isDisplayed());
+			report.reportPass("All Options are Displayed from create template page");
+		} catch (Exception e) {
+			report.reportHardFail(e, "All Options not Displayed from create template page");
+		}
+	}
+
+	public void verifyJournalTemplateOptions() {
+		try {
+			webActions.clickBYJS(btn_Create, "create Button");
+			webActions.waitForVisibility(btn_Add, "Add button");
+			Assert.assertEquals(true, btn_Add.isDisplayed());
+			Assert.assertEquals(true, btn_Cancel.isDisplayed());
+			Assert.assertEquals(true, btn_Submit.isDisplayed());
+			Assert.assertEquals(true, btn_Remove.isDisplayed());
+			Assert.assertEquals(true, lbl_TemplateName.isDisplayed());
+			Assert.assertEquals(true, lbl_FileUpload.isDisplayed());
+			report.reportPass("All Options are Displayed from Journal Template page");
+		} catch (Exception e) {
+			report.reportHardFail(e, "All Options not Displayed from Journal Template page");
+		}
+	}
+
+	public void clickAddButton() {
+		try {
+			webActions.waitForVisibility(btn_Add, "Add Button");
+			webActions.clickBYJS(btn_Add, "Add Button");
+			report.reportPass("Clicked on Add button");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Failed to click on add button");
+		}
+	}
+
+	public void enterDebitAcctNumber(String accountNumber) {
+		try {
+			webActions.waitForVisibility(txt_Account, "Account Number");
+			webActions.SendKeysByCharAuto(txt_Account, accountNumber, "Account Number");
+			for (int i = 0; i <= 20; i++) {// Required to load new element property. Once loaded come out from loop
+				Thread.sleep(1000);
+				String value = webActions.getAttributeValue(txt_AccountName, "class", "Account name");
+				if (value.equals(
+						"v-textfield v-widget v-readonly v-has-width v-has-height v-textfield-readonly c-disabled-or-readonly")) {
+					break;
+				}
+			}
+			Thread.sleep(1000);// Required to load
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter account number");
+		}
+	}
+
+	public void enterDebitSelector(String selector){
+	    try {
+	      webActions.clickBYJS(txt_Selector, "Selector");
+	      webActions.SendKeysByCharAuto(txt_Selector, selector, "Selector");
+	      Thread.sleep(3000);// Required to load Amount field and required minimum 3 seconds
+	    } catch (Exception e) {
+	      report.reportHardFail(e, "Fail to enter selector value ");
+	    }
+	  }
+
+	  public void enterDebitAmount(String amount){
+	    try {
+	    webActions.waitForClickAbility(txt_Amount,"Waiting for click on Amount");
+	      webActions.waitAndCickBYJS(txt_Amount, "Amount");
+	      webActions.sendKeysByChar(txt_Amount, amount, "Amount");
+	      webActions.waitForJSandJQueryToLoad();
+	    } catch (Exception e) {
+	      report.reportHardFail(e, "Fail to enter amount value ");
+	    }
+	  }
+	
+	
+
+	public void enterDebitDescription(String description) {
+		try {
+			
+			webActions.waitAndCickBYJS(txt_Description, "description");
+			webActions.sendKeysByChar(txt_Description, description, "Description");
+			report.reportPass("Entered debit information");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter description value ");
+		}
+	}
+
+	public void enterCreditAcctNumber(String accountNumber) {
+		try {
+			webActions.waitForVisibility(txt_Accoun_Credit, "Account Number");
+			webActions.SendKeysByCharAuto(txt_Accoun_Credit, accountNumber, "Account number");
+			for (int i = 0; i <= 20; i++) {
+				Thread.sleep(1000);// Required to load new element property. Once loaded come out from loop
+				String value = webActions.getAttributeValue(txt_creditAccountName, "class", "Account name");
+				if (value.equals(
+						"v-textfield v-widget v-readonly v-has-width v-has-height v-textfield-readonly c-disabled-or-readonly")) {
+					break;
+				}
+				Thread.sleep(1000);// Required to load
+			}
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter account number value ");
+		}
+	}
+
+	public void enterCreditSelector(String selector){
+	    try {
+	      webActions.clickBYJS(txt_Selector_Credit, "Selector");
+	      webActions.SendKeysByCharAuto(txt_Selector_Credit, selector, "Selector");
+	      Thread.sleep(3000);// Required to load Amount field and required minimum 3 seconds
+	    } catch (Exception e) {
+	      report.reportHardFail(e, "Fail to enter selector value ");
+	    }
+	  }
+
+	  public void enterCreditAmount(String amount){
+	    try {
+	    	webActions.waitForClickAbility(txt_Amount,"Waiting for click on Amount");
+	      webActions.waitAndSendKeysByChar(txt_Amount_Credit, amount, "Amount");
+	    } catch (Exception e) {
+	      report.reportHardFail(e, "Fail to enter amount value ");
+	    }
+	  }
+
+	public void enterCreditDescription(String description) {
+		try {
+			
+			webActions.waitAndCickBYJS(txt_Description_Credit, "description");
+			webActions.waitAndSendKeysByChar(txt_Description_Credit, description, "Description");
+			report.reportPass("Entered credit information successfully");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter description value ");
+		}
+	}
+
+	public void clickCreateTemplate() {
+		try {
+			webActions.clickBYJS(btn_CreateTemplate, "Create Template Button");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to click on Create Template Button ");
+		}
+	}
+
+	public void enterTamplateName(String templateName) {
+		try {
+			String xt = faker.number().digits(8);
+			webActions.waitForVisibility(txt_TemplateName, "Template Name");
+			webActions.sendKeysByChar(txt_TemplateName, templateName + xt, "Template Name");
+			report.reportPass("Entered template name successfully");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter TemplateName value ");
+		}
+	}
+
+	public void enterDescr(String description) {
+		try {
+			webActions.sendKeysByChar(txt_Description_Screen, description, "Description");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter description value ");
+		}
+	}
+
+	public void enterDescrInTemplate(String description) {
+		try {
+			webActions.sendKeysByChar(txt_Description_Template, description, "Description");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to enter description value ");
+		}
+	}
+
+	public void clickOkButton() {
+		try {
+			webActions.clickBYJS(btn_OK, "OK Button");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to click on OK Button ");
+		}
+	}
+
+	public void clickSubmitButton() {
+		try {
+			webActions.clickBYJS(btn_Submit, "Submit button");
+			webActions.waitForVisibility(btn_Create, "Create button");
+			report.reportPass("Clicked in submit button successfully");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to click on submit Button ");
+		}
+	}
+
+	public void editRecord(String amount) {
+		try {
+			webActions.waitForLoadingBarToComplete();
+			webActions.clickBYJS(btn_Edit, "Edit button");
+			webActions.waitForVisibility(txt_Amount, "Amount");
+			webActions.clearAndSendKeysByChar(txt_Amount, amount, "Amount");
+			webActions.clearAndSendKeysByChar(txt_Amount_Credit, amount, "Amount");
+			webActions.clickBYJS(btn_Submit, "Submit button");
+			webActions.waitForVisibility(btn_Remove, "Remove Button");
+			report.reportPass("Record edited successfully");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to edit first record ");
+		}
+	}
+
+	public void editTemplateRecord(String amount) {
+		try {
+			webActions.waitForLoadingBarToComplete();
+			webActions.clickBYJS(btn_Edit, "Edit button");
+			webActions.waitForVisibility(txt_Description_Template, "Amount");
+			webActions.clearAndSendKeysByChar(txt_Description_Template, amount, "Description");
+			webActions.clickBYJS(btn_Submit, "Submit button");
+			report.reportPass("Record edited successfully");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to edit first record ");
+		}
+	}
+
+	public void removeRecord() {
+		try {
+			webActions.waitForLoadingBarToComplete();
+			webActions.waitForVisibility(btn_Remove, "Remove button");
+			webActions.clickBYJS(btn_Remove, "Remove button");
+			webActions.waitForVisibility(btn_OK, "OK button");
+			clickOkButton();
+			report.reportPass("Record edited successfully");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Fail to edit first record ");
+		}
+	}
+
+	public void verifySearch(String column, String value) {
+		try {
+			addSearchCondtion(column, value);
+			webActions.waitForLoadingBarToComplete();
+			for (WebElement ac : lbl_CreateBy) {
+				if (ac.getText() != "" && ac.getText().matches("-?\\d+(\\.\\d+)?")) {
+					if (!ac.getText().equals(value)) {
+						throw new Exception("Assert Failed");
+					}
+				}
+			}
+			report.reportPass("Validate Search");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Validate Search");
+		}
+	}
+
+	public void addSearchCondtion(String conditionName, String value) {
+		try {
+			webActions.clickBYJS(btn_AddSearchConditon, "Add Search condition");
+			WebElement element = webActions.findByText(conditionName, "//span[text()='Properties']//following::span");
+			webActions.doubleClick(element, conditionName);
+			webActions.waitAndCickBYJS(btn_ContainsSearch, "Contains Serach Button");
+			webActions.waitAndCickBYJS(lbl_EqualsSearchCondition, "= Search Condition");
+			webActions.waitAndSendKeysByChar(txt_SearchFilter, value, "Search filter Input");
+			webActions.clickBYJS(btn_Search, "Filter Search");
+			report.reportPass("Add Search Condtion:" + conditionName);
+		} catch (Exception e) {
+			report.reportHardFail(e, "Add Search Condtion:" + conditionName);
+		}
+	}
+
+	@Override
+	protected ExpectedCondition getPageLoadCondition() {
+		// TODO Auto-generated method stub
+		return ExpectedConditions.visibilityOf(btn_JournalBatch);
+	}
+
+}
+*****************************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.List;
+import java.util.Map;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import com.tab.af.web.pages.BasePage;
+
+public class JournalBatch extends BasePage {
+
+  @FindBy(xpath = "//div[text()='Journal Batch']")
+  private WebElement lbl_JournalBatch;
+
+  @FindBy(xpath = "//span[text()='=']//following::input[1]")
+  private WebElement txt_SearchFilter;
+
+  @FindBy(xpath = "//span[text()='Add search condition']")
+  private WebElement btn_AddSearchConditon;
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//div[text()='Interest Rates']")
+  private WebElement lbl_InterestRatesTab;
+
+  @FindBy(xpath = "//span[text()='Create']")
+  private WebElement btn_Create;
+
+  @FindBy(xpath = "//span[text()='Cancel']")
+  private WebElement btn_Cancel;
+
+  @FindBy(xpath = "//span[text()='Create Template']")
+  private WebElement btn_CreateTemplate;
+
+  @FindBy(xpath = "//span[text()='OK']")
+  private WebElement btn_Ok;
+
+  @FindBy(xpath = "//div[text()='Template Name']//following::input[1]")
+  private WebElement txt_TemplateName;
+
+  @FindBy(
+      xpath = "//div[text()='Screen']//following::div[text()='Description']//following::input[1]")
+  private WebElement txt_TemplateDescripiton;
+
+  @FindBy(xpath = "//tbody/tr//td[contains(@class,'table-header-')]")
+  private List<WebElement> tbl_JournalIemsheader;
+
+  @FindBy(xpath = "//span[text()='Submit']")
+  private WebElement btn_Submit;
+
+  @FindBy(xpath = "//span[text()='Add']")
+  private WebElement btn_Add;
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_JournalBatch);
+  }
+
+  public void createBatch(){
+    try {
+      webActions.clickBYJS(btn_Create, "Create");
+      webActions.waitAndCickBYJS(btn_CreateTemplate, "Create Template");
+      webActions.sendKeysByChar(txt_TemplateName, faker.lorem().characters(6), "Template Name");
+      webActions.sendKeysByChar(txt_TemplateDescripiton, faker.lorem().characters(6),
+          "Template Description");
+      webActions.clickBYJS(btn_Ok, "OK");
+      webActions.waitUntilNotPresent(btn_Ok, "OK");
+      Map<String, Integer> cKey = webActions.getColumnIndexMap(tbl_JournalIemsheader);
+      for (int i = 1; i <= 2; i++) {
+        webActions.clickBYJS(btn_Add, "Add Button");
+        webActions.waitForJSandJQueryToLoad();
+        webActions.waitAndSendKeysByCharAuto(webActions.getRowElement(cKey, i, "Account"),
+            "500106938001", "Account Row " + i + " ");
+        webActions.SendKeysByCharAuto(webActions.getRowElement(cKey, i, "Selector"),
+            "500 - Opening Advance", "Selector Row " + i + " ");
+        webActions.SendKeysByCharAuto(webActions.getRowElement(cKey, i, "Amount"),
+            faker.number().numberBetween(300, 500) + "", "Amount Row " + i + " ");
+        webActions.SendKeysByCharAuto(webActions.getRowElement(cKey, i, "Description"),
+            faker.lorem().characters(6), "Description Row " + i + " ");
+        webActions.waitUntilValueisNotEmpty(webActions.getRowElement(cKey, 1, "Balance"),
+            "Balance Row " + i + " ");
+        webActions.clickBYJS(btn_Submit, "Submit");
+      }
+      report.reportPass("Create batch");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Create batch Fail");
+    }
+  }
+
+}
+****************************************************************
+package com.tab.af.web.pages.EBank;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import com.tab.af.testbase.TestBase;
+import com.tab.af.web.pages.BasePage;
+
+public class Login extends BasePage {
+
+	@FindBy(xpath = "//input[@name='loginField']")
+	private WebElement txt_UserName;
+
+	@FindBy(xpath = "//input[@name='passwordField']")
+	private WebElement txt_Password;
+
+	@FindBy(xpath = "//span[text()='Submit']")
+	private WebElement btn_Login;
+
+	@FindBy(xpath = "//div[contains(@class,'logout-button') and @role=\"button\"]")
+	private WebElement btn_LogOut;
+
+	public Login() {
+		PageFactory.initElements(driver, this);
+	}
+
+	public Login openEbank() {
+		try {
+			String URL = TestBase.prop.eBankIntURL();
+			webActions.loadURL(URL);
+		} catch (Exception e) {
+			report.reportHardFail(e, "Failed to Open EBank URL");
+		}
+		return (Login) base(Login.class);
+	}
+
+	public HomePage login(String userName, String password) {
+		try {
+
+			webActions.waitUntilPresentAndDisplayed(txt_UserName, "UserName");
+
+			webActions.sendKeys(txt_UserName, userName, "UserName");
+			webActions.sendKeys(txt_Password, password, "Password");
+			webActions.clickBYJS(btn_Login, "Login button");
+			report.reportPass("Login Success");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Login With Valid Credentials");
+		}
+		return (HomePage) base(HomePage.class);
+	}
+
+	public HomePage loginAsAdmin() {
+		try {
+			String URL = TestBase.prop.eBankIntURL();
+			webActions.loadURL(URL);
+			String adminUser = TestBase.prop.eBankAdminUser();
+			String adminPassword = TestBase.prop.eBankAdminPassword();
+			base(Login.class);
+			webActions.waitUntilPresentAndDisplayed(txt_UserName, "UserName");
+			webActions.sendKeys(txt_UserName, adminUser, "UserName");
+			webActions.sendKeys(txt_Password, adminPassword, "Password");
+			webActions.clickBYJS(btn_Login, "Login button");
+			report.reportPass("Login Success as Admin");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Login Failure as Admin");
+		}
+		return (HomePage) base(HomePage.class);
+	}
+
+	public void logOut() {
+		try {
+			webActions.clickBYJS(btn_LogOut, "Logout");
+			webActions.waitUntilPresentAndDisplayed(btn_Login, "Login Button");
+			report.reportPass("Logout Success");
+		} catch (Exception e) {
+			report.reportHardFail(e, "Logout Success");
+		}
+	}
+
+	@Override
+	protected ExpectedCondition getPageLoadCondition() {
+		return ExpectedConditions.visibilityOf(txt_UserName);
+	}
+
+}
+*************************************************
+package com.tab.af.web.pages.EBank;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import com.tab.af.web.pages.BasePage;
+
+public class Reports extends BasePage {
+
+  public Reports() {
+    PageFactory.initElements(driver, this);
+  }
+
+  @FindBy(xpath = "//span[@class='v-tabsheet-caption-close']")
+  private WebElement btn_CloseTab;
+
+  public void closePage(){
+    try {
+      webActions.clickBYJS(btn_CloseTab, "Close button");
+      report.reportPass("Page closed succeefully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to Close page");
+    }
+  }
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(btn_CloseTab);
+  }
+
+}
+***********************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.List;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import com.tab.af.web.pages.BasePage;
+
+public class ScheduledTasks extends BasePage {
+
+  public ScheduledTasks() {
+    PageFactory.initElements(driver, this);
+  }
+
+  JournalAccess journal = new JournalAccess();
+
+  @FindBy(xpath = "//div[text()='Scheduled Tasks']")
+  private WebElement lbl_ScheduledTasks;
+
+  @FindBy(xpath = "//span[text()='Edit']")
+  private WebElement btn_Edit;
+
+  @FindBy(xpath = "//span[text()='Add search condition']")
+  private WebElement btn_AddSearchConditon;
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//span[text()='Create']")
+  private WebElement btn_Create;
+
+  @FindBy(xpath = "//span[text()='Activate']")
+  private WebElement btn_Activate;
+
+  @FindBy(xpath = "//span[text()='Remove']")
+  private WebElement btn_Remove;
+
+  @FindBy(xpath = "//span[text()='Execution history']")
+  private WebElement btn_ExecutionHistory;
+
+  @FindBy(xpath = "//span[text()='=']//following::input[1]")
+  private WebElement txt_SearchFilter;
+
+  ///
+  @FindBy(xpath = "//label[text()='Bean']//preceding::input")
+  private WebElement radio_Bean;
+
+  @FindBy(xpath = "//label[text()='Class']//preceding::input[1]")
+  private WebElement radio_Class;
+
+  @FindBy(xpath = "//label[text()='Script']//preceding::input[1]")
+  private WebElement radio_Script;
+
+  @FindBy(xpath = "//div[text()='Bean Name']//following::input[1]")
+  private WebElement txt_BeanName;
+
+  @FindBy(xpath = "//div[text()='Class Name']//following::input[1]")
+  private WebElement txt_ClassName;
+
+  @FindBy(xpath = "//div[text()='Method Name']//following::input[1]")
+  private WebElement txt_MethodName;
+
+  @FindBy(xpath = "//div[text()='User Name']//following::input[1]")
+  private WebElement txt_UserName;
+
+  @FindBy(xpath = "//div[text()='Singleton']//following::input[1]")
+  private WebElement chk_SingleTon;
+
+  @FindBy(xpath = "//label[text()='Cron']//preceding::input[1]")
+  private WebElement txt_Cron;
+
+  @FindBy(xpath = "//label[text()='Period']//preceding::input[1]")
+  private WebElement txt_Period;
+
+  @FindBy(xpath = "//label[text()='Fixed Delay']//preceding::input[1]")
+  private WebElement txt_FixedDelay;
+
+  @FindBy(xpath = "//div[text()='Period, sec']//following::input[1]")
+  private WebElement txt_PeriodSec;
+
+  @FindBy(xpath = "//div[text()='Cron Expression']//following::input[1]")
+  private WebElement txt_CronExpression;
+
+  @FindBy(xpath = "//div[text()='Start Date']//following::input[1]")
+  private WebElement txt_StartDate;
+
+  @FindBy(xpath = "//div[text()='Timeout, sec']//following::input[1]")
+  private WebElement txt_TimeOut;
+
+  @FindBy(xpath = "//div[text()='Time Frame, sec']//following::input[1]")
+  private WebElement txt_TimeFrame;
+
+  @FindBy(xpath = "//div[text()='Start Delay, sec']//following::input[1]")
+  private WebElement txt_StartDelay;
+
+  @FindBy(xpath = "//div[text()='Permitted Servers']//following::textarea")
+  private WebElement txt_PermittedServices;
+
+  @FindBy(xpath = "//div[text()='Log start']//following::input[1]")
+  private WebElement txt_LogStart;
+
+  @FindBy(xpath = "//div[text()='Log finish']//following::input[1]")
+  private WebElement txt_LogFinish;
+
+  @FindBy(xpath = "//div[text()='Description']//following::textarea")
+  private WebElement txt_Description;
+
+  @FindBy(xpath = "//span[text()='OK']")
+  private WebElement btn_OK;
+
+  @FindBy(xpath = "//span[text()='Cancel']")
+  private WebElement btn_Cancel;
+
+  @FindBy(xpath = "//span[text()='Refresh']")
+  private WebElement btn_Refresh;
+
+  @FindBy(xpath = "//table[@class='v-table-table']")
+  private WebElement tbl_ScheduleExecution;
+
+  @FindBy(xpath = "//tr//td[7]")
+  private List<WebElement> lbl_CreateBy;
+
+  @FindBy(
+      xpath = "//div[@class='v-menubar-submenu v-widget c-main-menu v-menubar-submenu-c-main-menu v-has-width']/span/span[1]")
+  private List<WebElement> subMenu_BPM;
+
+  public void validateScheduledTaskPageOptions(){
+    try {
+      webActions.assertDisplayed(btn_Search, "Search Button");
+      webActions.assertDisplayed(btn_AddSearchConditon, "Add Search Condtion Button");
+      webActions.assertDisplayed(btn_Create, "Create Button");
+      webActions.assertDisplayed(btn_Activate, "Activate Button");
+      webActions.assertDisplayed(btn_Edit, "Edit Button");
+      webActions.assertDisplayed(btn_Remove, "Remove Button");
+      webActions.assertDisplayed(btn_ExecutionHistory, "Execution History Button");
+      report.reportPass("Validate Scheduled Task Page Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate Scheduled Task Page Options");
+    }
+  }
+
+  public void validateCreateScheduledTaskPageOptions(){
+    try {
+      webActions.clickBYJS(btn_Create, "create Button");
+      webActions.waitForVisibility(txt_BeanName, "Bean Name text field");
+      webActions.assertDisplayed(radio_Bean, "Bean Radio Button");
+      webActions.assertDisplayed(radio_Class, "Class Radio Button");
+      webActions.assertDisplayed(radio_Script, "Script Radio Button");
+      webActions.assertDisplayed(txt_BeanName, "Bean Name text field");
+      webActions.assertDisplayed(txt_MethodName, "Method Name");
+      webActions.assertDisplayed(txt_UserName, "User Name");
+      webActions.assertDisplayed(chk_SingleTon, "Single ton check box");
+      webActions.assertDisplayed(txt_Cron, "Cron");
+      webActions.assertDisplayed(txt_Period, "Period");
+      webActions.assertDisplayed(txt_FixedDelay, "Fixed delay");
+      webActions.assertDisplayed(txt_PeriodSec, "Period sec");
+      webActions.assertDisplayed(txt_StartDate, "Start Date");
+      webActions.assertDisplayed(txt_TimeOut, "TimeOut");
+      webActions.assertDisplayed(txt_TimeFrame, "Time Frame");
+      webActions.assertDisplayed(txt_StartDelay, "Start delay");
+      webActions.assertDisplayed(txt_PermittedServices, "Permitted services");
+      webActions.assertDisplayed(txt_LogStart, "Log Start");
+      webActions.assertDisplayed(txt_LogFinish, "Log Finish");
+      webActions.assertDisplayed(txt_Description, "Description");
+      report.reportPass("Validate Scheduled Task creation Page Options");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Fail to Validate Scheduled Task creation Page Options");
+    }
+  }
+
+  public void verifySearch(String column, String value){
+    try {
+      journal.addSearchCondtion(column, value);
+      //webActions.waitForJSandJQueryToLoad();
+      webActions.waitForLoadingBarToComplete();
+      for (WebElement ac : lbl_CreateBy) {
+        if (ac.getText() != "" && ac.getText().matches("-?\\d+(\\.\\d+)?")) {
+          if (!ac.getText().equals(value)) {
+            throw new Exception("Assert Failed");
+          }
+        }
+      }
+      report.reportPass("Validate Search");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Validate Search");
+    }
+  }
+
+  public void createTask(String classValue, String user, String corn, String description){
+    try {
+      webActions.waitForVisibility(txt_BeanName, "Bean Name text field");
+      webActions.clickBYJS(radio_Class, "Class Radio Button");
+      webActions.waitForVisibility(txt_ClassName, "Class Name text field");
+      webActions.sendKeysByChar(txt_ClassName, classValue, "Class value");
+      webActions.sendKeysByChar(txt_UserName, user, "user value");
+      webActions.clickBYJS(txt_Cron, "Cron Radio Button");
+      webActions.waitForVisibility(txt_CronExpression, "Cron expression text field");
+      webActions.sendKeysByChar(txt_CronExpression, corn, "corn value");
+      webActions.sendKeysByChar(txt_Description, description, "description value");
+      webActions.clickBYJS(btn_OK, "OK Button");
+      webActions.waitForVisibility(btn_Create, "Create button");
+      report.reportPass("Scheduled task created successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to create scheduled task");
+    }
+  }
+
+  public void editScheduleTask(String description){
+    try {
+      webActions.clickBYJS(btn_Edit, "Edit Button");
+      webActions.waitForVisibility(txt_Description, "Description text field");
+      webActions.sendKeysByChar(txt_Description, description, "Updated description value");
+      webActions.clickBYJS(btn_OK, "OK Button");
+      webActions.waitForVisibility(btn_Create, "Create button");
+      report.reportPass("Scheduled task Updated successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to Update scheduled task");
+    }
+  }
+
+  public void verifyExecutionHistory(){
+    try {
+      webActions.clickBYJS(btn_ExecutionHistory, "ExecutionHistory Button");
+      webActions.waitForVisibility(tbl_ScheduleExecution, "Refresh button");
+      webActions.assertDisplayed(tbl_ScheduleExecution, "Scheduled Execution table");
+      report.reportPass("Scheduled execution history verified successfully");
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify Scheduled execution history");
+    }
+  }
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_ScheduledTasks);
+  }
+
+}
+******************************************************
+package com.tab.af.web.pages.EBank;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.testng.Assert;
+import com.tab.af.web.pages.BasePage;
+
+public class ServerLog extends BasePage {
+
+  public ServerLog() {
+    PageFactory.initElements(driver, this);
+  }
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//div[text()='Users']//following::span[1]")
+  private WebElement btn_CloseUsersTab;
+
+  @FindBy(xpath = "//div[text()='Server Log']")
+  private WebElement lbl_ServerLog;
+
+  @FindBy(xpath = "//div[text()='Local Node']")
+  private WebElement txt_LocalNode;
+
+  @FindBy(xpath = "//div[text()='JMX Connection']//following::input[1]")
+  private WebElement txt_JMXConnection;
+
+  @FindBy(xpath = "//div[text()='View']")
+  private WebElement lnk_View;
+
+  @FindBy(xpath = "//div[text()='Options']")
+  private WebElement lnk_Options;
+
+  @FindBy(xpath = "//div[text()='Log File']//following::input[1]")
+  private WebElement txt_LogFile;
+
+  @FindBy(xpath = "//span[text()='Download']")
+  private WebElement btn_DownLoad;
+
+  @FindBy(xpath = "//span[text()='Show Tail']")
+  private WebElement btn_ShowTail;
+
+  @FindBy(xpath = "//div[text()='Logger']//following::input[1]")
+  private WebElement txt_Logger;
+
+  @FindBy(xpath = "//div[text()='Appender']//following::input[1]")
+  private WebElement txt_Appender;
+
+  @FindBy(xpath = "//div[text()='Level']//following::input[1]")
+  private WebElement txt_Level;
+
+  @FindBy(xpath = "//div[text()='Threshold']//following::input[1]")
+  private WebElement txt_Threshold;
+
+  @FindBy(xpath = "//span[text()='Control']")
+  private WebElement btn_Control;
+
+  @FindBy(xpath = "//label[text()='Auto Refresh']//preceding::input[1]")
+  private WebElement chk_AutoRefresh;
+
+  public void verifyOptionsServerLogPage(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(txt_LogFile, "Log file field");
+      Assert.assertEquals(true, txt_LocalNode.isDisplayed());
+      Assert.assertEquals(true, txt_JMXConnection.isDisplayed());
+      Assert.assertEquals(true, lnk_View.isDisplayed());
+      Assert.assertEquals(true, lnk_Options.isDisplayed());
+      report.reportPass("All Options Displayed from server log default page");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from server log default page");
+    }
+  }
+
+  public void toggle(){
+    try {
+      webActions.clickBYJS(lnk_Options, "Options tab");
+      webActions.waitUntilPresentAndDisplayed(txt_Logger, "Logger field");
+      Assert.assertEquals(true, txt_Logger.isDisplayed());
+      webActions.clickBYJS(lnk_View, "View tab");
+      webActions.waitUntilPresentAndDisplayed(txt_LogFile, "Log file field");
+      Assert.assertEquals(true, txt_LogFile.isDisplayed());
+      report.reportPass("All Options Displayed from view and options tabs");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from view and options tabs");
+    }
+  }
+
+  public void verifyOptionsTabOptions(){
+    try {
+      webActions.clickBYJS(lnk_Options, "Options tab");
+      webActions.waitUntilPresentAndDisplayed(txt_Logger, "Logger field");
+      Assert.assertEquals(true, txt_Logger.isDisplayed());
+      Assert.assertEquals(true, txt_Appender.isDisplayed());
+      Assert.assertEquals(true, txt_Level.isDisplayed());
+      Assert.assertEquals(true, txt_Threshold.isDisplayed());
+      Assert.assertEquals(true, btn_Control.isDisplayed());
+      report.reportPass("All Options Displayed from options tabs");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from options tab");
+    }
+  }
+
+  public void verifyViewOptions(){
+    try {
+      webActions.clickBYJS(lnk_View, "View tab");
+      webActions.waitUntilPresentAndDisplayed(txt_LogFile, "Log file field");
+      Assert.assertEquals(true, txt_LogFile.isDisplayed());
+      Assert.assertEquals(true, btn_ShowTail.isDisplayed());
+      Assert.assertEquals(true, btn_DownLoad.isDisplayed());
+      Assert.assertEquals(true, chk_AutoRefresh.isDisplayed());
+      report.reportPass("All Options Displayed from View tab");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from View tab");
+    }
+  }
+
+  public void downLoadLog(String format){
+    try {
+      webActions.sendKeysByChar(txt_LogFile, format, "Download file format");
+      webActions.clickBYJS(btn_DownLoad, "Download");
+      report.reportPass("Log File downloaded succeefully");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to Download log file");
+    }
+  }
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_ServerLog);
+  }
+
+}
+************************************************************
+package com.tab.af.web.pages.EBank;
+
+import java.util.List;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.testng.Assert;
+import com.tab.af.web.pages.BasePage;
+
+public class TemplateManagement extends BasePage {
+
+  public TemplateManagement() {
+    PageFactory.initElements(driver, this);
+  }
+
+  @FindBy(xpath = "//span[text()='Accounting']")
+  private WebElement lbl_Accounting;
+
+  @FindBy(xpath = "//span[text()='Add search condition']")
+  private WebElement btn_AddSearchConditon;
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//span[text()='Edit']")
+  private WebElement btn_Edit;
+
+  @FindBy(xpath = "//span[text()='Export Access Group Data']")
+  private WebElement btn_ExportAccessGroupData;
+
+  @FindBy(xpath = "//span[text()='Remove']")
+  private WebElement btn_Remove;
+
+  @FindBy(xpath = "//span[text()='Create']")
+  private WebElement btn_Create;
+
+  @FindBy(xpath = "//span[text()='Excel']")
+  private WebElement btn_Excel;
+
+  @FindBy(xpath = "//div[text()='Journal Template']")
+  private WebElement lbl_JournalTemplate;
+
+  //
+  @FindBy(xpath = "//span[text()='Add']")
+  private WebElement btn_Add;
+
+  @FindBy(xpath = "//span[text()='Cancel']")
+  private WebElement btn_Cancel;
+
+  @FindBy(xpath = "//span[text()='Submit']")
+  private WebElement btn_Submit;
+
+  @FindBy(xpath = "//span[text()='Create Template']")
+  private WebElement btn_CreateTemplate;
+
+  @FindBy(xpath = "//div[text()='Debit Total']")
+  private WebElement lbl_DebitTotal;
+
+  @FindBy(xpath = "//div[text()='Credit Total']")
+  private WebElement lbl_CreditTotal;
+
+  @FindBy(xpath = "//div[text()='Offset Amount']")
+  private WebElement lbl_OffsetAmount;
+
+  @FindBy(xpath = "//div[text()='Decision Description']")
+  private WebElement lbl_DecisionDescription;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[1]//input")
+  private WebElement txt_Account;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[4]//input")
+  private WebElement txt_Selector;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[6]//input")
+  private WebElement txt_Amount;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr/td[8]//input")
+  private WebElement txt_Description;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[1]//input")
+  private WebElement txt_Accoun_Credit;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[4]//input")
+  private WebElement txt_Selector_Credit;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[6]//input")
+  private WebElement txt_Amount_Credit;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[8]//input")
+  private WebElement txt_Description_Credit;
+
+  @FindBy(xpath = "//div[text()='Template Name']//following::input[1]")
+  private WebElement txt_TemplateName;
+
+  @FindBy(xpath = "//span[text()='OK']//preceding::input[1]")
+  private WebElement txt_Description_Screen;
+
+  @FindBy(xpath = "//span[text()='OK']")
+  private WebElement btn_OK;
+
+  @FindBy(xpath = "//div[text()='Journal Batch']//following::span[1]")
+  private WebElement btn_CloseTab;
+
+  @FindBy(xpath = "//table[@class='v-table-table']/tbody/tr[2]/td[1]/div")
+  private WebElement tbl_FirstRecord;
+
+  @FindBy(xpath = "//span[text()='contains']//following::input[1]")
+  private WebElement txt_SearchFilter;
+
+  @FindBy(xpath = "//tr//td[2]")
+  private List<WebElement> lbl_CreateBy;
+
+  @FindBy(xpath = "//div[text()='Template Name']")
+  private WebElement lbl_TemplateName;
+
+  @FindBy(xpath = "//span[text()='File is not selected']")
+  private WebElement lbl_FileUpload;
+
+  public void verifyOptions(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(btn_Search, "Search button");
+      Assert.assertEquals(true, btn_Search.isDisplayed());
+      Assert.assertEquals(true, btn_Create.isDisplayed());
+      Assert.assertEquals(true, btn_Edit.isDisplayed());
+      Assert.assertEquals(true, btn_Remove.isDisplayed());
+      Assert.assertEquals(true, btn_AddSearchConditon.isDisplayed());
+      Assert.assertEquals(true, btn_Excel.isDisplayed());
+      report.reportPass("All Options Displayed");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "All Options Displayed");
+    }
+  }
+
+  public void verifyJournalTemplateOptions(){
+    try {
+      webActions.clickBYJS(btn_Create, "create Button");
+      webActions.waitForVisibility(btn_Add, "Add button");
+      Assert.assertEquals(true, btn_Add.isDisplayed());
+      Assert.assertEquals(true, btn_Cancel.isDisplayed());
+      Assert.assertEquals(true, btn_Submit.isDisplayed());
+      Assert.assertEquals(true, btn_Remove.isDisplayed());
+      Assert.assertEquals(true, lbl_TemplateName.isDisplayed());
+      Assert.assertEquals(true, lbl_FileUpload.isDisplayed());
+      report.reportPass("All Options are Displayed from Journal Template page");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "All Options not Displayed from Journal Template page");
+    }
+  }
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_JournalTemplate);
+  }
+
+}
+*******************************************
+package com.tab.af.web.pages.EBank;
+
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.testng.Assert;
+import com.tab.af.web.pages.BasePage;
+
+public class Users extends BasePage {
+
+  public Users() {
+    PageFactory.initElements(driver, this);
+  }
+
+  @FindBy(xpath = "//span[text()='Create']")
+  private WebElement btn_Create;
+
+  @FindBy(xpath = "//span[text()='Edit']")
+  private WebElement btn_Edit;
+
+  @FindBy(xpath = "//span[text()='Copy']")
+  private WebElement btn_Copy;
+
+  @FindBy(xpath = "//span[text()='Remove']")
+  private WebElement btn_Remove;
+
+  @FindBy(xpath = "//span[text()='Additional']")
+  private WebElement btn_Additional;
+
+  @FindBy(xpath = "//span[text()='Excel']")
+  private WebElement btn_Excel;
+
+  @FindBy(xpath = "//span[text()='Search']")
+  private WebElement btn_Search;
+
+  @FindBy(xpath = "//div[text()='Users']//following::span[1]")
+  private WebElement btn_CloseUsersTab;
+
+  @FindBy(xpath = "//div[text()='Users']")
+  private WebElement lbl_Users;
+
+  @FindBy(xpath = "//div[text()='Local Node']")
+  private WebElement txt_LocalNode;
+
+  @FindBy(xpath = "//div[text()='JMX Connection']//following::input[1]")
+  private WebElement txt_JMXConnection;
+
+  @FindBy(xpath = "//div[text()='View']")
+  private WebElement lnk_View;
+
+  @FindBy(xpath = "//div[text()='Options']")
+  private WebElement lnk_Options;
+
+  @FindBy(xpath = "//div[text()='Log File']//following::input[1]")
+  private WebElement txt_LogFile;
+
+  @FindBy(xpath = "//span[text()='Download']")
+  private WebElement btn_DownLoad;
+
+  @FindBy(xpath = "//span[text()='Show Tail']")
+  private WebElement btn_ShowTail;
+
+  @FindBy(xpath = "//div[text()='Logger']//following::input[1]")
+  private WebElement txt_Logger;
+
+  @FindBy(xpath = "//div[text()='Appender']//following::input[1]")
+  private WebElement txt_Appender;
+
+  @FindBy(xpath = "//div[text()='Level']//following::input[1]")
+  private WebElement txt_Level;
+
+  @FindBy(xpath = "//div[text()='Threshold']//following::input[1]")
+  private WebElement txt_Threshold;
+
+  @FindBy(xpath = "//span[text()='Control']")
+  private WebElement btn_Control;
+
+  @FindBy(xpath = "//label[text()='Auto Refresh']//preceding::input[1]")
+  private WebElement chk_AutoRefresh;
+
+  public void verifyAllOptions(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(btn_Search, "Search button");
+      Assert.assertEquals(true, btn_Search.isDisplayed());
+      Assert.assertEquals(true, btn_Create.isDisplayed());
+      Assert.assertEquals(true, btn_Edit.isDisplayed());
+      Assert.assertEquals(true, btn_Remove.isDisplayed());
+      Assert.assertEquals(true, btn_Additional.isDisplayed());
+      Assert.assertEquals(true, btn_Excel.isDisplayed());
+      webActions.clickBYJS(btn_CloseUsersTab, "Close Button");
+      report.reportPass("All Options Displayed from Users page");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from users page");
+    }
+  }
+
+  public void verifyOptionsServerLogPage(){
+    try {
+      webActions.waitUntilPresentAndDisplayed(txt_LogFile, "Log file field");
+      Assert.assertEquals(true, txt_LocalNode.isDisplayed());
+      Assert.assertEquals(true, txt_JMXConnection.isDisplayed());
+      Assert.assertEquals(true, lnk_View.isDisplayed());
+      Assert.assertEquals(true, lnk_Options.isDisplayed());
+      report.reportPass("All Options Displayed from server log default page");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from server log default page");
+    }
+  }
+
+  public void toggle(){
+    try {
+      webActions.clickBYJS(lnk_Options, "Options tab");
+      webActions.waitUntilPresentAndDisplayed(txt_Logger, "Logger field");
+      Assert.assertEquals(true, txt_Logger.isDisplayed());
+      webActions.clickBYJS(lnk_View, "View tab");
+      webActions.waitUntilPresentAndDisplayed(txt_LogFile, "Log file field");
+      Assert.assertEquals(true, txt_LogFile.isDisplayed());
+      report.reportPass("All Options Displayed from view and options tabs");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from view and options tabs");
+    }
+  }
+
+  public void verifyOptionsTabOptions(){
+    try {
+      webActions.clickBYJS(lnk_Options, "Options tab");
+      webActions.waitUntilPresentAndDisplayed(txt_Logger, "Logger field");
+      Assert.assertEquals(true, txt_Logger.isDisplayed());
+      Assert.assertEquals(true, txt_Appender.isDisplayed());
+      Assert.assertEquals(true, txt_Level.isDisplayed());
+      Assert.assertEquals(true, txt_Threshold.isDisplayed());
+      Assert.assertEquals(true, btn_Control.isDisplayed());
+      report.reportPass("All Options Displayed from options tabs");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from options tab");
+    }
+  }
+
+  public void verifyViewOptions(){
+    try {
+      webActions.clickBYJS(lnk_View, "View tab");
+      webActions.waitUntilPresentAndDisplayed(txt_LogFile, "Log file field");
+      Assert.assertEquals(true, txt_LogFile.isDisplayed());
+      Assert.assertEquals(true, btn_ShowTail.isDisplayed());
+      Assert.assertEquals(true, btn_DownLoad.isDisplayed());
+      Assert.assertEquals(true, chk_AutoRefresh.isDisplayed());
+      report.reportPass("All Options Displayed from View tab");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to verify all the options from View tab");
+    }
+  }
+
+  public void downLoadLog(String format){
+    try {
+      webActions.sendKeysByChar(txt_LogFile, format, "Download file format");
+      webActions.clickBYJS(btn_DownLoad, "Download");
+      report.reportPass("Log File downloaded succeefully");
+
+    } catch (Exception e) {
+      report.reportHardFail(e, "Failed to Download log file");
+    }
+  }
+
+  @Override
+  protected ExpectedCondition getPageLoadCondition(){
+    // TODO Auto-generated method stub
+    return ExpectedConditions.visibilityOf(lbl_Users);
+  }
+
+}
